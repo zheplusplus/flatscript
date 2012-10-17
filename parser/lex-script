@@ -1,0 +1,22 @@
+BEGIN {
+  print "LEX=flex"
+  print "WORKDIR=parser";
+  print "include misc/mf-template.mk"
+}
+
+{
+  for (i = 1; "" != $i && "\\" != $i; ++i)
+  {
+    if ("lex-include.o:" == $i) {
+      print "$(WORKDIR)/lex.o: $(WORKDIR)/lex-include.h \\";
+    } else {
+      print $i " \\";
+    }
+  }
+}
+
+END {
+  print "$(WORKDIR)/lexica.l"
+  print "	$(LEX) -o $(WORKDIR)/lex.cpp $(WORKDIR)/lexica.l"
+  print "	$(COMPILE_GENERATED) $(WORKDIR)/lex.cpp -o $(WORKDIR)/lex.o"
+}

@@ -1,0 +1,7 @@
+if 0
+	write(0)
+else
+  	write(1)
+
+ifnot (0 = 1)
+	 write(0)

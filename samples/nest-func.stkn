@@ -1,0 +1,33 @@
+func xor(a, b)
+    if a
+        return !b
+    return b
+
+func leap(y)
+    func mod4()
+        return y % 4 = 0
+    func mod100()
+        return y % 100 = 0
+    func mod400()
+        return y % 400 = 0
+    m4: mod4()
+    m100: mod100()
+    m400: mod400()
+    return xor(m4, xor(m100, m400))
+
+write(leap(4))
+write(leap(10))
+write(leap(20))
+write(leap(100))
+write(leap(200))
+write(leap(400))
+
+func deepNest(x)
+    z: 5
+    func inner1Level(y)
+        func inner2Level()
+            return x * y
+        return inner2Level()
+    return inner1Level(z)
+
+write(deepNest(2))

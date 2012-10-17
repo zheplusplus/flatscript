@@ -1,0 +1,19 @@
+func make_pair(x, y)
+    func selector(select)
+        return select(x, y)
+    return selector
+
+func first(x, y)
+    return x
+
+func second(x, y)
+    return y
+
+m: 10
+x: make_pair(m, 6)
+write(x(first))
+write(x(second))
+
+y: make_pair(false, true)
+write(y(first))
+write(y(second))

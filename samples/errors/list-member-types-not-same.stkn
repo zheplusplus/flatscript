@@ -1,0 +1,5 @@
+func x(y)
+    return y * y
+
+write([x(100), false])
+write([x(10.0), true])

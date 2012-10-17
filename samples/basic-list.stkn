@@ -1,0 +1,16 @@
+func write_0_2(x, _, z)
+    write(x)
+    write(z)
+
+write_0_2([false, true], [0, 1], 3.1415926)
+
+y: 3.14159
+x: [y, 2.71828]
+write(x)
+
+write([] ++ [])
+write([] ++ [0])
+write([0] ++ [])
+write([0] ++ [0])
+z: [1.19]
+write(z++x)

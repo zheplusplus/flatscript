@@ -1,0 +1,8 @@
+func f0()
+    func f1()
+        return x
+    y: f1()
+    x: 10
+    return f1()
+
+write(f0())

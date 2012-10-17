@@ -1,0 +1,17 @@
+func rlist(x, y, z)
+    return [z, y]
+
+write(rlist(0, 1, 2))
+
+func list20(x, _, z)
+    return [z] ++ [x]
+
+write(list20(0, 1, 2))
+
+func elist(n)
+    if n = 0
+        return []
+    return [n]
+write(elist(0))
+write(elist(1))
+write(elist(2))

@@ -1,0 +1,16 @@
+ls: [5, 1, 6, 7, 2, 9, 4, 3, 8, 0]
+
+write(ls | return $element * $element)
+write(ls | return $element % 2 = 0)
+write(ls | if $element % 2 = 0)
+
+func head(list, n)
+    return list | if $index < n
+
+func after(list, n)
+    return list | if $index >= n
+
+write(head(ls, 4))
+write(after(ls, 4))
+
+write(ls | return $element * $element % 7 | if $element < 4)

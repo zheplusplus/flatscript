@@ -1,0 +1,39 @@
+n: 10
+
+func fib(n)
+    func add()
+        return fib(n) + fib(n - 1)
+    ifnot n < 2
+        return add()
+    return 1
+
+if n > 5
+    write(fib(10))
+else
+    write(false)
+
+func print_10()
+    if true
+        write(+10.0)
+
+x: print_10
+y: fib
+
+[]
+[0]
+[ panty, stocking, garterbelt(chuck) ]
+[ [zergling, hydralisk], [marine, firebat], [zealot, dragoon] ]
+[0] ++ []
+z ++ z ++ z
+
+
+
+
+
+
+
+[] | if $index = 0 | return $element * $element
+
+s: 'sizukani tiriyuku' + "the quick brown fox jumps over a lazy dog."
+sk: "a quote\" and something \\else in\t the\n string"
+st: 'nomico"misato' "nomico'misato"

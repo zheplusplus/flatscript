@@ -1,0 +1,23 @@
+func ret_string()
+    return "ste" 'kin'
+stekin: ret_string()
+write(stekin)
+
+write(stekin + true)
+stekin2: stekin + stekin
+write(stekin2)
+
+x: 112
+write(x + stekin)
+
+write(3.14 + "" + 3.14)
+
+func add_str(s)
+    func adding(a)
+        return s + a
+    return adding
+
+y: add_str('abc
+    ')
+write(y(10))
+write(y(false))
