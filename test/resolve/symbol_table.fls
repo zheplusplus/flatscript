@@ -1,0 +1,174 @@
+include 'errors.fls' as errors
+include 'misc.fls' as misc
+include 'test/assert.fls' as assert
+include 'resolve/symbol_table.fls' as st
+include 'resolve/expressions.fls' as exprs
+
+Literal: exprs.Literal
+
+export func run()
+    describe('symbol table', %)
+    if true
+        it('def ref names', %)
+        s: st.GlobalSymbolTable()
+        s.defName(misc.pos(null, 1), 'hello')
+        hello: s.compileRef(misc.pos(null, 2), 'hello')
+        assert.eq(false, errors.hasError())
+        assert.deepEq({name: 'hello'}, hello)
+
+        s.defName(misc.pos(null, 3), 'world')
+        hello0: s.compileRef(misc.pos(null, 4), 'hello')
+        assert.deepEq({name: 'hello'}, hello0)
+        world: s.compileRef(misc.pos(null, 4), 'world')
+        assert.deepEq({name: 'world'}, world)
+
+        assert.eq(null, s.literalValue(misc.pos(null, 4), 'hello'))
+        assert.eq(null, s.literalValue(misc.pos(null, 4), 'world'))
+        assert.eq(false, errors.hasError())
+
+    if true
+        it('external names', %)
+        s: st.GlobalSymbolTable()
+        s.addExternals(misc.pos(null, 0), ['quick', 'fox'])
+        s.defName(misc.pos(null, 1), 'lazy')
+        s.defName(misc.pos(null, 2), 'dog')
+
+        assert.deepEq({name: 'dog'}, s.compileRef(misc.pos(null, 3), 'dog'))
+        assert.deepEq({image: 'fox'}, s.compileRef(misc.pos(null, 3), 'fox'))
+        assert.deepEq({name: 'lazy'}, s.compileRef(misc.pos(null, 3), 'lazy'))
+        assert.deepEq({image: 'quick'}, s.compileRef(misc.pos(null, 3), 'quick'))
+
+        assert.eq(null, s.literalValue(misc.pos(null, 4), 'quick'))
+        assert.eq(null, s.literalValue(misc.pos(null, 4), 'fox'))
+        assert.eq(null, s.literalValue(misc.pos(null, 4), 'lazy'))
+        assert.eq(null, s.literalValue(misc.pos(null, 4), 'dog'))
+        assert.eq(false, errors.hasError())
+
+    if true
+        it('literal', %)
+        s: st.GlobalSymbolTable()
+        POS: {file: null, line: 1}
+        s.defLiteral(misc.pos(null, 1), 'lazy', Literal(POS, 'dog'))
+        s.defLiteral(misc.pos(null, 2), 'quick', Literal(POS, 91))
+        s.defName(misc.pos(null, 2), 'fox')
+
+        assert.deepEq({name: 'fox'}, s.compileRef(misc.pos(null, 3), 'fox'))
+        assert.deepEq({value: 'dog'}, s.compileRef(misc.pos(null, 3), 'lazy'))
+        assert.deepEq({value: 91}, s.compileRef(misc.pos(null, 3), 'quick'))
+
+        assert.eq(91, s.literalValue(misc.pos(null, 4), 'quick').value)
+        assert.eq(null, s.literalValue('misc.pos(null, 4), fox'))
+        assert.eq('dog', s.literalValue(misc.pos(null, 4), 'lazy').value)
+        assert.eq(false, errors.hasError())
+
+    if true
+        it('def ref errors', %)
+        s: st.GlobalSymbolTable()
+        POS0: misc.pos(null, 1)
+        s.compileRef(POS0, 'fox')
+
+        assert.deepEq([{
+            pos: POS0,
+            type: 'SymbolNotDef',
+            name: 'fox',
+        }], errors.deliver())
+
+        POS1: misc.pos(null, 2)
+        POS2: misc.pos(null, 3)
+        s.defName(POS1, 'fox')
+        s.defLiteral(POS2, 'fox', Literal(POS0, 91))
+        assert.deepEq([{
+            pos: POS2,
+            type: 'SymbolRedefined',
+            name: 'fox',
+            defPos: POS1,
+        }], errors.deliver())
+
+    if true
+        it('cascaded symbol tables', %)
+        s: st.GlobalSymbolTable()
+        t: s.makeFuncSymbolTable()
+        u: t.makeSubSymbolTable()
+        assert.uid(u.uid)
+
+        POS: {file: null, line: 1}
+        s.defLiteral(misc.pos(null, 1), 'lazy', Literal(POS, 'dog'))
+        s.defLiteral(misc.pos(null, 2), 'quick', Literal(POS, 91))
+        s.defName(misc.pos(null, 3), 'fox')
+
+        t.defLiteral(misc.pos(null, 4), 'dog', Literal(POS, 1729))
+        t.defLiteral(misc.pos(null, 5), 'fox', Literal(POS, 'yellow'))
+        t.defName(misc.pos(null, 5), 'quick')
+
+        u.defName(misc.pos(null, 6), 'lazy')
+        u.defName(misc.pos(null, 7), 'brown')
+        assert.eq(false, errors.hasError())
+
+        assert.deepEq({name: 'brown', uid: u.uid}, u.compileRef(misc.pos(null, 8), 'brown'))
+        assert.deepEq({value: 1729}, u.compileRef(misc.pos(null, 8), 'dog'))
+        assert.deepEq({value: 'yellow'}, u.compileRef(misc.pos(null, 8), 'fox'))
+        assert.deepEq({name: 'lazy', uid: u.uid}, u.compileRef(misc.pos(null, 8), 'lazy'))
+        assert.deepEq({name: 'quick'}, u.compileRef(misc.pos(null, 8), 'quick'))
+
+        assert.deepEq({value: 1729}, t.compileRef(misc.pos(null, 9), 'dog'))
+        assert.deepEq({value: 'yellow'}, t.compileRef(misc.pos(null, 9), 'fox'))
+        assert.deepEq({value: 'dog'}, t.compileRef(misc.pos(null, 9), 'lazy'))
+        assert.deepEq({name: 'quick'}, t.compileRef(misc.pos(null, 9), 'quick'))
+
+        assert.deepEq({name: 'fox'}, s.compileRef(misc.pos(null, 10), 'fox'))
+        assert.deepEq({value: 'dog'}, s.compileRef(misc.pos(null, 10), 'lazy'))
+        assert.deepEq({value: 91}, s.compileRef(misc.pos(null, 10), 'quick'))
+        assert.eq(false, errors.hasError())
+
+        POS0: misc.pos(null, 11)
+        s.compileRef(POS0, 'dog')
+        assert.deepEq([{
+            pos: POS0,
+            type: 'SymbolNotDef',
+            name: 'dog',
+        }], errors.deliver())
+
+        POS1: misc.pos(null, 11)
+        t.compileRef(POS1, 'brown')
+        assert.deepEq([{
+            pos: POS1,
+            type: 'SymbolNotDef',
+            name: 'brown',
+        }], errors.deliver())
+
+    if true
+        it('ref ext before def', %)
+        s: st.GlobalSymbolTable()
+        t: s.makeFuncSymbolTable()
+
+        POS: {file: null, line: 1}
+        s.defLiteral(misc.pos(null, 1), 'lazy', Literal(POS, 'dog'))
+        POS0: misc.pos(null, 2)
+        t.compileRef(POS0, 'lazy')
+        POS1: misc.pos(null, 3)
+        t.defName(POS1, 'lazy')
+
+        assert.deepEq([{
+            pos: POS1,
+            type: 'SymbolDefAfterRefs',
+            name: 'lazy',
+            refPosList: [POS0],
+        }], errors.deliver())
+
+    if true
+        it('query ext literal before def', %)
+        s: st.GlobalSymbolTable()
+        t: s.makeFuncSymbolTable()
+
+        s.defName(misc.pos(null, 1), 'lazy')
+        POS0: misc.pos(null, 2)
+        t.literalValue(POS0, 'lazy')
+        POS1: misc.pos(null, 3)
+        t.defName(POS1, 'lazy')
+
+        assert.deepEq([{
+            pos: POS1,
+            type: 'SymbolDefAfterRefs',
+            name: 'lazy',
+            refPosList: [POS0],
+        }], errors.deliver())

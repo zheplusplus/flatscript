@@ -1,0 +1,148 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'parse/build.fls' as build
+
+export func run()
+    describe('sub block automations', %)
+    if true
+        it('pipeline', %)
+        c: build.build('''
+            a |:
+              b
+            m + n
+        ''', null)
+
+        assert.not(errors.hasError())
+        assert.eq(0, c.funcs.length)
+        assert.eq(2, c.stmts.length)
+
+        POS0: {file: null, line: 2}
+        assert.deepEq({
+          pos: POS0,
+          name: 'a',
+        }, c.stmts[0].expr.arr)
+
+        assert.eq(1, c.stmts[0].expr.body.stmts.length)
+        POS1: {file: null, line: 3}
+        assert.deepEq({
+          pos: POS1,
+          name: 'b',
+        }, c.stmts[0].expr.body.stmts[0].expr)
+
+        POS2: {file: null, line: 4}
+        assert.deepEq({
+          pos: POS2,
+          op: '+',
+          lhs: {
+            pos: POS2,
+            name: 'm',
+          },
+          rhs: {
+            pos: POS2,
+            name: 'n',
+          },
+        }, c.stmts[1].expr)
+
+    if true
+        it('wrapped pipeline', %)
+        c: build.build('''
+            x(a |:
+              b
+            )
+        ''', null)
+
+        assert.not(errors.hasError())
+        assert.eq(0, c.funcs.length)
+        assert.eq(1, c.stmts.length)
+
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq(POS0, c.stmts[0].expr.pos)
+        assert.deepEq({
+          pos: POS0,
+          name: 'x',
+        }, c.stmts[0].expr.callee)
+
+        assert.eq(1, c.stmts[0].expr.args.length)
+        assert.deepEq({
+          pos: POS0,
+          arr: {
+            pos: POS0,
+            name: 'a',
+          },
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [{
+              pos: POS1,
+              expr: {
+                pos: POS1,
+                name: 'b',
+              },
+            }],
+          },
+        }, c.stmts[0].expr.args[0])
+
+    if true
+        it('lambda', %)
+        c: build.build('''
+            ():
+              m
+            a * b
+        ''', null)
+
+        assert.not(errors.hasError())
+        assert.eq(0, c.funcs.length)
+        assert.eq(2, c.stmts.length)
+
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq({
+          pos: POS0,
+          params: [],
+          body: {
+            pos: POS0,
+            stmts: [{
+              pos: POS1,
+              expr: {
+                pos: POS1,
+                name: 'm',
+              },
+            }],
+            funcs: [],
+          },
+        }, c.stmts[0].expr)
+
+    if true
+        it('wrapped lambda', %)
+        c: build.build('''
+            {x: (a, b):
+              m
+            }
+        ''', null)
+        assert.not(errors.hasError())
+        assert.eq(0, c.funcs.length)
+        assert.eq(1, c.stmts.length)
+
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq({
+          pos: POS0,
+          obj: {
+            x: {
+              pos: POS0,
+              params: ['a', 'b'],
+              body: {
+                pos: POS0,
+                stmts: [{
+                  pos: POS1,
+                  expr: {
+                    pos: POS1,
+                    name: 'm',
+                  },
+                }],
+                funcs: [],
+              },
+            },
+          },
+        }, c.stmts[0].expr)

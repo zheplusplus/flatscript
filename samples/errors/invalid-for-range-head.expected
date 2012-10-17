@@ -1,0 +1,2 @@
+samples/errors/invalid-for-range-head.fls:1
+    unexpected token: 10

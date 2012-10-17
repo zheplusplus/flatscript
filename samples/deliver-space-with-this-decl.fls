@@ -1,0 +1,11 @@
+fns: {}
+opt: {}
+
+((p):
+    fns.fx: (o):
+        opt: o if o else 42
+        p(opt, this != null)
+(console.log))
+
+fns.fx(-1)
+console.log(opt)

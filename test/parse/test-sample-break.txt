@@ -1,0 +1,29 @@
+x: y *
+    z
+x: y +
+        z
+x: y ||
+        z
+x: y &&
+z
+x: a + b *
+    c + d
+x: a * b =
+    c * d
+x: [
+    y]
+ifnot [y,
+    z]
+    x(
+    )
+x(
+    y)
+x(y,
+    z)
+
+if a * b =
+        c *
+        d
+    console.
+        log(x)
+over

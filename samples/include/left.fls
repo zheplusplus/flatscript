@@ -1,0 +1,7 @@
+include "samples/include/right.fls" as right
+include "samples/include/nodep.fls" as nodep
+
+export func foo()
+    return right.foo() + 1
+
+export bar: nodep.ep.bar

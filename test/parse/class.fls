@@ -1,0 +1,318 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/utils.fls' as utils
+include 'parse/build.fls' as build
+
+buildForStmts: utils.buildForStmts
+
+export func run()
+    describe('class', %)
+    if true
+        it('simple', %)
+        POS: {file: null, line: 2}
+        assert.deepEq([{
+          pos: POS,
+          name: 'MyClass',
+          base: null,
+          ct: null,
+          body: {
+            pos: POS,
+            funcs: [],
+            stmts: [],
+          },
+        }], buildForStmts('''
+            class MyClass
+        '''))
+
+    if true
+        it('extend', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 6}
+        assert.deepEq([{
+          pos: POS0,
+          name: 'MyClass',
+          base: {
+            pos: POS0,
+            callee: {
+              pos: POS0,
+              name: 'yourClass',
+            },
+            args: [],
+          },
+          ct: null,
+          body: {
+            pos: POS0,
+            funcs: [{
+              pos: POS1,
+              name: 'myFunc',
+              params: [],
+              body: {
+                pos: POS1,
+                stmts: [{
+                  pos: POS2,
+                  ret: {
+                    pos: POS2,
+                    value: 0,
+                  },
+                }],
+                funcs: [],
+              },
+            }],
+            stmts: [],
+          },
+        }, {
+          pos: POS3,
+          expr: {
+            pos: POS3,
+            callee: {
+              pos: POS3,
+              name: 'end',
+            },
+            args: [],
+          },
+        }], buildForStmts('''
+            class MyClass: yourClass()
+                func myFunc()
+                    return 0
+
+            end()
+        '''))
+
+    if true
+        it('constructor', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          name: 'MyClass',
+          base: null,
+          ct: {
+            pos: POS1,
+            params: [],
+            superInitCall: null,
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [],
+            },
+          },
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [],
+          },
+        }], buildForStmts('''
+            class MyClass
+                ctor()
+        '''))
+
+    if true
+        it('ctor not in class', %)
+        build.build('''
+            func x()
+                ctor()
+        ''', null)
+        assert.deepEq([{
+            type: 'CtorNotInClass',
+            pos: {file: null, line: 3},
+        }], errors.deliver())
+
+    if true
+        it('constructor with super call', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 6}
+        POS4: {file: null, line: 7}
+        assert.deepEq([{
+          pos: POS0,
+          name: 'MyClass',
+          base: {
+            pos: POS0,
+            name: 'HerClass',
+          },
+          ct: {
+            pos: POS1,
+            params: ['m', 'n'],
+            superInitCall: {
+              pos: POS1,
+              clsName: 'MyClass',
+              args: [],
+            },
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [{
+                pos: POS2,
+                ret: {
+                  pos: POS2,
+                  value: 0,
+                },
+              }],
+            },
+          },
+          body: {
+            pos: POS0,
+            funcs: [{
+              pos: POS3,
+              name: 'x',
+              params: [],
+              body: {
+                pos: POS3,
+                stmts: [{
+                  pos: POS4,
+                  expr: {
+                    pos: POS4,
+                    callee: {
+                      pos: POS4,
+                      name: 'y',
+                    },
+                    args: [],
+                  },
+                }],
+                funcs: [],
+              },
+            }],
+            stmts: [],
+          },
+        }], buildForStmts('''
+            class MyClass: HerClass
+                ctor(m, n) super()
+                    return 0
+
+                func x()
+                    y()
+        '''))
+
+        assert.deepEq([{
+          pos: POS0,
+          name: 'MyClass',
+          base: {
+            pos: POS0,
+            obj: {
+              pos: POS0,
+              name: 'fn',
+            },
+            prop: 'HerClass',
+          },
+          ct: {
+            pos: POS3,
+            params: ['m', 'n'],
+            superInitCall: {
+              pos: POS3,
+              clsName: 'MyClass',
+              args: [{
+                pos: POS3,
+                op: '+',
+                lhs: {
+                  pos: POS3,
+                  name: 'm',
+                },
+                rhs: {
+                  pos: POS3,
+                  name: 'n',
+                },
+              }, {
+                pos: POS3,
+                op: '-',
+                lhs: {
+                  pos: POS3,
+                  name: 'm',
+                },
+                rhs: {
+                  pos: POS3,
+                  name: 'n',
+                },
+              }],
+            },
+            body: {
+              pos: POS3,
+              funcs: [],
+              stmts: [{
+                pos: POS4,
+                ret: {
+                  pos: POS4,
+                  value: 0,
+                },
+              }],
+            },
+          },
+          body: {
+            pos: POS0,
+            funcs: [{
+              pos: POS1,
+              name: 'x',
+              params: [],
+              body: {
+                pos: POS1,
+                stmts: [{
+                  pos: POS2,
+                  expr: {
+                    pos: POS2,
+                    callee: {
+                      pos: POS2,
+                      name: 'y',
+                    },
+                    args: [],
+                  },
+                }],
+                funcs: [],
+              },
+            }],
+            stmts: [],
+          },
+        }], buildForStmts('''
+            class MyClass: fn.HerClass
+                func x()
+                    y()
+
+                ctor(m, n) super(m + n, m - n)
+                    return 0
+        '''))
+
+    if true
+        it('export', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          name: 'MyClass',
+          base: null,
+          ct: {
+            pos: POS1,
+            params: ['x', 'y'],
+            superInitCall: null,
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [],
+            },
+          },
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [],
+          },
+        }, {
+          pos: POS0,
+          exportPath: ['MyClass'],
+          value: {
+            pos: POS0,
+            name: 'MyClass',
+          },
+        }], buildForStmts('''
+            export class MyClass
+                ctor(x, y,)
+        '''))
+
+    if true
+        it('unexpected termination', %)
+        build.build('''
+            class Xx:
+        ''', null)
+        assert.deepEq([{
+            type: 'UnexpectedEOF',
+            pos: {file: null, line: 3},
+        }], errors.deliver())

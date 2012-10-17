@@ -1,0 +1,64 @@
+list: [4, 2, 3, 1]
+
+func print(element, cb)
+    setTimeout(%, 0)
+    console.log('Element: ' + element)
+    cb()
+
+func echo(cb, index)
+    setTimeout(%, 0)
+    console.log('Index: ' + index)
+    cb()
+
+func g(p, q, cb)
+    setTimeout(cb, 0)
+    return 0
+
+x: list |: g(print($, %), echo(%, $i), %)
+console.log(x)
+
+func asyncSqr(element, cb)
+    setTimeout(%, 0)
+    cb(element * element)
+
+console.log(list |:
+    asyncSqr($, %x)
+    $result.push(x)
+)
+
+console.log(list |:
+    asyncSqr($, %x)
+    if x % 3 = 1
+        $r.push(x)
+)
+
+list |:
+    console.log($i + ':' + $)
+    setTimeout(%, 0)
+
+console.log('-- references in nested --')
+
+func nestedPiping(x, %%)
+    x |:
+        i: $
+        x |:
+            setTimeout(%, 0)
+            console.log('+', i + $)
+        console.log('.', $, $i)
+
+nestedPiping([0, 1], %%)
+nestedPiping('ab', %%)
+
+console.log('---- async on object ----')
+
+obj: {fox: 'brown quick', dog: 'lazy'}
+
+func asyncIdent(x, %%)
+    setTimeout(%, 0)
+    return x
+
+console.log((obj |: asyncIdent($, %%)).sort())
+console.log(obj |: asyncIdent($i, %%))
+console.log((obj |: asyncIdent($k, %%)).sort())
+
+console.log('End')

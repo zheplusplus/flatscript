@@ -1,0 +1,81 @@
+func asyncThrowFunc(t, i, %%)
+    if t
+        throw 'this is an asynchronous exception: ' + i
+
+func syncThrowFunc(t, i)
+    if t
+        throw 'this is a synchronous exception: ' + i
+
+func f()
+    try
+        asyncThrowFunc(true, 9, %%)
+    catch e
+        console.log(e)
+
+f()
+
+func g()
+    try
+        asyncThrowFunc(false, -1, %%)
+        [0, 9] |: asyncThrowFunc(false, -1, %%)
+        syncThrowFunc(true, 10)
+    catch e
+        console.log(e)
+
+g()
+
+try
+    x: []
+    x.push(false)
+    x.push(true)
+    x |: asyncThrowFunc($, $i, %%)
+catch e
+    console.log(e)
+
+try
+    x: []
+    x.push(false)
+    x.push(false)
+    x.push(true)
+    x |: syncThrowFunc($, $i)
+catch e
+    console.log(e)
+
+try
+    try
+        x: []
+        x.push(true)
+        x |: syncThrowFunc($, 0)
+    catch e
+        setTimeout(%, 0)
+        throw 'throw in catch'
+catch e
+    setTimeout(%, 0)
+    console.log(e)
+
+func throwAfterTryCatchSync(t, i)
+    try
+        console.log('try+')
+    catch e
+        console.log('catch+')
+    syncThrowFunc(t, i)
+
+func throwAfterTryCatchAsync(t, i, %%)
+    try
+        setTimeout(%, 0)
+        console.log('try*')
+    catch e
+        console.log('catch*')
+    syncThrowFunc(t, i)
+
+try
+    throwAfterTryCatchSync(true, 72)
+catch e
+    console.log(e)
+
+try
+    throwAfterTryCatchAsync(true, 77, %%)
+catch e
+    console.log(e)
+
+console.log('end')

@@ -1,0 +1,928 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'parse/tokenize.fls' as tknz
+include 'parse/expressions.fls' as exprs
+include 'parse/clauses.fls' as cla
+include 'parse/automation.fls' as t
+
+func build(source)
+    c: cla.GlobalClause(null)
+    c.prepare()
+    tknz.tokenize(source, null, 1).tokens |: $.act(c.top())
+    return c
+
+func tknzForOneExpr(source)
+    c: build(source)
+    assert.ok(c.tryFinish())
+    if errors.count() != 0
+        console.error('>>> >> >>> Unexpected Errors')
+        console.error(errors.deliver())
+        console.error('<<< End of Unexpected Errors')
+        assert.ok(false)
+    assert.eq(2, c.stmts.length)
+    assert.eq(0, c.funcs.length)
+    return c.stmts[1].expr
+
+POS: {file: null, line: 1}
+
+export func run()
+    describe('expression automations', %)
+    if true
+        it('standalone factor', %)
+        assert.deepEq({
+            pos: POS,
+            value: 1,
+        }, tknzForOneExpr('1'))
+
+    if true
+        it('plain arith ops', %)
+        assert.deepEq({
+          pos: POS,
+          op: '+',
+          lhs: {
+            name: 'a',
+            pos: POS,
+          },
+          rhs: {
+            pos: POS,
+            op: '*',
+            lhs: {
+              pos: POS,
+              name: 'b',
+            },
+            rhs: {
+              pos: POS,
+              name: 'c',
+            },
+          },
+        }, tknzForOneExpr('a + b * c'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '-',
+          lhs: {
+            pos: POS,
+            op: '/',
+            lhs: {
+              pos: POS,
+              value: 1,
+            },
+            rhs: {
+              pos: POS,
+              name: 'x',
+            },
+          },
+          rhs: {
+            name: 'y',
+            pos: POS,
+          },
+        }, tknzForOneExpr('1 / x - y'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '<',
+          lhs: {
+            pos: POS,
+            op: '-',
+            rhs: {
+              pos: POS,
+              obj: {
+                pos: POS,
+                name: 'a',
+              },
+              prop: {
+                pos: POS,
+                name: 'b',
+              },
+            }
+          },
+          rhs: {
+            pos: POS,
+            name: 'c',
+          },
+        }, tknzForOneExpr('-a.b < c'))
+
+        e0: tknzForOneExpr('1 / x - y < m & n + p')
+        e0l: e0.lhs
+        e0r: e0.rhs
+        assert.eq('<', e0.op)
+
+        assert.eq('-', e0l.op)
+        assert.deepEq({
+          pos: POS,
+          op: '/',
+          lhs: {
+            pos: POS,
+            value: 1,
+          },
+          rhs: {
+            pos: POS,
+            name: 'x',
+          },
+        }, e0l.lhs)
+        assert.deepEq({
+          name: 'y',
+          pos: POS,
+        }, e0l.rhs)
+
+        assert.eq('&', e0r.op)
+        assert.deepEq({
+          name: 'm',
+          pos: POS,
+        }, e0r.lhs)
+        assert.deepEq({
+          pos: POS,
+          op: '+',
+          lhs: {
+            pos: POS,
+            name: 'n',
+          },
+          rhs: {
+            pos: POS,
+            name: 'p',
+          },
+        }, e0r.rhs)
+
+    if true
+        it('wrapped arith ops', %)
+        assert.deepEq({
+          pos: POS,
+          name: 'a',
+        }, tknzForOneExpr('(a)'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '&&',
+          lhs: {
+            pos: POS,
+            op: '!',
+            rhs: {
+              pos: POS,
+              op: '||',
+              lhs: {
+                pos: POS,
+                name: 'm',
+              },
+              rhs: {
+                pos: POS,
+                name: 'n',
+              },
+            },
+          },
+          rhs: {
+            pos: POS,
+            name: 'p',
+          },
+        }, tknzForOneExpr('!(m || n) && p'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '||',
+          lhs: {
+            pos: POS,
+            op: '!',
+            rhs: {
+              pos: POS,
+              name: 'm',
+            },
+          },
+          rhs: {
+            pos: POS,
+            op: '&&',
+            lhs: {
+              pos: POS,
+              name: 'n',
+            },
+            rhs: {
+              pos: POS,
+              name: 'p',
+            },
+          },
+        }, tknzForOneExpr('!m || (n && p)'))
+
+    if true
+        it('wrapped arith error', %)
+        build('()').tryFinish()
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'NoWrappedExpr',
+            pos: POS,
+        }], errors.deliver())
+
+        build('(1,) + 1').tryFinish()
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'ExcessiveWrappedExpr',
+            pos: POS,
+        }], errors.deliver())
+
+        build('(,1) + 1').tryFinish()
+        assert.eq(2, errors.count())
+        assert.deepEq([{
+            type: 'ArrElementOmitted',
+            pos: POS,
+        }, {
+            type: 'ExcessiveWrappedExpr',
+            pos: POS,
+        }], errors.deliver())
+
+    if true
+        it('array literal', %)
+        assert.deepEq({
+          pos: POS,
+          arr: [],
+        }, tknzForOneExpr('[]'))
+
+        assert.deepEq({
+          pos: POS,
+          arr: [{
+            pos: POS,
+            name: 'a',
+          }],
+        }, tknzForOneExpr('[a]'))
+
+        assert.deepEq({
+          pos: POS,
+          arr: [{
+            pos: POS,
+            name: 'a',
+          }],
+        }, tknzForOneExpr('[a,]'))
+
+        assert.deepEq({
+          pos: POS,
+          arr: [{
+            pos: POS,
+            name: 'a',
+          }, {
+            pos: POS,
+            op: '+',
+            lhs: {
+              pos: POS,
+              name: 'c',
+            },
+            rhs: {
+              pos: POS,
+              name: 'd',
+            },
+          }],
+        }, tknzForOneExpr('[a, c + (d),]'))
+
+    if true
+        it('array element omitted', %)
+        build('[,]')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'ArrElementOmitted',
+            pos: POS,
+        }], errors.deliver())
+
+        build('[, 0]')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'ArrElementOmitted',
+            pos: POS,
+        }], errors.deliver())
+
+    if true
+        it('object literal', %)
+        assert.deepEq({
+          pos: POS,
+          obj: {},
+        }, tknzForOneExpr('{}'))
+
+        assert.deepEq({
+          pos: POS,
+          obj: {
+            '0': {
+              pos: POS,
+              name: 'd',
+            },
+            a: {
+              pos: POS,
+              name: 'b',
+            },
+            'the quick': {
+              pos: POS,
+              value: 'fox',
+            },
+          },
+        }, tknzForOneExpr('{a: b, 0: d, "the quick": "fox"}'))
+
+        assert.deepEq({
+          pos: POS,
+          obj: {
+            0: {
+              pos: POS,
+              name: 'd',
+            },
+            lazy: {
+              pos: POS,
+              value: 'dog',
+            },
+          },
+        }, tknzForOneExpr('{0: d, "lazy": "dog",}'))
+
+    if true
+        it('object element omitted', %)
+        build('{0, 1}')
+        assert.eq(2, errors.count())
+        assert.deepEq([{
+            type: 'UnexpectedToken',
+            pos: POS,
+            image: ',',
+        }, {
+            type: 'ObjValueOmitted',
+            pos: POS,
+        }], errors.deliver())
+
+        build('{: 1}')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'ObjKeyOmitted',
+            pos: POS,
+        }], errors.deliver())
+
+    if true
+        it('lookup', %)
+        assert.deepEq({
+          pos: POS,
+          obj: {
+            pos: POS,
+            name: 'a',
+          },
+          key: {
+            pos: POS,
+            name: 'b',
+          },
+        }, tknzForOneExpr('a[b]'))
+
+    if true
+        it('slice', %)
+        assert.deepEq({
+          pos: POS,
+          arr: {
+            pos: POS,
+            name: 'a',
+          },
+          begin: {
+            pos: POS,
+          },
+          end: {
+            pos: POS,
+            name: 'b',
+          },
+          step: {
+            pos: POS,
+          },
+        }, tknzForOneExpr('a[, b]'))
+
+        assert.deepEq({
+          pos: POS,
+          arr: {
+            pos: POS,
+            name: 'a',
+          },
+          begin: {
+            pos: POS,
+            name: 'm',
+          },
+          end: {
+            pos: POS,
+            name: 'n',
+          },
+          step: {
+            pos: POS,
+            op: '+',
+            lhs: {
+              pos: POS,
+              value: 0,
+            },
+            rhs: {
+              pos: POS,
+              value: 1,
+            },
+          },
+        }, tknzForOneExpr('a[m, n, 0 + 1]'))
+
+    if true
+        it('lookup slice prop', %)
+        assert.deepEq({
+          pos: POS,
+          obj: {
+            pos: POS,
+            obj: {
+              pos: POS,
+              obj: {
+                pos: POS,
+                name: 'a',
+              },
+              prop: {
+                pos: POS,
+                name: 'mem',
+              },
+            },
+            key: {
+              pos: POS,
+              name: 'f',
+            },
+          },
+          key: {
+            pos: POS,
+            name: 'g',
+          },
+        }, tknzForOneExpr('a.mem[f][g]'))
+
+        assert.deepEq({
+          pos: POS,
+          obj: {
+            pos: POS,
+            arr: {
+              pos: POS,
+              obj: {
+                pos: POS,
+                name: 'p',
+              },
+              prop: {
+                pos: POS,
+                name: 'mem',
+              },
+            },
+            begin: {
+              pos: POS,
+              name: 'q',
+            },
+            end: {
+              pos: POS,
+            },
+            step: {
+              pos: POS,
+            },
+          },
+          prop: {
+            pos: POS,
+            name: 'x',
+          },
+        }, tknzForOneExpr('(p).mem[q,].x'))
+
+    if true
+        it('call', %)
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            obj: {
+              pos: POS,
+              name: 'x',
+            },
+            prop: {
+              pos: POS,
+              name: 'y',
+            },
+          },
+          args: [],
+        }, tknzForOneExpr('x.y()'))
+
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            callee: {
+              pos: POS,
+              name: 'y',
+            },
+            args: [{
+              pos: POS,
+              value: 0,
+            }, {
+              pos: POS,
+              value: 1,
+            }],
+          },
+          args: [{
+            pos: POS,
+            value: 2,
+          }],
+        }, tknzForOneExpr('y(0, 1,)(2)'))
+
+    if true
+        it('typeof', %)
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'f',
+          },
+          args: [{
+            pos: POS,
+            op: '=',
+            lhs: {
+              pos: POS,
+              op: 'typeof',
+              rhs: {
+                pos: POS,
+                obj: {
+                  pos: POS,
+                  name: 'a',
+                },
+                prop: {
+                  pos: POS,
+                  name: 'b',
+                },
+              },
+            },
+            rhs: {
+              pos: POS,
+              value: 'number',
+            },
+          }],
+        }, tknzForOneExpr('''f(typeof a.b = 'number')'''))
+
+    if true
+        it('inline pipeline', %)
+        assert.deepEq({
+          pos: POS,
+          op: '|:',
+          lhs: {
+            pos: POS,
+            op: '++',
+            lhs: {
+              pos: POS,
+              name: 'a',
+            },
+            rhs: {
+              pos: POS,
+              name: 'b',
+            },
+          },
+          rhs: {
+            pos: POS,
+            op: '||',
+            lhs: {
+              pos: POS,
+              name: 'c',
+            },
+            rhs: {
+              pos: POS,
+            },
+          },
+        }, tknzForOneExpr('a ++ b |: c || $'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '|:',
+          lhs: {
+            pos: POS,
+            op: '|?',
+            lhs: {
+              pos: POS,
+              op: '++',
+              lhs: {
+                pos: POS,
+                name: 'a',
+              },
+              rhs: {
+                pos: POS,
+                name: 'b',
+              },
+            },
+            rhs: {
+              pos: POS,
+              op: '<',
+              lhs: {
+                pos: POS,
+              },
+              rhs: {
+                pos: POS,
+                value: 0,
+              },
+            },
+          },
+          rhs: {
+            pos: POS,
+            obj: {
+              pos: POS,
+              name: 'm',
+            },
+            key: {
+              pos: POS,
+            },
+          },
+        }, tknzForOneExpr('a ++ b |? $ < 0 |: m[$]'))
+
+        assert.deepEq({
+          pos: POS,
+          obj: {
+            pos: POS,
+            op: '|?',
+            lhs: {
+              pos: POS,
+              op: '++',
+              lhs: {
+                pos: POS,
+                name: 'a',
+              },
+              rhs: {
+                pos: POS,
+                name: 'b',
+              },
+            },
+            rhs: {
+              pos: POS,
+              op: '=',
+              lhs: {
+                pos: POS,
+              },
+              rhs: {
+                pos: POS,
+                value: 0,
+              },
+            },
+          },
+          prop: {
+            pos: POS,
+            name: 'length',
+          },
+        }, tknzForOneExpr('(a ++ b |? $ = 0).length'))
+
+    if true
+        it('unfinished pipeline', %)
+        build('(x |: )')
+        assert.deepEq([{
+            type: 'PipeBodyOmitted',
+            pos: POS,
+        }], errors.deliver())
+
+        build('(x |? |: 0)')
+        assert.deepEq([{
+            type: 'PipeBodyOmitted',
+            pos: POS,
+        }], errors.deliver())
+
+    if true
+        it('inline lambda', %)
+        assert.deepEq({
+          pos: POS,
+          paramsExprs: [],
+          ret: {
+            pos: POS,
+            value: 0,
+          },
+        }, tknzForOneExpr('(): 0'))
+
+        assert.deepEq({
+          pos: POS,
+          paramsExprs: [{
+            pos: POS,
+            name: 'a',
+          }, {
+            pos: POS,
+            name: 'b',
+          }],
+          ret: {
+            pos: POS,
+            op: '|:',
+            lhs: {
+              pos: POS,
+              op: '++',
+              lhs: {
+                pos: POS,
+                name: 'a',
+              },
+              rhs: {
+                pos: POS,
+                name: 'b',
+              },
+            },
+            rhs: {
+              pos: POS,
+              op: '+',
+              lhs: {
+                pos: POS,
+              },
+              rhs: {
+                pos: POS,
+                value: 2,
+              },
+            },
+          },
+        }, tknzForOneExpr('(a, b,): a ++ b |: $ + 2'))
+
+    if true
+        it('conditional', %)
+        assert.deepEq({
+          pos: POS,
+          predicate: {
+            pos: POS,
+            name: 'y'
+          },
+          consequence: {
+            pos: POS,
+            op: '+',
+            lhs: {
+              pos: POS,
+              value: 1,
+            },
+            rhs: {
+              pos: POS,
+              name: 'x',
+            },
+          },
+          alternative: {
+            pos: POS,
+            name: 'z'
+          },
+        }, tknzForOneExpr('1 + x if y else z'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '+',
+          lhs: {
+            pos: POS,
+            value: 1,
+          },
+          rhs: {
+            pos: POS,
+            predicate: {
+              pos: POS,
+              name: 'y'
+            },
+            consequence: {
+                pos: POS,
+                name: 'x',
+              },
+            alternative: {
+              pos: POS,
+              name: 'z'
+            },
+          },
+        }, tknzForOneExpr('1 + (x if y else z)'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '|?',
+          lhs: {
+            pos: POS,
+            predicate: {
+              pos: POS,
+              name: 'y'
+            },
+            consequence: {
+                pos: POS,
+                name: 'x',
+              },
+            alternative: {
+              pos: POS,
+              name: 'z'
+            },
+          },
+          rhs: {
+            pos: POS,
+            op: '=',
+            lhs: {
+              pos: POS,
+            },
+            rhs: {
+              pos: POS,
+              value: 0,
+            },
+          },
+        }, tknzForOneExpr('x if y else z |? $ = 0'))
+
+        assert.deepEq({
+            pos: POS,
+            predicate: {
+              pos: POS,
+              op: '<=',
+              lhs: {
+                pos: POS,
+                value: 1,
+              },
+              rhs: {
+                pos: POS,
+                value: 2,
+              },
+            },
+            consequence: {
+              pos: POS,
+              op: '+',
+              lhs: {
+                pos: POS,
+                value: 1,
+              },
+              rhs: {
+                pos: POS,
+                value: 2,
+              },
+            },
+            alternative: {
+              pos: POS,
+              op: '%',
+              lhs: {
+                pos: POS,
+                value: 2,
+              },
+              rhs: {
+                pos: POS,
+                value: 3,
+              },
+            },
+        }, tknzForOneExpr('(1 + 2) if (1 <= 2) else (2 % 3)'))
+
+    if true
+        it('unfinished conditional', %)
+        build('1 + (x if y)')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'UnexpectedToken',
+            pos: POS,
+            image: ')',
+        }], errors.deliver())
+
+    if true
+        it('super call', %)
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            prop: 'x',
+          },
+          args: [],
+        }, tknzForOneExpr('super.x()'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '*',
+          lhs: {
+            pos: POS,
+            value: 2
+          },
+          rhs: {
+            pos: POS,
+            callee: {
+              pos: POS,
+              prop: 'y',
+            },
+            args: [{
+              pos: POS,
+              name: 'a',
+            }],
+          },
+        }, tknzForOneExpr('2 * super.y(a,)'))
+
+        assert.deepEq({
+          pos: POS,
+          op: '+',
+          lhs: {
+            pos: POS,
+            callee: {
+              pos: POS,
+              prop: 'y',
+            },
+            args: [{
+              pos: POS,
+              name: 'm',
+            }],
+          },
+          rhs: {
+            pos: POS,
+            callee: {
+              pos: POS,
+              prop: 'z',
+            },
+            args: [],
+          },
+        }, tknzForOneExpr('super.y(m) + super.z()'))
+
+    if true
+        it('super without call', %)
+        build('super.x + 0')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'SuperWithoutCall',
+            pos: POS,
+        }], errors.deliver())
+
+        build('super |: $')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'SuperWithoutCall',
+            pos: POS,
+        }], errors.deliver())
+
+        build('super()')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'SuperWithoutCall',
+            pos: POS,
+        }], errors.deliver())
+
+    if true
+        it('mismatch paren', %)
+        build('(a]')
+        assert.eq(1, errors.count())
+        assert.deepEq([{
+            type: 'MismatchParen',
+            pos: POS,
+            expected: ')',
+        }], errors.deliver())

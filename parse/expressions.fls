@@ -1,0 +1,296 @@
+include 'errors.fls' as errors
+include 'globals.fls' as g
+include 'language.fls' as lang
+include 'parse/utils.fls' as utils
+include 'resolve/expressions.fls' as resolve
+include 'resolve/statements.fls' as resolve_stmts
+include 'resolve/pipeline.fls' as resolve_pipe
+
+class Expression
+    ctor(pos)
+        this.pos: pos
+
+    func empty()
+        return false
+
+    func reduceForParam(env, index)
+        errors.InvalidParam(this.pos)
+
+    func reduceForArg(env, index)
+        env.addArg(this.compileAsExpr())
+
+    func reduceAsName()
+        errors.InvalidName(this.pos)
+
+    func reduceAsKey()
+        return this.reduceAsName()
+
+    func compileAsExpr()
+        throw 'abstract Expression.compileAsExpr'
+
+    func compileForAssignment(assignment)
+        errors.InvalidLeftValue(this.pos)
+
+export class Empty: Expression
+    ctor(pos) super(pos)
+
+    func empty()
+        return true
+
+    func compileAsExpr()
+        return resolve.Undefined(this.pos)
+
+class Literal: Expression
+    ctor(pos, value) super(pos)
+        this.value: value
+
+    func reduceAsKey()
+        return this.value.toString()
+
+export class Num: Literal
+    ctor(pos, value) super(pos, value)
+
+    func compileAsExpr()
+        return resolve.Literal(this.pos, this.value)
+
+export class Str: Literal
+    ctor(pos, value) super(pos, value)
+
+    func compileAsExpr()
+        return resolve.Literal(this.pos, this.value)
+
+export class Bool: Literal
+    ctor(pos, value) super(pos, value)
+
+    func compileAsExpr()
+        return resolve.Literal(this.pos, this.value)
+
+export class Regex: Literal
+    ctor(pos, value) super(pos, value)
+
+    func compileAsExpr()
+        return resolve.Regex(this.pos, this.value)
+
+export class Identifier: Expression
+    ctor(pos, name) super(pos)
+        this.name: name
+
+    func reduceAsName()
+        return this.name
+
+    func compileAsExpr()
+        return resolve.Reference(this.pos, this.name)
+
+    func reduceForParam(env, index)
+        return env.addParam(this.name)
+
+    func compileForAssignment(assignment)
+        return resolve_stmts.NameDef(this.pos, this.name, assignment)
+
+export class This: Expression
+    ctor(pos) super(pos)
+
+    func reduceAsKey()
+        return 'this'
+
+    func compileAsExpr()
+        return resolve.This(this.pos)
+
+export class MemberAccess: Expression
+    ctor(pos, obj, prop) super(pos)
+        this.obj: obj
+        this.prop: prop
+
+    func compileAsExpr()
+        return resolve.MemberAccess(this.pos, this.obj.compileAsExpr(), this.prop.reduceAsName())
+
+    func compileForAssignment(assignment)
+        return resolve_stmts.AttrSet(this.compileAsExpr(), assignment)
+
+export class UnaryOp: Expression
+    ctor(pos, op, rhs) super(pos)
+        this.op: op
+        this.rhs: rhs
+
+    func compileAsExpr()
+        return resolve.UnaryOp(this.pos, this.op, this.rhs.compileAsExpr())
+
+export class BinaryOp: Expression
+    ctor(pos, op, lhs, rhs) super(pos)
+        this.op: op
+        this.lhs: lhs
+        this.rhs: rhs
+
+    func compileAsExpr()
+        if this.op = '|:'
+            g.usePipeline()
+            return resolve_pipe.mapPipeline(this.pos, this.lhs.compileAsExpr(),
+                                            this.rhs.compileAsExpr())
+        if this.op = '|?'
+            g.usePipeline()
+            return resolve_pipe.filterPipeline(this.pos, this.lhs.compileAsExpr(),
+                                               this.rhs.compileAsExpr())
+        if this.op = '++'
+            return resolve.ArrayConcat(this.pos, this.lhs.compileAsExpr(),
+                                       this.rhs.compileAsExpr())
+        if this.op = '||'
+            return resolve.Conditional(this.pos, this.lhs.compileAsExpr(),
+                                       resolve.Literal(this.pos, true), this.rhs.compileAsExpr())
+        if this.op = '&&'
+            return resolve.Conditional(this.pos, this.lhs.compileAsExpr(),
+                                       this.rhs.compileAsExpr(), resolve.Literal(this.pos, false))
+        return resolve.BinaryOp(this.pos, lang.mapBinOp(this.op), this.lhs.compileAsExpr(),
+                                this.rhs.compileAsExpr())
+
+export class ArrayLiteral: Expression
+    ctor(pos, arr) super(pos)
+        this.arr: arr
+
+    func compileAsExpr()
+        return resolve.ArrayLiteral(this.pos, this.arr |: $.compileAsExpr())
+
+export class ObjectLiteral: Expression
+    ctor(pos, obj) super(pos)
+        this.obj: obj
+
+    func compileAsExpr()
+        r: {}
+        this.obj |:
+            r[$k]: $.compileAsExpr()
+        return resolve.ObjectLiteral(this.pos, r)
+
+export class PipeElement: Expression
+    ctor(pos) super(pos)
+
+    func compileAsExpr()
+        return resolve_pipe.PipeElement(this.pos)
+
+export class PipeIndex: Expression
+    ctor(pos) super(pos)
+
+    func compileAsExpr()
+        return resolve_pipe.PipeIndex(this.pos)
+
+export class PipeKey: Expression
+    ctor(pos) super(pos)
+
+    func compileAsExpr()
+        return resolve_pipe.PipeKey(this.pos)
+
+export class PipeResult: Expression
+    ctor(pos) super(pos)
+
+    func compileAsExpr()
+        return resolve_pipe.PipeResult(this.pos)
+
+export class BlockPipeline: Expression
+    ctor(pos, arr, body) super(pos)
+        this.arr: arr
+        this.body: body
+
+    func compileAsExpr()
+        g.usePipeline()
+        return resolve_pipe.Pipeline(this.pos, this.arr.compileAsExpr(), this.body.compile())
+
+export class Lookup: Expression
+    ctor(pos, obj, key) super(pos)
+        this.obj: obj
+        this.key: key
+
+    func compileAsExpr()
+        return resolve.Lookup(this.pos, this.obj.compileAsExpr(), this.key.compileAsExpr())
+
+    func compileForAssignment(assignment)
+        return resolve_stmts.AttrSet(this.compileAsExpr(), assignment)
+
+export class Slice: Expression
+    ctor(pos, arr, begin, end, step) super(pos)
+        this.arr: arr
+        this.begin: begin if begin else Empty(pos)
+        this.end: end if end else Empty(pos)
+        this.step: step if step else Empty(pos)
+
+    func compileAsExpr()
+        g.useListSlice()
+        return resolve.Slice(this.pos, this.arr.compileAsExpr(), this.begin.compileAsExpr(),
+                             this.end.compileAsExpr(), this.step.compileAsExpr())
+
+export class Call: Expression
+    ctor(pos, callee, args) super(pos)
+        this.callee: callee
+        this.args: args
+
+    func compileAsExpr()
+        env: utils.compileArgs(this.args)
+        if env.asyncSet()
+            if env.regularAsync
+                return resolve.RegularAsyncCall(this.pos, this.callee.compileAsExpr(),
+                                                env.args, env.asyncIndex)
+            return resolve.AsyncDeclsCall(this.pos, this.callee.compileAsExpr(), env.args,
+                                          env.asyncIndex, env.asyncDecls)
+        return resolve.SyncArgsCall(this.pos, this.callee.compileAsExpr(), env.args)
+
+export class RegularAsyncParam: Expression
+    ctor(pos) super(pos)
+
+    func reduceForParam(env, index)
+        return env.setAsync(this.pos, index)
+
+    func compileAsExpr()
+        errors.AsyncParamNotExpr(this.pos)
+        return resolve.Undefined(this.pos)
+
+    func reduceForArg(env, index)
+        env.setRegularAsync(this.pos, index)
+
+func compileLambda(pos, params, compiledBody)
+    env: utils.compileParams(params)
+    if env.asyncSet()
+        return resolve.RegularAsyncLambda(pos, env.params, env.asyncIndex, compiledBody)
+    return resolve.SyncLambda(pos, env.params, compiledBody)
+
+export class Lambda: Expression
+    ctor(pos, params, ret) super(pos)
+        this.paramsExprs: params
+        this.ret: ret
+
+    func compileAsExpr()
+        return compileLambda(this.pos, this.paramsExprs, resolve_stmts.wrapSingle(
+                    resolve_stmts.Return(this.ret.compileAsExpr())))
+
+export class BlockLambda: Expression
+    ctor(pos, params, body) super(pos)
+        this.paramsExprs: params
+        this.body: body
+
+    func compileAsExpr()
+        return compileLambda(this.pos, this.paramsExprs, this.body.compile())
+
+export class Conditional: Expression
+    ctor(pos, pred, consq, alter) super(pos)
+        this.predicate: pred
+        this.consequence: consq
+        this.alternative: alter
+
+    func compileAsExpr()
+        return resolve.Conditional(
+                this.pos, this.predicate.compileAsExpr(), this.consequence.compileAsExpr(),
+                this.alternative.compileAsExpr())
+
+export class AsyncPlaceholder: Expression
+    ctor(pos, names) super(pos)
+        this.names: names
+
+    func reduceForArg(env, index)
+        env.setAsync(this.pos, index, this.names)
+
+    func compileAsExpr()
+        errors.AsyncParamNotExpr(this.pos)
+        return resolve.Undefined(this.pos)
+
+export class SuperFunc: Expression
+    ctor(pos, prop) super(pos)
+        this.prop: prop
+
+    func compileAsExpr()
+        return resolve.SuperFunc(this.pos, this.prop)

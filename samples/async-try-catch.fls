@@ -1,0 +1,117 @@
+func aResult(x, cb)
+    setTimeout(%, 0)
+    if x
+        cb(null, x - 1)
+    else
+        cb('a', null)
+
+func sResult(x)
+    if x
+        return x - 1
+    throw 's'
+
+func mixedA(x, %%)
+    return sResult(aResult(x, %%))
+
+func mixedB(x, %%)
+    try
+        y: aResult(x, %%)
+        z: sResult(y)
+        return y + z
+    catch e
+        console.log(e)
+        throw 'b'
+
+func mixedC(x, %%)
+    try
+        y: sResult(x)
+        z: aResult(y, %%)
+        return y + z
+    catch e
+        console.log(e)
+        throw 'c'
+
+func mixedD(x, %%)
+    y: aResult(x, %%)
+    z: sResult(y)
+    return y + z
+
+func mixedE(x, %%)
+    y: sResult(x)
+    z: aResult(y, %%)
+    return y + z
+
+func main(%%)
+    try
+        mixedA(1, %%)
+    catch e
+        console.log('E0', e)
+
+    console.log('=')
+    try
+        console.log('OK', mixedB(2, %%))
+    catch e
+        console.log('E1', e)
+
+    console.log('=')
+    try
+        console.log('OK', mixedB(1, %%))
+    catch e
+        console.log('E2', e)
+
+    console.log('=')
+    try
+        console.log('OK', mixedB(0, %%))
+    catch e
+        console.log('E3', e)
+
+    console.log('=')
+    try
+        console.log('OK', mixedC(2, %%))
+    catch e
+        console.log('E4', e)
+
+    console.log('=')
+    try
+        console.log('OK', mixedC(1, %%))
+    catch e
+        console.log('E5', e)
+
+    console.log('=')
+    try
+        console.log('OK', mixedC(0, %%))
+    catch e
+        console.log('E6', e)
+
+    console.log('==')
+    try
+        console.log('OK', mixedD(2, %%))
+    catch e
+        console.log('E7', e)
+
+    try
+        console.log('OK', mixedD(1, %%))
+    catch e
+        console.log('E8', e)
+
+    try
+        console.log('OK', mixedD(0, %%))
+    catch e
+        console.log('E9', e)
+
+    try
+        console.log('OK', mixedE(2, %%))
+    catch e
+        console.log('Ea', e)
+
+    try
+        console.log('OK', mixedE(1, %%))
+    catch e
+        console.log('Eb', e)
+
+    try
+        console.log('OK', mixedE(0, %%))
+    catch e
+        console.log('Ec', e)
+
+main(%%)

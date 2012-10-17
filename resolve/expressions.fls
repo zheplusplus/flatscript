@@ -1,0 +1,403 @@
+include 'misc.fls' as misc
+include 'errors.fls' as errors
+include 'language.fls' as lang
+include 'resolve/scope.fls' as sc
+include 'backend/expressions.fls' as backend
+include 'backend/statements.fls' as backend_stmts
+include 'backend/function.fls' as backend_funcs
+
+export class Expression
+    ctor(pos)
+        this.pos: pos
+
+    func isAsync()
+        throw 'abstract Expression.isAsync'
+
+    func isLiteral(sym)
+        return false
+
+    func literalValue(sym)
+        return null
+
+    func compile(scope, %%)
+        throw 'abstract Expression.compile'
+
+    func compileAsCallee(scope, args, %%)
+        return backend.Call(this.compile(scope, %%), args)
+
+    func compileAsStmt(scope, %%)
+        e: this.compile(scope, %%)
+        scope.addStmt(this.pos, backend_stmts.PlaceExpr(e))
+
+export class AtomicItem: Expression
+    ctor(pos) super(pos)
+    func compileAsStmt(scope, %%)
+
+    func compile(scope, %%)
+        setTimeout(%, 0)
+        return this.syncCompile(scope)
+
+    func syncCompile(scope)
+        throw 'abstract AtomicItem.syncCompile'
+
+    func isAsync()
+        return false
+
+export class Undefined: AtomicItem
+    ctor(pos) super(pos)
+
+    func syncCompile(scope)
+        return backend.Undefined()
+
+export class Literal: AtomicItem
+    ctor(pos, value) super(pos)
+        this.value: value
+
+    func isLiteral(sym)
+        return true
+
+    func literalValue(sym)
+        return this
+
+    func syncCompile(scope)
+        return backend.Literal(this.value)
+
+export class Regex: AtomicItem
+    ctor(pos, ex) super(pos)
+        this.ex: ex
+
+    func syncCompile(scope)
+        return backend.Literal(this.ex)
+
+export class Reference: AtomicItem
+    ctor(pos, name) super(pos)
+        this.name: name
+
+    func isLiteral(sym)
+        return this.literalValue(sym) != null
+
+    func literalValue(sym)
+        return sym.literalValue(this.pos, this.name)
+
+    func syncCompile(scope)
+        return scope.sym().compileRef(this.pos, this.name)
+
+export class This: AtomicItem
+    ctor(pos) super(pos)
+
+    func syncCompile(scope)
+        scope.referenceThis(this.pos)
+        return backend.This()
+
+export class MemberAccess: Expression
+    ctor(pos, obj, prop) super(pos)
+        this.obj: obj
+        this.prop: prop
+
+    func isAsync()
+        return this.obj.isAsync()
+
+    func compile(scope, %%)
+        obj: this.obj.compile(scope, %%)
+        return backend.Lookup(obj, backend.Literal(this.prop)) if lang.isReservedWord(this.prop)
+                else backend.MemberAccess(obj, this.prop)
+
+    func compileAsStmt(scope, %%)
+        return this.obj.compileAsStmt(scope, %%)
+
+_UNARY_OP: eval('({' + (['+', '-', '!', '~', 'typeof']
+                |: '"' + $ + '":function(a) {return ' + $ + ' a}').join(',') + '})')
+
+export class UnaryOp: Expression
+    ctor(pos, op, rhs) super(pos)
+        this.op: op
+        this.rhs: rhs
+
+    func isAsync()
+        return this.rhs.isAsync()
+
+    func isLiteral(sym)
+        return this.rhs.isLiteral(sym)
+
+    func literalValue(sym)
+        if this.op = '*'
+            errors.LiteralValueError(this.pos, this.rhs.literalValue(sym).value, 'unary *')
+            return Literal(this.pos, 0)
+        return Literal(this.pos, _UNARY_OP[this.op](this.rhs.literalValue(sym).value))
+
+    func compile(scope, %%)
+        if this.op = '*'
+            return backend.New(this.rhs.compile(scope, %%))
+
+        if this.isLiteral(scope.sym())
+            return backend.Literal(this.literalValue(scope.sym()).value)
+
+        return backend.UnaryOp(this.op, this.rhs.compile(scope, %%))
+
+    func compileAsStmt(scope, %%)
+        return this.rhs.compileAsStmt(scope, %%)
+
+_BINARY_OP: eval('({' + (['|', '&', '^', '<<', '>>', '>>>', '+', '-', '*', '/', '%',
+                          '<', '>', '<=', '>=', '===', '!==', '&&', '||'] |: (
+    '"' + $ + '":function(a, b) {return a' + $ + 'b}')).join(',') + '})')
+
+export class BinaryOp: Expression
+    ctor(pos, op, lhs, rhs) super(pos)
+        this.op: op
+        this.lhs: lhs
+        this.rhs: rhs
+
+    func isAsync()
+        return this.lhs.isAsync() || this.rhs.isAsync()
+
+    func isLiteral(sym)
+        return this.lhs.isLiteral(sym) && this.rhs.isLiteral(sym)
+
+    func literalValue(sym)
+        return Literal(this.pos, _BINARY_OP[this.op](this.lhs.literalValue(sym).value,
+                                                     this.rhs.literalValue(sym).value))
+
+    func compile(scope, %%)
+        if this.isLiteral(scope.sym())
+            return backend.Literal(this.literalValue(scope.sym()).value)
+
+        lhs: this.lhs.compile(scope, %%)
+        rhs: this.rhs.compile(scope, %%)
+        return backend.BinaryOp(this.op, lhs, rhs)
+
+    func compileAsStmt(scope, %%)
+        this.lhs.compileAsStmt(scope, %%)
+        this.rhs.compileAsStmt(scope, %%)
+
+export class ArrayLiteral: Expression
+    ctor(pos, arr) super(pos)
+        this.arr: arr
+
+    func isAsync()
+        this.arr |:
+            if $.isAsync()
+                return true
+        return false
+
+    func compile(scope, %%)
+        return backend.ArrayLiteral(this.arr |: $.compile(scope, %%))
+
+    func compileAsStmt(scope, %%)
+        this.arr |: $.compileAsStmt(scope, %%)
+
+export class ArrayConcat: Expression
+    ctor(pos, lhs, rhs) super(pos)
+        this.lhs: lhs
+        this.rhs: rhs
+
+    func isAsync()
+        return this.lhs.isAsync() || this.rhs.isAsync()
+
+    func isLiteral(sym)
+        return false
+
+    func compile(scope, %%)
+        lhs: this.lhs.compile(scope, %%)
+        rhs: this.rhs.compile(scope, %%)
+        return backend.ArrayConcat(lhs, rhs)
+
+    func compileAsStmt(scope, %%)
+        this.lhs.compileAsStmt(scope, %%)
+        this.rhs.compileAsStmt(scope, %%)
+
+export class ObjectLiteral: Expression
+    ctor(pos, obj) super(pos)
+        this.obj: obj
+
+    func isAsync()
+        this.obj |:
+            if $.isAsync()
+                return true
+        return false
+
+    func compile(scope, %%)
+        r: {}
+        this.obj |:
+            r[$k]: $.compile(scope, %%)
+        return backend.ObjectLiteral(r)
+
+    func compileAsStmt(scope, %%)
+        this.obj |: $.compileAsStmt(scope, %%)
+
+export class Lookup: Expression
+    ctor(pos, obj, key) super(pos)
+        this.obj: obj
+        this.key: key
+
+    func isAsync()
+        return this.obj.isAsync() || this.key.isAsync()
+
+    func compile(scope, %%)
+        obj: this.obj.compile(scope, %%)
+        key: this.key.compile(scope, %%)
+        return backend.Lookup(obj, key)
+
+export class Slice: Expression
+    ctor(pos, arr, begin, end, step) super(pos)
+        this.arr: arr
+        this.begin: begin
+        this.end: end
+        this.step: step
+
+    func isAsync()
+        return this.arr.isAsync() || this.begin.isAsync() ||
+               this.end.isAsync() || this.step.isAsync()
+
+    func compile(scope, %%)
+        arr: this.arr.compile(scope, %%)
+        begin: this.begin.compile(scope, %%)
+        end: this.end.compile(scope, %%)
+        step: this.step.compile(scope, %%)
+        return backend.Slice(arr, begin, end, step)
+
+export class SyncArgsCall: Expression
+    ctor(pos, callee, args) super(pos)
+        this.callee: callee
+        this.args: args
+
+    func isAsync()
+        if this.callee.isAsync()
+            return true
+        this.args |:
+            if $.isAsync()
+                return true
+        return false
+
+    func compile(scope, %%)
+        return this.callee.compileAsCallee(scope, this.args |: $.compile(scope, %%), %%)
+
+export class RegularAsyncCall: SyncArgsCall
+    ctor(pos, callee, args, asyncIndex) super(pos, callee, args)
+        this.asyncIndex: asyncIndex
+
+    func isAsync()
+        return true
+
+    func compile(scope, %%)
+        return backend.AnonymousRef(this._compile(scope, false, %%))
+
+    func compileAsStmt(scope, %%)
+        this._compile(scope, true, %%)
+
+    func _compile(scope, asStmt, %%)
+        args: this.args |: $.compile(scope, %%)
+        asyncFlow: backend_stmts.Block()
+        callback: backend.RegularAsyncCallbackArg(asyncFlow, scope.throwMethod())
+        args.splice(this.asyncIndex, 0, callback)
+        call: this.callee.compileAsCallee(scope, args, %%)
+        current: scope.block()
+        scope.setAsyncSpace(this.pos, [], asyncFlow)
+        current.addStmt(backend_stmts.PlaceExpr(call))
+        return callback.id
+
+func lambdaParams(pos, scope, params)
+    return params |: scope.sym().compileRef(pos, $)
+
+export class AsyncDeclsCall: RegularAsyncCall
+    ctor(pos, callee, args, asyncIndex, decls) super(pos, callee, args, asyncIndex)
+        this.asyncIndex: asyncIndex
+        this.decls: decls
+
+    func _compile(scope, asStmt, %%)
+        args: this.args |: $.compile(scope, %%)
+        current: scope.block()
+        asyncFlow: backend_stmts.Block()
+        scope.setAsyncSpace(this.pos, this.decls, asyncFlow)
+        args.splice(this.asyncIndex, 0, backend_funcs.SyncLambda(
+            lambdaParams(this.pos, scope, this.decls), asyncFlow, true))
+        complCall: this.callee.compileAsCallee(scope, args, %%)
+        callId: misc.uid()
+        current.addStmt(backend_stmts.AsyncCallResultDef(
+            complCall, !asStmt, null if asStmt else callId))
+        return callId
+
+export class SyncLambda: Expression
+    ctor(pos, params, body) super(pos)
+        this.params: params
+        this.body: body
+
+    func compileAsStmt(scope, %%)
+
+    func isAsync()
+        return false
+
+    func compile(scope, %%)
+        bodyScope: sc.SyncFuncScope(this.pos, scope, this.params, false)
+        this.body.compile(bodyScope, %%)
+        return backend_funcs.SyncLambda(
+            lambdaParams(this.pos, bodyScope, this.params), bodyScope.deliver(%%), false)
+
+export class RegularAsyncLambda: SyncLambda
+    ctor(pos, params, asyncIndex, body) super(pos, params, body)
+        this.asyncIndex: asyncIndex
+
+    func compile(scope, %%)
+        bodyScope: sc.AsyncFuncScope(this.pos, scope, this.params, false)
+        this.body.compile(bodyScope, %%)
+        return backend_funcs.RegularAsyncLambda(
+            lambdaParams(this.pos, bodyScope, this.params), this.asyncIndex, bodyScope.deliver(%%))
+
+func compileConditionalBranch(scope, expr, cb, %%)
+    sub: sc.BranchScope(scope)
+    args: [expr.compile(sub, %%)]
+    sub.addStmt(expr.pos, backend_stmts.PlaceExpr(cb.callMe(args)))
+    return sub.deliver(%%)
+
+export class Conditional: Expression
+    ctor(pos, pred, consq, alter) super(pos)
+        this.predicate: pred
+        this.consequence: consq
+        this.alternative: alter
+
+    func isAsync()
+        return this.predicate.isAsync() || this.consequence.isAsync() || this.alternative.isAsync()
+
+    func isLiteral(sym)
+        return this.predicate.isLiteral(sym) && this.consequence.isLiteral(sym) &&
+               this.alternative.isLiteral(sym)
+
+    func literalValue(sym)
+        return this.consequence.literalValue(sym) if this.predicate.literalValue(sym).value else
+               this.alternative.literalValue(sym)
+
+    func compile(scope, %%)
+        if this.predicate.isLiteral(scope.sym())
+            return (this.consequence if this.predicate.literalValue(scope.sym()).value
+                    else this.alternative).compile(scope, %%)
+        if this.consequence.isAsync() || this.alternative.isAsync()
+            return this._compileAsync(scope, %%)
+        p: this.predicate.compile(scope, %%)
+        return backend.Conditional(p, this.consequence.compile(scope, %%),
+                                   this.alternative.compile(scope, %%))
+
+    func _compileAsync(scope, %%)
+        p: this.predicate.compile(scope, %%)
+        cb: backend_funcs.ConditionalCallback()
+        c: compileConditionalBranch(scope, this.consequence, cb, %%)
+        a: compileConditionalBranch(scope, this.alternative, cb, %%)
+        scope.block().addFunc(cb)
+        scope.addStmt(this.pos, backend_stmts.Branch(p, c, a))
+        scope.setAsyncSpace(this.pos, [], cb.body())
+        return cb.paramsRefs()[0]
+
+export class SuperFunc: Expression
+    ctor(pos, property) super(pos)
+        this.property: property
+
+    func isAsync()
+        return false
+
+    func compile(scope, %%)
+        errors.SuperWithoutCall(this.pos)
+        return backend.Undefined()
+
+    func compileAsCallee(scope, args, %%)
+        ifnot scope.allowSuper()
+            errors.SuperNotInMember(this.pos)
+        scope.referenceThis(this.pos)
+        return backend.SuperCall(this.property, args)

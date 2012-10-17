@@ -1,0 +1,16 @@
+include 'parse/utils.fls' as utils
+include 'resolve/function.fls' as resolve
+
+export class Func
+    ctor(pos, name, paramsExprs, body)
+        this.pos: pos
+        this.name: name
+        this.paramsExprs: paramsExprs
+        this.body: body
+
+    func compile()
+        env: utils.compileParams(this.paramsExprs)
+        body: this.body.compile()
+        if env.asyncSet()
+            return resolve.RegularAsyncFunc(this.pos, this.name, env.params, env.asyncIndex, body)
+        return resolve.SyncFunc(this.pos, this.name, env.params, body)

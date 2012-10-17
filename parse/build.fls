@@ -1,0 +1,58 @@
+include 'errors.fls' as errors
+include 'misc.fls' as misc
+include 'parse/clauses.fls' as cla
+include 'parse/tokenize.fls' as tknz
+
+class Builder
+    ctor(file)
+        this._global: cla.GlobalClause(file, this)
+        this._clauses: [this._global]
+
+    func top()
+        return this._clauses[0]
+
+    func push(clause)
+        this._clauses.unshift(clause)
+
+    func pop()
+        c: this._clauses.shift()
+        c.deliver()
+
+    func deliver(pos)
+        ifnot this._shrinkTo(0)
+            errors.UnexpectedEOF(pos)
+        return this._global
+
+    func addTokens(indent, pos, tokens)
+        if this._shrinkTo(indent, pos)
+            this.top().setMemberIndent(pos, indent)
+            this.top().prepare()
+        tokens |: $.act(this.top().top())
+        this.top().tryFinish(pos)
+
+    func _shrinkTo(level, pos)
+        ifnot this.top().shrinkOn(level)
+            return this.top().tryFinish(pos)
+        ifnot this.top().tryFinish(pos)
+            return false
+        this.pop()
+        return this._shrinkTo(level, pos)
+
+INDENT_RE: *RegExp('^[ \t]*')
+
+func indentLv(string)
+    return INDENT_RE.exec(string)[0].length
+
+func buildSource(builder, source, file, line)
+    if source.length = 0
+        return line
+    indent: indentLv(source)
+    r: tknz.tokenize(source, file, line)
+    if r.tokens.length != 0
+        builder.addTokens(indent, misc.pos(file, line), r.tokens)
+    return buildSource(builder, r.source, file, line + r.lineInc)
+
+export func build(source, filename)
+    builder: Builder(filename)
+    lastLine: buildSource(builder, source, filename, 1)
+    return builder.deliver(misc.pos(filename, lastLine)).compile()

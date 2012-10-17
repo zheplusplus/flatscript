@@ -1,0 +1,17 @@
+func vector(x, y, z)
+    func multi(x0, y0, z0)
+        return x * x0 + y * y0 + z * z0
+    return multi
+
+func calc(a, b, vec, c)
+    return vec(a, b, c)
+
+func calc2(a, b, vec, c)
+    return calc(a, b, vec, c)
+
+console.log(calc(6, 4, vector(1, -2, 3), 5))
+console.log(calc2(6, 4, vector(1, -2, 3), 5))
+vec: vector(1, -2, 3)
+console.log(calc(6, 4, vec, 5))
+console.log(calc2(6, 4, vec, 5))
+console.log(vec(6, 4, 5))

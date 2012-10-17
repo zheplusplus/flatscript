@@ -1,0 +1,227 @@
+include 'test/assert.fls' as assert
+include 'test/resolve/utils.fls' as utils
+
+buildForAll: utils.buildForAll
+
+export func run(%%)
+    describe('pipeline', %)
+    if true
+        it('sync pipeline expr', %done)
+        r: buildForAll('''
+            extern x, y
+            a: [x, y] |: $ * $
+            console.log(a)
+        ''', %%)
+        loopId: assert.uid(r.stmts[0].value.pipeId)
+
+        assert.deepEq({
+          localDefs: [{
+            name: 'a',
+          }],
+          funcs: [],
+          stmts: [{
+            setPoint: {
+              name: 'a',
+            },
+            value: {
+              pipeId: loopId,
+              arr: {
+                arr: [{
+                  image: 'x',
+                }, {
+                  image: 'y',
+                }],
+              },
+              body: {
+                localDefs: [],
+                funcs: [],
+                stmts: [{
+                  expr: {
+                    callee: {
+                      obj: {
+                        loopId: loopId,
+                      },
+                      prop: 'push',
+                    },
+                    args: [{
+                      op: '*',
+                      lhs: {
+                        loopId: loopId,
+                      },
+                      rhs: {
+                        loopId: loopId,
+                      },
+                    }],
+                  },
+                }],
+              },
+            },
+          }, {
+            expr: {
+              callee: {
+                obj: {
+                  image: 'console',
+                },
+                prop: 'log',
+              },
+              args: [{
+                name: 'a',
+              }],
+            },
+          }],
+        }, r)
+        done()
+
+    if true
+        it('sync pipeline stmt', %done)
+        r: buildForAll('''
+            extern x, y
+            x |:
+                console.log($)
+            console.log(y)
+        ''', %%)
+        loopId: assert.uid(r.stmts[0].pipeId)
+
+        assert.deepEq({
+          localDefs: [],
+          funcs: [],
+          stmts: [{
+            pipeId: loopId,
+            arr: {
+              image: 'x',
+            },
+            body: {
+              localDefs: [],
+              funcs: [],
+              stmts: [{
+                expr: {
+                  callee: {
+                    obj: {
+                      image: 'console',
+                    },
+                    prop: 'log',
+                  },
+                  args: [{
+                    loopId: loopId,
+                  }],
+                },
+              }],
+            },
+            extRet: {
+              throwing: false,
+            },
+            hasBreak: false,
+            hasRet: false,
+          }, {
+            expr: {
+              callee: {
+                obj: {
+                  image: 'console',
+                },
+                prop: 'log',
+              },
+              args: [{
+                image: 'y',
+              }],
+            },
+          }],
+        }, r)
+        done()
+
+    if true
+        it('async pipeline', %done)
+        r: buildForAll('''
+            extern x, y
+            a: x |: y($, %%)
+            console.log(a)
+        ''', %%)
+        loopId: assert.uid(r.stmts[0].expr.pipeId)
+        asyncId: assert.uid(r.stmts[0].expr.body.stmts[0].expr.args[1].id)
+
+        assert.deepEq({
+          localDefs: [{
+            name: 'a',
+          }],
+          funcs: [],
+          stmts: [{
+            decl: false,
+            defId: null,
+            expr: {
+              pipeId: loopId,
+              throwMethod: {
+                throwing: true,
+              },
+              arr: {
+                image: 'x',
+              },
+              body: {
+                localDefs: [],
+                funcs: [],
+                stmts: [{
+                  expr: {
+                    callee: {
+                      image: 'y',
+                    },
+                    args: [{
+                      loopId: loopId,
+                    }, {
+                      id: asyncId,
+                      throwMethod: {
+                        throwing: true,
+                      },
+                      asyncFlow: {
+                        localDefs: [],
+                        funcs: [],
+                        stmts: [{
+                          expr: {
+                            callee: {
+                              obj: {
+                                loopId: loopId,
+                              },
+                              prop: 'push',
+                            },
+                            args: [{
+                              refId: asyncId,
+                            }],
+                          },
+                        }, {
+                          method: {
+                            throwing: false,
+                          },
+                          expr: {
+                            continueId: loopId,
+                          },
+                        }],
+                      },
+                    }],
+                  },
+                }],
+              },
+              succession: {
+                localDefs: [],
+                funcs: [],
+                stmts: [{
+                  setPoint: {
+                    name: 'a',
+                  },
+                  value: {
+                    loopId: loopId,
+                  },
+                }, {
+                  expr: {
+                    callee: {
+                      obj: {
+                        image: 'console',
+                      },
+                      prop: 'log',
+                    },
+                    args: [{
+                      name: 'a',
+                    }],
+                  },
+                }],
+              },
+            },
+          }],
+        }, r)
+        done()

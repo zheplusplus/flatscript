@@ -1,0 +1,87 @@
+func aGet(n, %%)
+    setTimeout(%, 1)
+    return n * 2
+
+func sGet(n)
+    return n * 2
+
+func fss(x, r)
+    x |:
+        $ |:
+            if $ % 3 = 1
+                return sGet($) + r
+    return r
+
+func fas(x, r, %%)
+    x |:
+        setTimeout(%, 1)
+        $ |:
+            if $ % 3 = 1
+                return sGet($) + r
+    return r
+
+func fsa(x, r, %%)
+    x |:
+        $ |:
+            if $ % 3 = 1
+                return aGet($, %%) + r
+    return r
+
+func faa(x, r, %%)
+    x |:
+        setTimeout(%, 1)
+        $ |:
+            if $ % 3 = 1
+                return aGet($, %%) + r
+    return r
+
+mat: [
+    [0, 2],
+    [3, 1],
+]
+
+console.log(fss(mat, 0))
+console.log(fas(mat, 10, %%))
+console.log(fsa(mat, 20, %%))
+console.log(faa(mat, 30, %%))
+
+func bss(x, r)
+    ifnot r = 0
+        x |:
+            $ |:
+                if $ % 3 = 1
+                    return sGet($) + r
+    return r
+
+func bas(x, r, %%)
+    ifnot r = 0
+        x |:
+            setTimeout(%, 1)
+            $ |:
+                if $ % 3 = 1
+                    return sGet($) + r
+    return r
+
+func bsa(x, r, %%)
+    ifnot r = 0
+        x |:
+            $ |:
+                if $ % 3 = 1
+                    return aGet($, %%) + r
+    return r
+
+func baa(x, r, %%)
+    ifnot r = 0
+        x |:
+            setTimeout(%, 1)
+            $ |:
+                if $ % 3 = 1
+                    return aGet($, %%) + r
+    return r
+
+console.log('With o<')
+console.log(bss(mat, 1))
+console.log(bas(mat, 11, %%))
+console.log(bsa(mat, 21, %%))
+console.log(baa(mat, 31, %%))
+console.log('End')

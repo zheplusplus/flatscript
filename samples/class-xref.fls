@@ -1,0 +1,14 @@
+class Fun
+    func get()
+        console.log('Fun::get')
+        return Gun()
+
+class Gun
+    func get()
+        console.log('Gun::get')
+        return Fun()
+
+f: Fun()
+g: f.get()
+h: g.get()
+h.get()

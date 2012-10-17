@@ -1,0 +1,17 @@
+func va()
+    return 10
+
+func getTrue()
+    return true
+
+m: va()
+if getTrue()
+    m: va() + 10
+    console.log(m)
+    setTimeout(():
+        console.log(m)
+        console.log(m)
+    , 1)
+if getTrue()
+    m: va() + 20
+    console.log(m)

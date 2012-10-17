@@ -1,0 +1,68 @@
+include 'backend/mangle.fls' as mangle
+
+class Method
+    ctor(throwing)
+        this.throwing: throwing
+
+    func scheme(expr)
+        throw 'abstract Method.scheme'
+
+    func mayThrow(expr)
+        return this.throwing || expr.mayThrow()
+
+export class Place: Method
+    ctor() super(false)
+
+    func scheme(expr)
+        return expr.toString() + ';'
+
+export class ThrowExc: Method
+    ctor() super(true)
+
+    func scheme(expr)
+        return 'throw ' + expr.toString() + ';'
+
+export class CallbackExc: Method
+    ctor() super(false)
+
+    func scheme(expr)
+        return 'return ' + mangle.TERM_REGULAR_ASYNC_CALLBACK + '(' + expr.toString() + ');'
+
+export class AsyncCatcher: Method
+    ctor(catchFunc) super(false)
+        this.catchFunc: catchFunc
+
+    func scheme(expr)
+        return 'return ' + this.catchFunc.nameRef() + '(' + expr.toString() + ');'
+
+export class Ret: Method
+    ctor() super(false)
+
+    func scheme(expr)
+        return 'return ' + expr.toString() + ';'
+
+export class AsyncRet: Method
+    ctor() super(false)
+
+    func scheme(expr)
+        return 'return ' + mangle.TERM_REGULAR_ASYNC_CALLBACK + '(null,' + expr.toString() + ');'
+
+export class SyncPipeRet: Method
+    ctor(loopId) super(false)
+        this.loopId: loopId
+
+    func scheme(expr)
+        return '{' + mangle.loopReturnFlag(this.loopId) + '=true;' +
+               'return ' + mangle.loopReturnValue(this.loopId) + '=' + expr.toString() + '}'
+
+export class SyncBreak: Method
+    ctor() super(false)
+
+    func scheme(expr)
+        return 'return ' + expr.toString() + '=true;'
+
+export class CallNext: Method
+    ctor() super(false)
+
+    func scheme(expr)
+        return 'return ' + expr.toString() + '();'

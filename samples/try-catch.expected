@@ -1,0 +1,10 @@
+this is an asynchronous exception: 9
+this is a synchronous exception: 10
+this is an asynchronous exception: 1
+this is a synchronous exception: 2
+throw in catch
+try+
+this is a synchronous exception: 72
+try*
+this is a synchronous exception: 77
+end

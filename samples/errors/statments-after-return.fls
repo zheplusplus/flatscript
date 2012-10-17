@@ -1,0 +1,7 @@
+func write(x)
+    if x = 10
+        return
+        write(x)
+    console.log(x = 10)
+
+write(10)

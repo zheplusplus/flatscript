@@ -1,0 +1,146 @@
+include 'backend/mangle.fls' as mangle
+
+export class Statement
+    func mayThrow()
+        throw 'abstract Statement.mayThrow'
+
+    func toString()
+        throw 'abstract Statement.toString'
+
+export class ExprScheme: Statement
+    ctor(method, expr) super()
+        this.method: method
+        this.expr: expr
+
+    func mayThrow()
+        return this.method.mayThrow(this.expr)
+
+    func toString()
+        return this.method.scheme(this.expr)
+
+export class PlaceExpr: Statement
+    ctor(expr) super()
+        this.expr: expr
+
+    func mayThrow()
+        return this.expr.mayThrow()
+
+    func toString()
+        return this.expr.toString() + ';'
+
+export class Assignment: Statement
+    ctor(sp, val) super()
+        this.setPoint: sp
+        this.value: val
+
+    func mayThrow()
+        return this.setPoint.mayThrow(this.expr) || this.value.mayThrow()
+
+    func toString()
+        return this.setPoint.toString() + '=' + this.value.toString() + ';'
+
+export class Export: Statement
+    ctor(ep, value) super()
+        this.exportPath: ep
+        this.value: value
+
+    func mayThrow()
+        return this.value.mayThrow()
+
+    func toString()
+        exportPath: [mangle.TERM_EXPORT] ++ this.exportPath
+        ep: []
+        for i range 2, exportPath.length
+            p: exportPath[, i].join('.')
+            ep.push(p)
+            ep.push('=')
+            ep.push(p)
+            ep.push('|| {};')
+        return (ep ++ [exportPath.join('.'), '=', this.value.toString(), ';']).join('')
+
+export class Branch: Statement
+    ctor(pred, consq, alter) super()
+        this.predicate: pred
+        this.consequence: consq
+        this.alternative: alter
+
+    func mayThrow()
+        return this.predicate.mayThrow() || this.consequence.mayThrow() ||
+               this.alternative.mayThrow()
+
+    func toString()
+        return ['if (', this.predicate.toString(), ') {',
+                    this.consequence.toString(),
+                '} else {',
+                    this.alternative.toString(),
+                '}',
+               ].join('')
+
+export class ExceptionHandle: Statement
+    ctor(tryBlock, catchBlock, excRef) super()
+        this.tryBlock: tryBlock
+        this.catchBlock: catchBlock
+        this.excRef: excRef
+
+    func mayThrow()
+        return this.catchBlock.mayThrow()
+
+    func toString()
+        ifnot this.tryBlock.mayThrow()
+            return this.tryBlock.toString()
+        return ['try {',
+                    this.tryBlock.toString(),
+                '} catch (', this.excRef.toString(), ') {',
+                    this.catchBlock.toString(),
+                '}',
+               ].join('')
+
+export class Block: Statement
+    ctor() super()
+        this.stmts: []
+        this.funcs: []
+        this.localDefs: []
+
+    func prependStmt(s)
+        this.stmts.unshift(s)
+
+    func addStmt(s)
+        this.stmts.push(s)
+
+    func addFunc(f)
+        this.funcs.push(f)
+
+    func setLocalDefs(defs)
+        this.localDefs: defs
+
+    func mayThrow()
+        this.stmts |:
+            if $.mayThrow()
+                return true
+        return false
+
+    func toString()
+        decl: '' if this.localDefs.length = 0 else ('var ' + this.localDefs.join(',') + ';')
+        return decl + (this.funcs |: $.toString()).join('') + (this.stmts |: $.toString()).join('')
+
+export class ThisDeclaration: Statement
+    ctor() super()
+
+    func mayThrow()
+        return false
+
+    func toString()
+        return 'var $this = this;'
+
+export class AsyncCallResultDef: Statement
+    ctor(expr, decl, defId) super()
+        this.expr: expr
+        this.decl: decl
+        this.defId: defId
+
+    func mayThrow()
+        return this.expr.mayThrow()
+
+    func toString()
+        decl: ('var ' + mangle.anonymousRef(this.defId) + '=') if this.decl else ''
+        return decl + this.expr.toString() + ';'

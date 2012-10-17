@@ -1,0 +1,107 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/utils.fls' as utils
+include 'resolve/symbol_table.fls' as st
+include 'resolve/expressions.fls' as exprs
+
+buildForExpr: utils.buildForOneExpr
+Literal: exprs.Literal
+
+func assertPureLiteral(v, expected)
+    assert.ok(v.isLiteral(st.GlobalSymbolTable()))
+    assert.eq(expected, v.literalValue(st.GlobalSymbolTable()).value)
+
+func assertLiteral(v, sym, expected)
+    assert.ok(v.isLiteral(sym))
+    assert.eq(expected, v.literalValue(sym).value)
+
+export func run()
+    describe('literals', %)
+    if true
+        it('atomic item', %)
+        assertPureLiteral(buildForExpr('0'), 0)
+        assertPureLiteral(buildForExpr('0.5'), 0.5)
+        assertPureLiteral(buildForExpr('"the quick brown fox"'), 'the quick brown fox')
+        assertPureLiteral(buildForExpr('true'), true)
+        assertPureLiteral(buildForExpr('false'), false)
+
+    if true
+        it('unary op', %)
+        assertPureLiteral(buildForExpr('-0.5'), -0.5)
+        assertPureLiteral(buildForExpr('+0.5'), 0.5)
+        assertPureLiteral(buildForExpr('!0'), true)
+        assertPureLiteral(buildForExpr('!1'), false)
+        assertPureLiteral(buildForExpr('!false'), true)
+        assertPureLiteral(buildForExpr('!true'), false)
+        assertPureLiteral(buildForExpr('typeof true'), 'boolean')
+        assertPureLiteral(buildForExpr('typeof 0'), 'number')
+        assertPureLiteral(buildForExpr('typeof ""'), 'string')
+        assertPureLiteral(buildForExpr('~1234'), -1235)
+
+    if true
+        it('binary op', %)
+        assertPureLiteral(buildForExpr('3 | 5'), 7)
+        assertPureLiteral(buildForExpr('3 & 5'), 1)
+        assertPureLiteral(buildForExpr('3 ^ 5'), 6)
+        assertPureLiteral(buildForExpr('3 << 5'), 96)
+        assertPureLiteral(buildForExpr('96 >> 5'), 3)
+        assertPureLiteral(buildForExpr('-96 >> 5'), -3)
+        assertPureLiteral(buildForExpr('-96 >>> 5'), 134217725)
+
+        assertPureLiteral(buildForExpr('"a" + "b"'), 'ab')
+
+        assertPureLiteral(buildForExpr('3 + 5'), 8)
+        assertPureLiteral(buildForExpr('3 - 5'), -2)
+        assertPureLiteral(buildForExpr('3 * 5'), 15)
+        assertPureLiteral(buildForExpr('3 / 5'), 0.6)
+        assertPureLiteral(buildForExpr('3 % 5'), 3)
+
+        assertPureLiteral(buildForExpr('3 < 5'), true)
+        assertPureLiteral(buildForExpr('3 <= 5'), true)
+        assertPureLiteral(buildForExpr('3 > 5'), false)
+        assertPureLiteral(buildForExpr('3 >= 5'), false)
+        assertPureLiteral(buildForExpr('3 = 5'), false)
+        assertPureLiteral(buildForExpr('3 != 5'), true)
+
+        assertPureLiteral(buildForExpr('1 - 2 * 3'), -5)
+        assertPureLiteral(buildForExpr('1 < 2 && 4 > 5'), false)
+        assertPureLiteral(buildForExpr('1 < 2 || 4 > 5'), true)
+
+    if true
+        it('conditional', %)
+        assertPureLiteral(buildForExpr('0 if true else 1'), 0)
+        assertPureLiteral(buildForExpr('0 if false else 1'), 1)
+        assertPureLiteral(buildForExpr('(1 + 2) if 1 < 2 else (2 + 3)'), 3)
+        assertPureLiteral(buildForExpr('(1 * 2) if 1 = 2 else (2 % 3)'), 2)
+
+    if true
+        it('strict comparing', %)
+        assertPureLiteral(buildForExpr('1 = 1'), true)
+        assertPureLiteral(buildForExpr('1 = "1"'), false)
+
+    if true
+        it('from symbol table', %)
+        POS: {file: null, line: 1}
+        s: st.GlobalSymbolTable()
+        s.defLiteral({file: null, line: 1}, 'lazy', Literal(POS, 'dog'))
+        s.defLiteral({file: null, line: 2}, 'quick', Literal(POS, 91))
+        assert.eq(false, errors.hasError())
+
+        assertLiteral(buildForExpr('lazy'), s, 'dog')
+        assertLiteral(buildForExpr('quick'), s, 91)
+        assertLiteral(buildForExpr('"hot" + lazy'), s, 'hotdog')
+        assertLiteral(buildForExpr('quick < 1729'), s, true)
+        assertLiteral(buildForExpr('1729 % quick'), s, 0)
+        assertLiteral(buildForExpr('lazy + quick'), s, 'dog91')
+        assert.eq(false, errors.hasError())
+
+    if true
+        it('unary new to literal', %)
+        v: buildForExpr('*1')
+        v.literalValue(st.GlobalSymbolTable())
+        assert.deepEq([{
+            pos: {file: null, line: 1},
+            type: 'LiteralValueError',
+            value: 1,
+            op: 'unary *',
+        }], errors.deliver())

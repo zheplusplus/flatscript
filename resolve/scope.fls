@@ -1,0 +1,481 @@
+include 'errors.fls' as errors
+include 'globals.fls' as g
+include 'misc.fls' as misc
+include 'resolve/symbol_table.fls' as st
+include 'backend/statements.fls' as backend
+include 'backend/expressions.fls' as backend_exprs
+include 'backend/loop.fls' as backend_loop
+include 'backend/class.fls' as backend_class
+include 'backend/methods.fls' as backend_methods
+include 'backend/function.fls' as backend_func
+
+class ScopeBase
+    ctor()
+        this._mainBlock: backend.Block()
+        this._currentBlock: this._mainBlock
+        this._termPos: null
+        this._termErrReported: false
+
+    func addStmt(pos, stmt)
+        this.checkNotTerminated(pos)
+        this._currentBlock.addStmt(stmt)
+
+    func addClass(pos, name, base, ct, memfns)
+        throw 'abstract ScopeBase.addClass'
+
+    func checkNotTerminated(pos)
+        if this.terminated() && !this._termErrReported
+            errors.FlowTerminated(pos, this._termPos)
+            this._termErrReported: true
+
+    func terminate(pos)
+        this._termPos: pos
+
+    func terminated()
+        return this._termPos != null
+
+    func block()
+        return this._currentBlock
+
+    func inPipe()
+        return false
+
+    func inCatch()
+        return false
+
+    func allowSuper()
+        return false
+
+    func setAsyncSpace(pos, params, block)
+        params |: this.sym().defAsyncParam(pos, $)
+        this._currentBlock: this.replaceBlock(block)
+
+    func replaceBlock(space)
+        return space
+
+    func referenceThis()
+        throw 'abstract ScopeBase.referenceThis'
+
+    func retMethod(pos)
+        throw 'abstract ScopeBase.retMethod'
+
+    func throwMethod()
+        throw 'abstract ScopeBase.throwMethod'
+
+    func breakMethod(pos)
+        throw 'abstract ScopeBase.breakMethod'
+
+    func continueMethod(pos)
+        throw 'abstract ScopeBase.continueMethod'
+
+    func firstReturn()
+        throw 'abstract ScopeBase.firstReturn'
+
+    func hasBreak()
+        throw 'abstract ScopeBase.hasBreak'
+
+    func sym()
+        throw 'abstract ScopeBase.sym'
+
+    func scopeId()
+        throw 'abstract ScopeBase.scopeId'
+
+    func includeFile(pos, path, %%)
+        throw 'abstract ScopeBase.includeFile'
+
+    func deliver(%%)
+        this._mainBlock.setLocalDefs(this.sym().localDefs())
+        return this._mainBlock
+
+_NULID: misc.uid()
+
+class DomainScope: ScopeBase
+    ctor() super()
+        this._classInits: []
+
+    func addClass(pos, name, base, ct, memfns)
+        this._classInits.push({name: name, inherit: base != null, ct: ct, memfns: memfns})
+        this.sym().defName(pos, name)
+        this.addStmt(pos, backend_class.ClassInitCall(name, base))
+
+    func breakMethod(pos)
+        errors.InvalidStatementInScope(pos, 'break')
+        return backend_methods.Place()
+
+    func continueMethod(pos)
+        errors.InvalidStatementInScope(pos, 'continue')
+        return backend_methods.Place()
+
+    func hasBreak()
+        return false
+
+    func deliver(%%)
+        this._classInits |:
+            memfns: {}
+            allowSuper: $.inherit
+            $.memfns |:
+                memfns[$k]: $.compileToLambda(this, allowSuper, %%)
+            this._mainBlock.prependStmt(
+                backend_class.ClassInitDecl($.name, $.inherit, memfns, $.ct))
+        return super.deliver(%%)
+
+    func scopeId()
+        return _NULID
+
+class FileScope: DomainScope
+    ctor() super()
+        this._sym: st.GlobalSymbolTable()
+        this._sym.addExternals(misc.posBuiltIn(), g.g().built_in_names)
+        this._sym.addExternals(misc.posComplOpt(), g.g().opt_externs)
+
+    func inPipe()
+        return false
+
+    func inCatch()
+        return false
+
+    func allowSuper()
+        return false
+
+    func referenceThis(pos)
+        errors.ReferenceThisInGlobal(pos)
+
+    func retMethod(pos)
+        errors.InvalidStatementInScope(pos, 'return')
+        return backend_methods.Place()
+
+    func throwMethod()
+        return backend_methods.ThrowExc()
+
+    func firstReturn()
+        return null
+
+    func sym()
+        return this._sym
+
+export class IncludeFileScope: FileScope
+    ctor(parent, fileId) super()
+        this.parent: parent
+        this.fileId: fileId
+        this.deps: {}
+
+    func scopeId()
+        return this.fileId
+
+    func includeFile(pos, file, %%)
+        r: this.parent.includeFile(pos, file, %%)
+        this.deps[r.path]: r
+        return r
+
+    func setAsyncSpace(pos, params, body)
+        errors.AsyncNotAllowedInIncludeFile(pos)
+
+class IncludedSource
+    ctor(includeId, path, parsed)
+        this.includeId: includeId
+        this.parsed: parsed
+        this.path: path
+        this.deps: null
+
+export class GlobalScope: FileScope
+    ctor() super()
+        this._includings: {}
+
+    func canonicalPath(path, includePos)
+        return path
+
+    func parseFile(path, includePos, %%)
+        throw Error('GlobalScope.compileFile Not Implemented')
+
+    func includeFile(pos, file, %%)
+        if file.length = 0 || file[0] = '.'
+            errors.InvalidFileName(pos)
+            return _NULID
+        cfile: this.canonicalPath(file, pos)
+        if this._includings.hasOwnProperty(cfile)
+            return this._includings[cfile]
+        i: IncludedSource(misc.uid(), cfile, this.parseFile(cfile, pos, %%))
+        this._includings[cfile]: i
+        return i
+
+    func deliver(%%)
+        initFuncs: this._compileIncludingsCascade({}, %%)
+        initCalls: this._resolveInitSequence([], {}, initFuncs)
+        block: super.deliver(%%)
+        initFuncs |: block.addFunc($)
+        initCalls.reverse()
+        initCalls |: block.prependStmt($)
+        return block
+
+    func _compileIncludingsCascade(initFuncs, %%)
+        if Object.keys(initFuncs).length = Object.keys(this._includings).length
+            return initFuncs
+        this._includings |:
+            ifnot initFuncs.hasOwnProperty($.includeId.toString())
+                fileScope: IncludeFileScope(this, $.includeId)
+                $.parsed.compile(fileScope, %%)
+                initFuncs[$.includeId.toString()]: backend_func.ModuleInitFunc(
+                    $.includeId, fileScope.deliver(%%))
+                $.deps: fileScope.deps
+        return this._compileIncludingsCascade(initFuncs, %%)
+
+    func _countDeps(deps)
+        return (deps |? $).length
+
+    func _resolveInitSequence(calls, callsAdded, initFuncs)
+        if Object.keys(this._includings).length = calls.length
+            return calls
+        this._includings |:
+            if !callsAdded.hasOwnProperty($k) && this._countDeps($.deps) = 0
+                callsAdded[$k]: true
+                calls.push(backend.PlaceExpr(initFuncs[$.includeId.toString()].callMe(
+                    [backend_exprs.BinaryOp('=', backend_exprs.Module($.includeId),
+                                            backend_exprs.ObjectLiteral({}))])))
+                this._removeDep($)
+                return this._resolveInitSequence(calls, callsAdded, initFuncs)
+        this._unresolvableDependencies(this._includings[Object.keys(this._includings)[0]], [], {})
+        return []
+
+    func _removeDep(d)
+        this._includings |:
+            $.deps[d.path]: null
+
+    func _unresolvableDependencies(incl, depStack, depFlagged)
+        ifnot depFlagged.hasOwnProperty(incl.includeId.toString())
+            depStack.push(incl)
+            depFlagged[incl.includeId.toString()]: true
+            return this._unresolvableDependencies(incl.deps[Object.keys(incl.deps)[0]],
+                                                  depStack, depFlagged)
+        for i range depStack.length
+            if depStack[i].includeId.toString() = incl.includeId.toString()
+                errors.DepenedenciesUnresolvable(depStack[i, ] |: $.path)
+                return
+
+class FuncScope: DomainScope
+    ctor(pos, parent, params, allowSuper) super()
+        this.parent: parent
+        this._allowSuper: allowSuper
+        this._firstReturn: null
+        this._thisRef: false
+        this._sym: parent.sym().makeFuncSymbolTable(pos, params)
+
+    func setAllowSuper(a)
+        this._allowSuper: a
+
+    func allowSuper()
+        return this._allowSuper
+
+    func inPipe()
+        return false
+
+    func inCatch()
+        return false
+
+    func referenceThis(pos)
+        this._thisRef: true
+
+    func sym()
+        return this._sym
+
+    func firstReturn()
+        return this._firstReturn
+
+    func retMethod(pos)
+        this._firstReturn: pos
+        return this._retMethod(pos)
+
+    func includeFile(pos, file, %%)
+        return this.parent.includeFile(pos, file, %%)
+
+    func deliver(%%)
+        if this._thisRef
+            this._mainBlock.prependStmt(backend.ThisDeclaration())
+        return super.deliver(%%)
+
+export class SyncFuncScope: FuncScope
+    ctor(pos, parent, params, allowSuper) super(pos, parent, params, allowSuper)
+
+    func _retMethod(pos)
+        return backend_methods.Ret()
+
+    func throwMethod()
+        return backend_methods.ThrowExc()
+
+func replaceBlockInAsyncTry(block, cf)
+    tryBlock: backend.Block()
+    block.addStmt(backend.ExceptionHandle(
+        tryBlock, cf(backend_exprs.ExceptionRef()), backend_exprs.ExceptionRef()))
+    return tryBlock
+
+export class AsyncFuncScope: FuncScope
+    ctor(pos, parent, params, allowSuper) super(pos, parent, params, allowSuper)
+        this.retPos: pos
+        this._currentBlock: this.replaceBlock(this._currentBlock)
+
+    func _retMethod(pos)
+        return backend_methods.AsyncRet()
+
+    func throwMethod()
+        return backend_methods.CallbackExc()
+
+    func deliver(%%)
+        ifnot this.terminated()
+            this.block().addStmt(backend.ExprScheme(this._retMethod(), backend_exprs.Undefined()))
+        return super.deliver(%%)
+
+    func replaceBlock(space)
+        throwM: this.throwMethod()
+        return replaceBlockInAsyncTry(space, (exc): backend.ExprScheme(throwM, exc))
+
+class SubScope: ScopeBase
+    ctor(parent) super()
+        this.parent: parent
+
+    func inPipe()
+        return this.parent.inPipe()
+
+    func inCatch()
+        return this.parent.inCatch()
+
+    func allowSuper()
+        return this.parent.allowSuper()
+
+    func retMethod(pos)
+        return this.parent.retMethod(pos)
+
+    func throwMethod()
+        return this.parent.throwMethod()
+
+    func breakMethod(pos)
+        return this.parent.breakMethod(pos)
+
+    func continueMethod(pos)
+        return this.parent.continueMethod(pos)
+
+    func firstReturn()
+        return this.parent.firstReturn()
+
+    func replaceBlock(space)
+        return this.parent.replaceBlock(space)
+
+    func referenceThis(pos)
+        return this.parent.referenceThis(pos)
+
+    func scopeId()
+        return this.parent.scopeId()
+
+    func includeFile(pos, file, %%)
+        return this.parent.includeFile(pos, file, %%)
+
+    func addClass(pos, name, base, ct, memfns)
+        errors.ClassDefNotAllowed(pos)
+
+    func hasBreak()
+        return false
+
+export class BranchScope: SubScope
+    ctor(parent) super(parent)
+        this._sym: parent.sym().makeSubSymbolTable()
+
+    func sym()
+        return this._sym
+
+export class CatchScope: BranchScope
+    ctor(parent, pos, excName) super(parent)
+        this.sym().defParam(pos, excName)
+        this.excRef: this.sym().compileRef(pos, excName)
+
+    func scopeId()
+        return this.sym().uid
+
+export class AsyncTryScope: BranchScope
+    ctor(parent, catchFunc) super(parent)
+        this.catchFunc: catchFunc
+
+    func throwMethod()
+        return backend_methods.AsyncCatcher(this.catchFunc)
+
+    func replaceBlock(block)
+        catchFunc: this.catchFunc
+        return replaceBlockInAsyncTry(block, (exc): backend.PlaceExpr(catchFunc.callMe([exc])))
+
+class PipelineScope: SubScope
+    ctor(parent, pipeId, root) super(parent)
+        this.pipeId: pipeId
+        this.root: root
+        this._sym: st.FuncSymbolTable(parent.sym())
+        this._firstReturn: null
+        this._hasBreak: false
+
+    func inPipe()
+        return true
+
+    func retMethod(pos)
+        ifnot this.root
+            errors.InvalidStatementInScope(pos, 'return')
+        this._firstReturn: pos
+        return this._retMethod(pos)
+
+    func breakMethod(pos)
+        ifnot this.root
+            errors.InvalidStatementInScope(pos, 'break')
+        this._hasBreak: true
+        return this._breakMethod(pos)
+
+    func continueMethod(pos)
+        ifnot this.root
+            errors.InvalidStatementInScope(pos, 'continue')
+        return this._continueMethod(pos)
+
+    func firstReturn()
+        return this._firstReturn
+
+    func hasBreak()
+        return this._hasBreak
+
+    func sym()
+        return this._sym
+
+    func scopeId()
+        return this.pipeId
+
+    func _retMethod(pos)
+        return backend_methods.SyncPipeRet(this.pipeId)
+
+    func _breakMethod(pos)
+        return backend_methods.SyncBreak()
+
+    func _continueMethod(pos)
+        return backend_methods.Ret()
+
+export SyncPipelineScope: PipelineScope
+
+export class AsyncPipelineScope: PipelineScope
+    ctor(parent, pipeId, root) super(parent, pipeId, root)
+
+    func deliver(%%)
+        ifnot this.terminated()
+            this.block().addStmt(backend.ExprScheme(
+                this._continueMethod(), backend_loop.Continue(this.pipeId)))
+        return super.deliver(%%)
+
+    func _retMethod(pos)
+        return this.parent.retMethod(pos)
+
+    func _breakMethod(pos)
+        return backend_methods.CallNext()
+
+    func _continueMethod()
+        return backend_methods.CallNext()
+
+export class SyncForRangeScope: PipelineScope
+    ctor(parent, pipeId) super(parent, pipeId, true)
+
+    func inPipe()
+        return false
+
+export class AsyncForRangeScope: AsyncPipelineScope
+    ctor(parent, pipeId) super(parent, pipeId, true)
+
+    func inPipe()
+        return false

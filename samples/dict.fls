@@ -1,0 +1,42 @@
+func first(x, y)
+    return x
+
+func second(x, y)
+    return y
+
+func sum(x, y)
+    return x + y
+
+x: {
+    'first': first,
+    'second': second,
+    'sum': sum
+}
+
+console.log(x['sum'](1, 4))
+console.log(x['first'](1, 4))
+console.log(x['second'](1, 4))
+
+console.log({
+    first: first,
+    second: second,
+    1: sum
+}[1]('shinto ', 'shrine'))
+
+y: {
+    summer: 'xia',
+    fall: 'qiu',
+    winter: 'dong',
+}
+
+y |: console.log($k + ':' + $)
+
+func opMap()
+    return {
+        '==': '===',
+        '!=': '!==',
+    }
+
+o: opMap()
+console.log(o['=='])
+console.log(o['!='])

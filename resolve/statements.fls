@@ -1,0 +1,296 @@
+include 'errors.fls' as errors
+include 'misc.fls' as misc
+include 'resolve/scope.fls' as sc
+include 'backend/statements.fls' as backend
+include 'backend/expressions.fls' as backend_exprs
+include 'backend/function.fls' as backend_funcs
+include 'backend/loop.fls' as backend_loop
+include 'backend/methods.fls' as backend_methods
+
+export class Statement
+    ctor(pos)
+        this.pos: pos
+
+    func isAsync()
+        throw 'abstract Statement.isAsync'
+
+    func compile(scope, %%)
+        throw 'abstract Statement.compile'
+
+export class Arithmetics: Statement
+    ctor(expr) super(expr.pos)
+        this.expr: expr
+
+    func isAsync()
+        return this.expr.isAsync()
+
+    func compile(scope, %%)
+        this.expr.compileAsStmt(scope, %%)
+
+export class NameDef: Statement
+    ctor(pos, name, init) super(pos)
+        this.name: name
+        this.init: init
+
+    func isAsync()
+        return this.init.isAsync()
+
+    func compile(scope, %%)
+        if this.init.isLiteral(scope.sym())
+            return scope.sym().defLiteral(this.pos, this.name, this.init.literalValue(scope.sym()))
+        init: this.init.compile(scope, %%)
+        scope.sym().defName(this.pos, this.name)
+        scope.addStmt(this.pos, backend.Assignment(
+            scope.sym().compileRef(this.pos, this.name), init))
+
+export class AttrSet: Statement
+    ctor(sp, val) super(sp.pos)
+        this.setPoint: sp
+        this.value: val
+
+    func isAsync()
+        return this.setPoint.isAsync() || this.value.isAsync()
+
+    func compile(scope, %%)
+        sp: this.setPoint.compile(scope, %%)
+        val: this.value.compile(scope, %%)
+        scope.addStmt(this.pos, backend.Assignment(sp, val))
+
+export class Return: Statement
+    ctor(expr) super(expr.pos)
+        this.ret: expr
+
+    func isAsync()
+        return this.ret.isAsync()
+
+    func compile(scope, %%)
+        ret: this.ret.compile(scope, %%)
+        scope.addStmt(this.pos, backend.ExprScheme(scope.retMethod(this.pos), ret))
+        scope.terminate(this.pos)
+
+export class Extern: Statement
+    ctor(pos, names) super(pos)
+        this.names: names
+
+    func isAsync()
+        return false
+
+    func compile(scope, %%)
+        scope.sym().addExternals(this.pos, this.names)
+
+export class Export: Statement
+    ctor(pos, ep, value) super(pos)
+        this.exportPath: ep
+        this.value: value
+
+    func isAsync()
+        return this.value.isAsync()
+
+    func compile(scope, %%)
+        value: this.value.compile(scope, %%)
+        scope.addStmt(this.pos, backend.Export(this.exportPath, value))
+
+export class Branch: Statement
+    ctor(pred, consq, alter) super(pred.pos)
+        this.predicate: pred
+        this.consequence: consq
+        this.alternative: alter
+
+    func isAsync()
+        return this.predicate.isAsync() || this.consequence.isAsync() || this.alternative.isAsync()
+
+    func _compileOnePath(scope, block, %%)
+        subScope: sc.BranchScope(scope)
+        block.compile(subScope, %%)
+        return subScope
+
+    func compile(scope, %%)
+        if this.predicate.isLiteral(scope.sym())
+            block: (this.consequence if this.predicate.literalValue(scope.sym()).value
+                    else this.alternative)
+            return scope.addStmt(block.pos, this._compileOnePath(scope, block, %%).deliver(%%))
+        pred: this.predicate.compile(scope, %%)
+        cscope: this._compileOnePath(scope, this.consequence, %%)
+        ascope: this._compileOnePath(scope, this.alternative, %%)
+        scope.addStmt(this.pos, backend.Branch(pred, cscope.deliver(%%), ascope.deliver(%%)))
+
+        if cscope.terminated() && ascope.terminated()
+            return scope.terminate(this.pos)
+        ifnot this.consequence.isAsync() || this.alternative.isAsync()
+            return
+
+        cb: backend_funcs.NoParamCallback()
+        ifnot cscope.terminated()
+            cscope.addStmt(this.pos, backend.PlaceExpr(cb.callMe([])))
+        ifnot ascope.terminated()
+            ascope.addStmt(this.pos, backend.PlaceExpr(cb.callMe([])))
+        scope.block().addFunc(cb)
+        scope.setAsyncSpace(this.pos, [], cb.body())
+
+export class ExceptionHandle: Statement
+    ctor(tryBlock, excName, catchBlock) super(tryBlock.pos)
+        this.tryBlock: tryBlock
+        this.excName: excName
+        this.catchBlock: catchBlock
+
+    func isAsync()
+        return this.tryBlock.isAsync() || this.catchBlock.isAsync()
+
+    func compile(scope, %%)
+        return this._compileAsync(scope, %%) if this.isAsync() else this._compileSync(scope, %%)
+
+    func _compileSync(scope, %%)
+        tryScope: sc.BranchScope(scope)
+        this.tryBlock.compile(tryScope, %%)
+        catchScope: sc.CatchScope(scope, this.catchBlock.pos, this.excName)
+        this.catchBlock.compile(catchScope, %%)
+        scope.addStmt(this.pos, backend.ExceptionHandle(
+            tryScope.deliver(%%), catchScope.deliver(%%), catchScope.excRef))
+        if tryScope.terminated() && catchScope.terminated()
+            scope.terminate(this.pos)
+
+    func _compileAsync(scope, %%)
+        catchScope: sc.CatchScope(scope, this.catchBlock.pos, this.excName)
+        catchFunc: backend_funcs.AsyncCatchFunc(catchScope.excRef)
+        scope.block().addFunc(catchFunc)
+        catchScope.setAsyncSpace(this.catchBlock.pos, [], catchFunc.body())
+        this.catchBlock.compile(catchScope, %%)
+        tryScope: sc.AsyncTryScope(scope, catchFunc)
+        this.tryBlock.compile(tryScope, %%)
+        handleBlock: backend.Block()
+        handleBlock.addStmt(backend.PlaceExpr(catchFunc.callMe([catchScope.excRef])))
+        scope.addStmt(this.pos, backend.ExceptionHandle(
+            tryScope.deliver(%%), handleBlock, catchScope.excRef))
+        if tryScope.terminated() && catchScope.terminated()
+            return scope.terminate(this.pos)
+
+        cb: backend_funcs.NoParamCallback()
+        ifnot tryScope.terminated()
+            tryScope.addStmt(this.pos, backend.PlaceExpr(cb.callMe([])))
+        ifnot catchScope.terminated()
+            catchScope.addStmt(this.pos, backend.PlaceExpr(cb.callMe([])))
+        scope.block().addFunc(cb)
+
+        succTry: backend.Block()
+        succCatch: backend.Block()
+        succCatch.addStmt(backend.ExprScheme(scope.throwMethod(), backend_exprs.ExceptionRef()))
+        cb.body().addStmt(backend.ExceptionHandle(succTry, succCatch,
+                                                  backend_exprs.ExceptionRef()))
+        scope.setAsyncSpace(this.pos, [], succTry)
+
+export class Throw: Statement
+    ctor(exc) super(exc.pos)
+        this.exc: exc
+
+    func isAsync()
+        return false
+
+    func compile(scope, %%)
+        if this.exc.isAsync()
+            errors.AsyncNotAllowedInThrow(this.pos)
+        exc: this.exc.compile(scope, %%)
+        scope.addStmt(this.pos, backend.ExprScheme(scope.throwMethod(), exc))
+        scope.terminate(this.pos)
+
+export class ForRange: Statement
+    ctor(pos, ref, begin, end, step, body) super(pos)
+        this.ref: ref
+        this.begin: begin
+        this.end: end
+        this.step: step
+        this.body: body
+
+    func isAsync()
+        return this.begin.isAsync() || this.end.isAsync() || this.body.isAsync()
+
+    func compile(scope, %%)
+        loopId: misc.uid()
+        ifnot this.step.isLiteral(scope.sym())
+            return errors.RangeStepNonLiteral(this.step.pos)
+        step: this.step.literalValue(scope.sym()).value
+        ifnot typeof step = 'number' && step != 0
+            return errors.InvalidRangeStep(this.step.pos)
+        begin: this.begin.compile(scope, %%)
+        end: this.end.compile(scope, %%)
+        this._compileAsync(scope, begin, end, step, loopId, %%) if this.body.isAsync()
+            else this._compileSync(scope, begin, end, step, loopId, %%)
+
+    func _compileSync(parentScope, begin, end, step, loopId, %%)
+        scope: sc.SyncForRangeScope(parentScope, loopId)
+        scope.sym().loopDecl(this.pos, this.ref, loopId)
+        ref: scope.sym().compileRef(this.pos, this.ref)
+        this.body.compile(scope, %%)
+        firstRet: scope.firstReturn()
+        extReturn: parentScope.retMethod(firstRet) if firstRet != null else backend_methods.Place()
+        parentScope.addStmt(this.pos, backend_loop.SyncForRange(
+            ref, begin, end, step, scope.deliver(%%), extReturn, loopId,
+            firstRet != null, scope.hasBreak()))
+
+    func _compileAsync(parentScope, begin, end, step, loopId, %%)
+        currentFlow: parentScope.block()
+        successionFlow: backend.Block()
+        parentScope.setAsyncSpace(this.pos, [], successionFlow)
+        loopScope: sc.AsyncForRangeScope(parentScope, loopId)
+        loopScope.sym().loopDecl(this.pos, this.ref, loopId)
+        ref: loopScope.sym().compileRef(this.pos, this.ref)
+        this.body.compile(loopScope, %%)
+        currentFlow.addStmt(backend_loop.AsyncForRange(
+            ref, begin, end, step, loopScope.deliver(%%), successionFlow, loopId))
+
+export class Break: Statement
+    ctor(pos) super(pos)
+
+    func isAsync()
+        return false
+
+    func compile(scope, %%)
+        scope.addStmt(this.pos, backend.ExprScheme(scope.breakMethod(this.pos),
+                                                   backend_loop.Break(scope.scopeId())))
+        scope.terminate(this.pos)
+
+export class Continue: Statement
+    ctor(pos) super(pos)
+
+    func isAsync()
+        return false
+
+    func compile(scope, %%)
+        scope.addStmt(this.pos, backend.ExprScheme(scope.continueMethod(this.pos),
+                                                   backend_loop.Continue(scope.scopeId())))
+        scope.terminate(this.pos)
+
+export class Include: Statement
+    ctor(pos, includePath, moduleAlias) super(pos)
+        this.includePath: includePath
+        this.moduleAlias: moduleAlias
+
+    func isAsync()
+        return false
+
+    func compile(scope, %%)
+        scope.sym().defModule(this.pos, this.moduleAlias,
+                              scope.includeFile(this.pos, this.includePath, %%).includeId)
+
+export class Block: Statement
+    ctor(pos, stmts, funcs) super(pos)
+        this.stmts: stmts
+        this.funcs: funcs
+
+    func isAsync()
+        this.stmts |:
+            if $.isAsync()
+                return true
+        return false
+
+    func compile(scope, %%)
+        setTimeout(%, 0)
+        block: scope.block()
+        this.funcs |: scope.sym().defFunc($.pos, $.name)
+        this.stmts |: $.compile(scope, %%)
+        this.funcs |: block.addFunc($.compile(scope, false, %%))
+
+export func wrapSingle(s)
+    return Block(s.pos, [s], [])
+
+export func emptyBlock(pos)
+    return Block(pos, [], [])

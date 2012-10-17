@@ -1,0 +1,19 @@
+func make_pair(x, y)
+    func selector(select)
+        return select(x, y)
+    return selector
+
+func first(x, y)
+    return x
+
+func second(x, y)
+    return y
+
+m: 10
+x: make_pair(m, 6)
+console.log(x(first))
+console.log(x(second))
+
+y: make_pair(false, true)
+console.log(y(first))
+console.log(y(second))

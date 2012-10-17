@@ -1,0 +1,268 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/utils.fls' as utils
+include 'parse/build.fls' as build
+
+buildForAll: utils.buildForAll
+
+export func run()
+    describe('function', %)
+    if true
+        it('decl sync', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 5}
+        POS3: {file: null, line: 6}
+        POS4: {file: null, line: 8}
+        assert.deepEq({
+          stmts: [{
+            pos: POS4,
+            expr: {
+              pos: POS4,
+              callee: {
+                pos: POS4,
+                name: 'ln',
+              },
+              args: [],
+            },
+          }],
+          funcs: [{
+            pos: POS0,
+            name: 'myFunc',
+            params: [],
+            body: {
+              pos: POS0,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                expr: {
+                  pos: POS1,
+                  callee: {
+                    pos: POS1,
+                    name: 'log',
+                  },
+                  args: [{
+                    pos: POS1,
+                    value: 1,
+                  }],
+                },
+              }],
+            },
+          }, {
+            pos: POS2,
+            name: 'yourFunc',
+            params: ['a', 'b'],
+            body: {
+              pos: POS2,
+              funcs: [],
+              stmts: [{
+                pos: POS3,
+                expr: {
+                  pos: POS3,
+                  callee: {
+                    pos: POS3,
+                    name: 'e',
+                  },
+                  args: [{
+                    pos: POS3,
+                    value: 0,
+                  }],
+                },
+              }],
+            },
+          }],
+        }, buildForAll('''
+            func myFunc()
+                log(1)
+
+            func yourFunc(a, b,)
+                e(0)
+
+            ln()
+        '''))
+
+    if true
+        it('decl async', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 5}
+        POS3: {file: null, line: 6}
+        POS4: {file: null, line: 8}
+        POS5: {file: null, line: 10}
+        POS6: {file: null, line: 11}
+        assert.deepEq({
+          stmts: [{
+            pos: POS4,
+            expr: {
+              pos: POS4,
+              callee: {
+                pos: POS4,
+                name: 'ln',
+              },
+              args: [],
+            },
+          }],
+          funcs: [{
+            pos: POS0,
+            name: 'myFunc',
+            params: [],
+            asyncIndex: 0,
+            body: {
+              pos: POS0,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                expr: {
+                  pos: POS1,
+                  callee: {
+                    pos: POS1,
+                    name: 'log',
+                  },
+                  args: [{
+                    pos: POS1,
+                    value: 1,
+                  }],
+                },
+              }],
+            },
+          }, {
+            pos: POS2,
+            name: 'yourFunc',
+            params: ['b'],
+            asyncIndex: 0,
+            body: {
+              pos: POS2,
+              funcs: [],
+              stmts: [{
+                pos: POS3,
+                expr: {
+                  pos: POS3,
+                  callee: {
+                    pos: POS3,
+                    name: 'e',
+                  },
+                  args: [{
+                    pos: POS3,
+                    value: 0,
+                  }],
+                },
+              }],
+            },
+          }, {
+            pos: POS5,
+            name: 'herFunc',
+            params: ['a', 'c'],
+            asyncIndex: 1,
+            body: {
+              pos: POS5,
+              funcs: [{
+                pos: POS6,
+                name: 'noFunc',
+                params: [],
+                body: {
+                  pos: POS6,
+                  funcs: [],
+                  stmts: [],
+                },
+              }],
+              stmts: [],
+            },
+          }],
+        }, buildForAll('''
+            func myFunc(%%)
+                log(1)
+
+            func yourFunc(%%, b,)
+                e(0)
+
+            ln()
+
+            func herFunc(a, %%, c)
+                func noFunc()
+        '''))
+
+    if true
+        it('export', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 5}
+        POS3: {file: null, line: 6}
+        assert.deepEq({
+          stmts: [{
+            pos: POS0,
+            exportPath: ['myFunc'],
+            value: {
+              pos: POS0,
+              name: 'myFunc',
+            },
+          }, {
+            pos: POS2,
+            exportPath: ['yourFunc'],
+            value: {
+              pos: POS2,
+              name: 'yourFunc',
+            },
+          }],
+          funcs: [{
+            pos: POS0,
+            name: 'myFunc',
+            params: [],
+            body: {
+              pos: POS0,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                expr: {
+                  pos: POS1,
+                  callee: {
+                    pos: POS1,
+                    name: 'log',
+                  },
+                  args: [{
+                    pos: POS1,
+                    value: 1,
+                  }],
+                },
+              }],
+            },
+          }, {
+            pos: POS2,
+            name: 'yourFunc',
+            params: ['b'],
+            asyncIndex: 1,
+            body: {
+              pos: POS2,
+              funcs: [],
+              stmts: [{
+                pos: POS3,
+                expr: {
+                  pos: POS3,
+                  callee: {
+                    pos: POS3,
+                    name: 'e',
+                  },
+                  args: [{
+                    pos: POS3,
+                    value: 0,
+                  }],
+                },
+              }],
+            },
+          }],
+        }, buildForAll('''
+            export func myFunc()
+                log(1)
+
+            export func yourFunc(b, %%,)
+                e(0)
+        '''))
+
+    if true
+        it('invalid async param', %)
+        build.build('''
+            func m(%(x))
+        ''', null)
+        assert.deepEq([{
+            type: 'InvalidParam',
+            pos: {file: null, line: 2},
+        }], errors.deliver())

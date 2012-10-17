@@ -1,0 +1,139 @@
+include 'errors.fls' as errors
+include 'globals.fls' as g
+include 'resolve/statements.fls' as resolve
+
+export class Statement
+    ctor(pos)
+        this.pos: pos
+
+    func compile()
+        throw 'abstract Statement.compile'
+
+    func acceptElse(elseBlock)
+        errors.ClauseNotMatch(elseBlock.pos, 'else', 'if')
+
+    func acceptCatch(catchBlock, excName)
+        errors.ClauseNotMatch(catchBlock.pos, 'catch', 'try')
+
+export class Arithmetics: Statement
+    ctor(expr) super(expr.pos)
+        this.expr: expr
+
+    func compile()
+        return resolve.Arithmetics(this.expr.compileAsExpr())
+
+export class Assignment: Statement
+    ctor(leftVal, assignment) super(leftVal.pos)
+        this.leftVal: leftVal
+        this.assignment: assignment
+
+    func compile()
+        return this.leftVal.compileForAssignment(this.assignment.compileAsExpr())
+
+export class Return: Statement
+    ctor(expr) super(expr.pos)
+        this.ret: expr
+
+    func compile()
+        return resolve.Return(this.ret.compileAsExpr())
+
+export class Extern: Statement
+    ctor(pos, names) super(pos)
+        this.names: names
+
+    func compile()
+        return resolve.Extern(this.pos, this.names)
+
+export class Export: Statement
+    ctor(pos, ep, val) super(pos)
+        this.exportPath: ep
+        this.value: val
+
+    func compile()
+        g.useExport()
+        return resolve.Export(this.pos, this.exportPath, this.value.compileAsExpr())
+
+export class If: Statement
+    ctor(pred, consq) super(pred.pos)
+        this.predicate: pred
+        this.consequence: consq
+        this.alternative: null
+
+    func compile()
+        return resolve.Branch(this.predicate.compileAsExpr(), this.consequence.compile(),
+                               this.alternative.compile() if this.alternative != null
+                                   else resolve.emptyBlock(this.pos))
+
+    func acceptElse(elseBlock)
+        if this.alternative != null
+            errors.DuplicatedMatch(this.alternative.pos, elseBlock.pos, 'else')
+        else
+            this.alternative: elseBlock
+
+export class Ifnot: Statement
+    ctor(pred, alter) super(pred.pos)
+        this.predicate: pred
+        this.alternative: alter
+
+    func compile()
+        return resolve.Branch(this.predicate.compileAsExpr(), resolve.emptyBlock(this.pos),
+                               this.alternative.compile())
+
+export class Try: Statement
+    ctor(block) super(block.pos)
+        this.block: block
+        this._catch: null
+        this._excName: null
+
+    func compile()
+        if this._catch = null
+            errors.TryWithoutCatch(this.pos)
+            return resolve.emptyBlock(this.pos)
+        return resolve.ExceptionHandle(this.block.compile(), this._excName, this._catch.compile())
+
+    func acceptCatch(catchBlock, excName)
+        if this._catch != null
+            errors.DuplicatedMatch(this._catch.pos, catchBlock.pos, 'catch')
+        else
+            this._catch: catchBlock
+            this._excName: excName
+
+export class Throw: Statement
+    ctor(exc) super(exc.pos)
+        this.exc: exc
+
+    func compile()
+        return resolve.Throw(this.exc.compileAsExpr())
+
+export class ForRange: Statement
+    ctor(pos, ref, begin, end, step, body) super(pos)
+        this.ref: ref
+        this.begin: begin
+        this.end: end
+        this.step: step
+        this.body: body
+
+    func compile()
+        return resolve.ForRange(
+            this.pos, this.ref, this.begin.compileAsExpr(), this.end.compileAsExpr(),
+            this.step.compileAsExpr(), this.body.compile())
+
+export class Break: Statement
+    ctor(pos) super(pos)
+
+    func compile()
+        return resolve.Break(this.pos)
+
+export class Continue: Statement
+    ctor(pos) super(pos)
+
+    func compile()
+        return resolve.Continue(this.pos)
+
+export class Include: Statement
+    ctor(pos, includePath, moduleAlias) super(pos)
+        this.includePath: includePath
+        this.moduleAlias: moduleAlias
+
+    func compile()
+        return resolve.Include(this.pos, this.includePath, this.moduleAlias)

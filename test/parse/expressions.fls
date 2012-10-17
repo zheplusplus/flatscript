@@ -1,0 +1,261 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/utils.fls' as utils
+include 'parse/build.fls' as build
+
+func buildForExpr(source)
+    s: utils.buildForStmts(source)
+    assert.eq(1, s.length)
+    return s[0].expr
+
+export func run()
+    describe('expressions', %)
+    if true
+        it('async inline lambda', %)
+        POS: {file: null, line: 1}
+        assert.deepEq({
+          pos: POS,
+          params: [],
+          asyncIndex: 0,
+          body: {
+            pos: POS,
+            funcs: [],
+            stmts: [{
+              pos: POS,
+              ret: {
+                pos: POS,
+                value: 0,
+              },
+            }],
+          },
+        }, buildForExpr('(%%): 0'))
+
+        assert.deepEq({
+          pos: POS,
+          params: ['a'],
+          asyncIndex: 1,
+          body: {
+            pos: POS,
+            funcs: [],
+            stmts: [{
+              pos: POS,
+              ret: {
+                pos: POS,
+                value: 0,
+              },
+            }],
+          },
+        }, buildForExpr('(a, %%,): 0'))
+
+        assert.deepEq({
+          pos: POS,
+          params: ['a'],
+          asyncIndex: 0,
+          body: {
+            pos: POS,
+            funcs: [],
+            stmts: [{
+              pos: POS,
+              ret: {
+                pos: POS,
+                value: 0,
+              },
+            }],
+          },
+        }, buildForExpr('(%%, a): 0'))
+
+        assert.deepEq({
+          pos: POS,
+          params: ['a', 'b'],
+          asyncIndex: 1,
+          body: {
+            pos: POS,
+            funcs: [],
+            stmts: [{
+              pos: POS,
+              ret: {
+                pos: POS,
+                value: 0,
+              },
+            }],
+          },
+        }, buildForExpr('(a, %%, b): 0'))
+
+    if true
+        it('multiple async placeholders', %)
+        build.build('(%%, %%): 0', null)
+        POS: {file: null, line: 1}
+        assert.deepEq([{
+            pos: POS,
+            type: 'MoreThanOneAsyncPlaceholder',
+        }], errors.deliver())
+
+    if true
+        it('expr as param', %)
+        build.build('(0): 0', null)
+        POS: {file: null, line: 1}
+        assert.deepEq([{
+            pos: POS,
+            type: 'InvalidParam',
+        }], errors.deliver())
+
+    if true
+        it('async block lambda', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq({
+          pos: POS0,
+          params: [],
+          asyncIndex: 0,
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [{
+              pos: POS1,
+              expr: {
+                pos: POS1,
+                callee: {
+                  pos: POS1,
+                  name: 'x',
+                },
+                args: [],
+              },
+            }],
+          },
+        }, buildForExpr('''
+            (%%):
+                x()
+        '''))
+
+        assert.deepEq({
+          pos: POS0,
+          params: ['a'],
+          asyncIndex: 0,
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [{
+              pos: POS1,
+              expr: {
+                pos: POS1,
+                callee: {
+                  pos: POS1,
+                  name: 'y',
+                },
+                args: [],
+              },
+            }],
+          },
+        }, buildForExpr('''
+            (%%, a):
+                y()
+        '''))
+
+    if true
+        it('regular async param in expr', %)
+        build.build('%%', null)
+        POS0: {file: null, line: 1}
+        assert.deepEq([{
+            pos: POS0,
+            type: 'AsyncParamNotExpr',
+        }], errors.deliver())
+
+        build.build('1 +\n%%', null)
+        POS1: {file: null, line: 2}
+        assert.deepEq([{
+            pos: POS1,
+            type: 'AsyncParamNotExpr',
+        }], errors.deliver())
+
+    if true
+        it('async call with decls', %)
+        POS: {file: null, line: 1}
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'f',
+          },
+          args: [{
+            pos: POS,
+            name: 'a',
+          }],
+          asyncIndex: 0,
+          decls: [],
+        }, buildForExpr('f(%, a)'))
+
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'f',
+          },
+          args: [{
+            pos: POS,
+            name: 'a',
+          }],
+          asyncIndex: 1,
+          decls: [],
+        }, buildForExpr('f(a, %())'))
+
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'f',
+          },
+          args: [{
+            pos: POS,
+            name: 'a',
+          }],
+          asyncIndex: 1,
+          decls: ['c'],
+        }, buildForExpr('f(a, %(c))'))
+
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'f',
+          },
+          args: [{
+            pos: POS,
+            name: 'a',
+          }],
+          asyncIndex: 1,
+          decls: ['c'],
+        }, buildForExpr('f(a, %c)'))
+
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'f',
+          },
+          args: [],
+          asyncIndex: 0,
+          decls: ['c', 'd'],
+        }, buildForExpr('f(%(c, d,))'))
+
+    if true
+        it('regular async call', %)
+        POS: {file: null, line: 1}
+
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'f',
+          },
+          args: [],
+          asyncIndex: 0,
+        }, buildForExpr('f(%%)'))
+
+    if true
+        it('multiple async placeholders calls', %)
+        build.build('g(%%, %)', null)
+        POS: {file: null, line: 1}
+        assert.deepEq([{
+            pos: POS,
+            type: 'MoreThanOneAsyncPlaceholder',
+        }], errors.deliver())

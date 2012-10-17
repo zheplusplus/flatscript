@@ -1,0 +1,1391 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/utils.fls' as utils
+include 'parse/build.fls' as build
+
+buildForStmts: utils.buildForStmts
+
+export func run()
+    describe('statement automations', %)
+    if true
+        it('empty', %)
+        assert.eq(0, buildForStmts('').length)
+
+    if true
+        it('single arith', %)
+        POS: {file: null, line: 1}
+        assert.deepEq([], buildForStmts(''))
+
+        assert.deepEq([{
+          pos: POS,
+          expr: {
+            pos: POS,
+            arr: {
+              pos: POS,
+              name: 'x',
+            },
+            body: {
+              pos: POS,
+              funcs: [],
+              stmts: [{
+                pos: POS,
+                expr: {
+                  pos: POS,
+                  callee: {
+                    pos: POS,
+                    obj: {
+                      pos: POS,
+                    },
+                    prop: 'push',
+                  },
+                  args: [{
+                    pos: POS,
+                  }],
+                },
+              }],
+            },
+          },
+        }], buildForStmts('x |: $'))
+
+    if true
+        it('multiple', %)
+        s: buildForStmts(['0', 'x |: $', '', '1 + (m if p else n)'].join('\n'))
+        assert.eq(3, s.length)
+        POS0: {file: null, line: 1}
+        POS1: {file: null, line: 2}
+        POS2: {file: null, line: 4}
+        assert.deepEq({
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            value: 0,
+          }
+        }, s[0])
+
+        assert.deepEq({
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            arr: {
+              pos: POS1,
+              name: 'x',
+            },
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                expr: {
+                  pos: POS1,
+                  callee: {
+                    pos: POS1,
+                    obj: {
+                      pos: POS1,
+                    },
+                    prop: 'push',
+                  },
+                  args: [{
+                    pos: POS1,
+                  }],
+                },
+              }],
+            },
+          }
+        }, s[1])
+
+        assert.deepEq({
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            op: '+',
+            lhs: {
+              pos: POS2,
+              value: 1,
+            },
+            rhs: {
+              pos: POS2,
+              predicate: {
+                pos: POS2,
+                name: 'p',
+              },
+              consequence: {
+                pos: POS2,
+                name: 'm',
+              },
+              alternative: {
+                pos: POS2,
+                name: 'n',
+              },
+            },
+          },
+        }, s[2])
+
+    if true
+        it('single indented', %)
+        POS: {file: null, line: 2}
+        assert.deepEq([{
+          pos: POS,
+          expr: {
+            pos: POS,
+            callee: {
+              pos: POS,
+              obj: {
+                pos: POS,
+                name: 'console',
+              },
+              prop: 'log',
+            },
+            args: [{
+              pos: POS,
+              callee: {
+                pos: POS,
+                obj: {
+                  pos: POS,
+                  name: 'z',
+                },
+                prop: 'toString',
+              },
+              args: [],
+            }],
+          },
+        }], buildForStmts('''
+            console.log(z.toString())
+        '''))
+
+    if true
+        it('multiple indented', %)
+        s: buildForStmts('''
+            a + b
+
+            x(y)
+            m * n()
+        ''')
+        assert.eq(3, s.length)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 4}
+        POS2: {file: null, line: 5}
+
+        assert.deepEq({
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            op: '+',
+            lhs: {
+              pos: POS0,
+              name: 'a',
+            },
+            rhs: {
+              pos: POS0,
+              name: 'b',
+            },
+          },
+        }, s[0])
+
+        assert.deepEq({
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'x',
+            },
+            args: [{
+              pos: POS1,
+              name: 'y',
+            }],
+          },
+        }, s[1])
+
+        assert.deepEq({
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            op: '*',
+            lhs: {
+              pos: POS2,
+              name: 'm',
+            },
+            rhs: {
+              pos: POS2,
+              callee: {
+                pos: POS2,
+                name: 'n',
+              },
+              args: [],
+            },
+          },
+        }, s[2])
+
+    if true
+        it('break line in binary op', %)
+        s: buildForStmts('''
+            a +
+              b
+            x(y)
+        ''', null)
+        assert.eq(2, s.length)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 4}
+
+        assert.deepEq({
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            op: '+',
+            lhs: {
+              pos: POS0,
+              name: 'a',
+            },
+            rhs: {
+              pos: {file: null, line: 3},
+              name: 'b',
+            },
+          },
+        }, s[0])
+
+        assert.deepEq({
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'x',
+            },
+            args: [{
+              pos: POS1,
+              name: 'y',
+            }],
+          },
+        }, s[1])
+
+    if true
+        it('break line array literal', %)
+        POS0: {file: null, line: 2}
+        assert.deepEq([{
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            arr: [],
+          },
+        }], buildForStmts('''
+            [
+            ]
+        '''))
+
+        assert.deepEq([{
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            arr: [{
+              pos: POS0,
+              value: 0,
+            }],
+          },
+        }], buildForStmts('''
+            [0
+            ]
+        '''))
+
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            arr: [{
+              pos: POS0,
+              name: 'a',
+            }, {
+              pos: POS1,
+              name: 'b',
+            }],
+          },
+        }], buildForStmts('''
+            [a,
+             b]
+        '''))
+
+        assert.deepEq([{
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            arr: [{
+              pos: POS0,
+              name: 'a',
+            }, {
+              pos: POS0,
+              name: 'b',
+            }],
+          },
+        }], buildForStmts('''
+            [a, b
+            ]
+        '''))
+
+        assert.deepEq([{
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            arr: [{
+              pos: POS1,
+              name: 'a',
+            }, {
+              pos: POS1,
+              name: 'b',
+            }],
+          },
+        }], buildForStmts('''
+            [
+            a, b]
+        '''))
+
+    if true
+        it('break lambda', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            params: [],
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                ret: {
+                  pos: POS1,
+                  value: 0,
+                },
+              }],
+            },
+          },
+        }], buildForStmts('''
+            (
+             ): 0
+        '''))
+
+        assert.deepEq([{
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            params: ['a'],
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                ret: {
+                  pos: POS1,
+                  value: 1,
+                },
+              }],
+            },
+          },
+        }], buildForStmts('''
+            (a,
+             ): 1
+        '''))
+
+        assert.deepEq([{
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            params: ['a', 'b'],
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                ret: {
+                  pos: POS1,
+                  value: 1,
+                },
+              }],
+            },
+          },
+        }], buildForStmts('''
+            (a,
+             b): 1
+        '''))
+
+        assert.deepEq([{
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            params: ['a', 'b'],
+            body: {
+              pos: POS1,
+              funcs: [],
+              stmts: [{
+                pos: POS1,
+                ret: {
+                  pos: POS1,
+                  value: 1,
+                },
+              }],
+            },
+          },
+        }], buildForStmts('''
+            (
+             a, b): 1
+        '''))
+
+    if true
+        it('name def', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        assert.deepEq([{
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            callee: {
+              pos: POS0,
+              name: 'a',
+            },
+            args: [],
+          },
+        }, {
+          pos: POS1,
+          name: 'x',
+          init: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'b',
+            },
+            args: [],
+          },
+        }, {
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            callee: {
+              pos: POS2,
+              name: 'c',
+            },
+            args: [],
+          },
+        }], buildForStmts('''
+            a()
+            x: b()
+            c()
+        '''))
+
+    if true
+        it('attr set', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        assert.deepEq([{
+          pos: POS0,
+          setPoint: {
+            pos: POS0,
+            obj: {
+              pos: POS0,
+              callee: {
+                pos: POS0,
+                name: 'x',
+              },
+              args: [],
+            },
+            key: {
+              pos: POS0,
+              name: 'n',
+            },
+          },
+          value: {
+            pos: POS0,
+            callee: {
+              pos: POS0,
+              name: 'a',
+            },
+            args: [],
+          },
+        }, {
+          pos: POS1,
+          setPoint: {
+            pos: POS1,
+            obj: {
+              pos: POS1,
+              name: 'y',
+            },
+            prop: 'm',
+          },
+          value: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'b',
+            },
+            args: [],
+          },
+        }, {
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            callee: {
+              pos: POS2,
+              name: 'c',
+            },
+            args: [],
+          },
+        }], buildForStmts('''
+            x()[n]: a()
+            y.m: b()
+            c()
+        '''))
+
+    if true
+        it('assign to invalid', %)
+        build.build('a(): 10', null)
+        assert.deepEq([{
+            type: 'InvalidLeftValue',
+            pos: {file: null, line: 1},
+        }], errors.deliver())
+
+    if true
+        it('return some', %)
+        POS0: {file: null, line: 2}
+        assert.deepEq([{
+          pos: POS0,
+          ret: {
+            pos: POS0,
+            callee: {
+              pos: POS0,
+              name: 'a',
+            },
+            args: [],
+          },
+        }], buildForStmts('''
+            return a()
+        '''))
+
+    if true
+        it('return nothing', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          ret: {
+            pos: POS0,
+          },
+        }, {
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'a',
+            },
+            args: [],
+          }
+        }], buildForStmts('''
+            return
+            a()
+        '''))
+
+    if true
+        it('extern names', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          names: ['a', 'b'],
+        }, {
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'a',
+            },
+            args: [],
+          }
+        }], buildForStmts('''
+            extern a, b
+            a()
+        '''))
+
+    if true
+        it('export names', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        assert.deepEq([{
+          pos: POS0,
+          exportPath: ['p'],
+          value: {
+            pos: POS0,
+            value: 0,
+          },
+        }, {
+          pos: POS1,
+          exportPath: ['a', 'b', 'c'],
+          value: {
+            pos: POS1,
+            name: 'x',
+          },
+        }, {
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            callee: {
+              pos: POS2,
+              name: 'y',
+            },
+            args: [],
+          }
+        }], buildForStmts('''
+            export p: 0
+            export a.b.c: x
+            y()
+        '''))
+
+    if true
+        it('export invalid path', %)
+        build.build('''
+            export a.this: x
+        ''', null)
+        assert.deepEq([{
+            type: 'InvalidName',
+            pos: {file: null, line: 2},
+        }], errors.deliver())
+
+    if true
+        it('branch without alter', %)
+        s: buildForStmts('''
+            if a
+                x()
+                y()
+            z()
+        ''')
+        assert.eq(2, s.length)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 5}
+        assert.deepEq({
+          pos: POS0,
+          name: 'a',
+        }, s[0].predicate)
+
+        assert.eq(2, s[0].consequence.stmts.length)
+        assert.deepEq({
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'x',
+            },
+            args: [],
+          },
+        }, s[0].consequence.stmts[0])
+        assert.deepEq({
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            callee: {
+              pos: POS2,
+              name: 'y',
+            },
+            args: [],
+          },
+        }, s[0].consequence.stmts[1])
+        assert.eq(0, s[0].alternative.stmts.length)
+
+        assert.deepEq({
+          pos: POS3,
+          expr: {
+            pos: POS3,
+            callee: {
+              pos: POS3,
+              name: 'z',
+            },
+            args: [],
+          },
+        }, s[1])
+
+    if true
+        it('branch with only alter', %)
+        s: buildForStmts('''
+            ifnot a
+                x()
+                y()
+            z()
+        ''')
+        assert.eq(2, s.length)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 5}
+        assert.deepEq({
+          pos: POS0,
+          name: 'a',
+        }, s[0].predicate)
+
+        assert.eq(2, s[0].alternative.stmts.length)
+        assert.deepEq({
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'x',
+            },
+            args: [],
+          },
+        }, s[0].alternative.stmts[0])
+        assert.deepEq({
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            callee: {
+              pos: POS2,
+              name: 'y',
+            },
+            args: [],
+          },
+        }, s[0].alternative.stmts[1])
+        assert.eq(0, s[0].consequence.stmts.length)
+
+        assert.deepEq({
+          pos: POS3,
+          expr: {
+            pos: POS3,
+            callee: {
+              pos: POS3,
+              name: 'z',
+            },
+            args: [],
+          },
+        }, s[1])
+
+    if true
+        it('branch with alter', %)
+
+        s: buildForStmts('''
+            if a
+                x()
+                y()
+            else
+                z()
+        ''')
+        assert.eq(1, s.length)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 5}
+        POS4: {file: null, line: 6}
+        assert.deepEq({
+          pos: POS0,
+          name: 'a',
+        }, s[0].predicate)
+
+        assert.eq(2, s[0].consequence.stmts.length)
+        assert.deepEq({
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'x',
+            },
+            args: [],
+          },
+        }, s[0].consequence.stmts[0])
+        assert.deepEq({
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            callee: {
+              pos: POS2,
+              name: 'y',
+            },
+            args: [],
+          },
+        }, s[0].consequence.stmts[1])
+
+        assert.eq(1, s[0].alternative.stmts.length)
+        assert.deepEq({
+          pos: POS4,
+          expr: {
+            pos: POS4,
+            callee: {
+              pos: POS4,
+              name: 'z',
+            },
+            args: [],
+          },
+        }, s[0].alternative.stmts[0])
+
+    if true
+        it('branch with more than one else', %)
+        build.build('''
+            if a
+                x()
+            else
+                y()
+            else
+                z()
+        ''', null)
+        assert.deepEq([{
+            type: 'DuplicatedMatch',
+            pos: {file: null, line: 6},
+            prevPos: {file: null, line: 4},
+            kw: 'else',
+        }], errors.deliver())
+
+    if true
+        it('branch empty predicate', %)
+        build.build('''
+            if
+                x()
+            else
+                y()
+        ''', null)
+        assert.deepEq([{
+            type: 'EmptyPredicate',
+            pos: {file: null, line: 2},
+        }], errors.deliver())
+
+    if true
+        it('branch empty consequence', %)
+        s: buildForStmts('''
+            if f
+            else
+                g()
+        ''')
+        assert.eq(1, s.length)
+
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        assert.deepEq({
+          pos: POS0,
+          name: 'f',
+        }, s[0].predicate)
+
+        assert.eq(0, s[0].consequence.stmts.length)
+        assert.eq(1, s[0].alternative.stmts.length)
+        assert.deepEq({
+          pos: POS2,
+          expr: {
+            pos: POS2,
+            callee: {
+              pos: POS2,
+              name: 'g',
+            },
+            args: [],
+          },
+        }, s[0].alternative.stmts[0])
+
+    if true
+        it('nested branch', %)
+        s: buildForStmts('''
+            if a
+                if b
+                    log()
+            else
+                if c
+                    e(():
+                        lg()
+                    )
+                else
+                    ln()
+            f()
+        ''')
+        assert.eq(2, s.length)
+
+        bRoot: s[0]
+        assert.deepEq({
+          pos: {file: null, line: 2},
+          name: 'a',
+        }, bRoot.predicate)
+        assert.eq(1, bRoot.consequence.stmts.length)
+        assert.eq(1, bRoot.alternative.stmts.length)
+
+        bcNested: bRoot.consequence.stmts[0]
+        assert.deepEq({
+          pos: {file: null, line: 3},
+          name: 'b',
+        }, bcNested.predicate)
+        assert.eq(1, bcNested.consequence.stmts.length)
+        POS0: {file: null, line: 4}
+        assert.deepEq({
+          pos: POS0,
+          expr: {
+            pos: POS0,
+            callee: {
+              pos: POS0,
+              name: 'log',
+            },
+            args: [],
+          },
+        }, bcNested.consequence.stmts[0])
+        assert.eq(0, bcNested.alternative.stmts.length)
+
+        baNested: bRoot.alternative.stmts[0]
+        assert.deepEq({
+          pos: {file: null, line: 6},
+          name: 'c',
+        }, baNested.predicate)
+        assert.eq(1, baNested.consequence.stmts.length)
+        bacNested: baNested.consequence.stmts[0]
+        POS1: {file: null, line: 7}
+        POS2: {file: null, line: 8}
+        assert.deepEq({
+          pos: POS1,
+          expr: {
+            pos: POS1,
+            callee: {
+              pos: POS1,
+              name: 'e',
+            },
+            args: [{
+              pos: POS1,
+              params: [],
+              body: {
+                pos: POS1,
+                funcs: [],
+                stmts: [{
+                  pos: POS2,
+                  expr: {
+                    pos: POS2,
+                    callee: {
+                      pos: POS2,
+                      name: 'lg',
+                    },
+                    args: [],
+                  },
+                }],
+              },
+            }],
+          },
+        }, bacNested)
+
+        assert.eq(1, baNested.alternative.stmts.length)
+        baaNested: baNested.alternative.stmts[0]
+        POS3: {file: null, line: 11}
+        assert.deepEq({
+          pos: POS3,
+          expr: {
+            pos: POS3,
+            callee: {
+              pos: POS3,
+              name: 'ln',
+            },
+            args: [],
+          },
+        }, baaNested)
+
+        POS4: {file: null, line: 12}
+        assert.deepEq({
+          pos: POS4,
+          expr: {
+            pos: POS4,
+            callee: {
+              pos: POS4,
+              name: 'f',
+            },
+            args: [],
+          },
+        }, s[1])
+
+    if true
+        it('else not match', %)
+        build.build('''
+            x: 0
+            else
+                10
+        ''', null)
+        assert.deepEq([{
+            type: 'ClauseNotMatch',
+            pos: {file: null, line: 3},
+            clause: 'else',
+            match: 'if',
+        }], errors.deliver())
+
+    if true
+        it('else before tokens', %)
+        build.build('''
+            if x
+                y()
+            else m
+        ''', null)
+        assert.deepEq([{
+            type: 'UnexpectedToken',
+            pos: {file: null, line: 4},
+            image: 'm',
+        }], errors.deliver())
+
+    if true
+        it('try catch', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 5}
+        assert.deepEq([{
+          pos: POS0,
+          tryBlock: {
+            pos: POS0,
+            funcs: [],
+            stmts: [{
+              pos: POS1,
+              expr: {
+                pos: POS1,
+                callee: {
+                  pos: POS1,
+                  name: 'log',
+                },
+                args: [],
+              },
+            }],
+          },
+          excName: 'e',
+          catchBlock: {
+            pos: POS2,
+            funcs: [],
+            stmts: [{
+              pos: POS3,
+              expr: {
+                pos: POS3,
+                callee: {
+                  pos: POS3,
+                  name: 'print',
+                },
+                args: [{
+                  pos: POS3,
+                  name: 'e',
+                }],
+              },
+            }],
+          },
+        }], buildForStmts('''
+            try
+                log()
+            catch e
+                print(e)
+        '''))
+
+    if true
+        it('try before tokens', %)
+        build.build('''
+            try x
+                y()
+            catch e
+        ''', null)
+        assert.deepEq([{
+            type: 'UnexpectedToken',
+            pos: {file: null, line: 2},
+            image: 'x',
+        }], errors.deliver())
+
+    if true
+        it('try without catch', %)
+        build.build('''
+            try
+                log()
+        ''', null)
+        assert.deepEq([{
+            type: 'TryWithoutCatch',
+            pos: {file: null, line: 2},
+        }], errors.deliver())
+
+    if true
+        it('catch without exception name', %)
+        build.build('''
+            try
+                log()
+            catch
+                error()
+        ''', null)
+        assert.deepEq([{
+            type: 'CatchWithoutExcName',
+            pos: {file: null, line: 4},
+        }], errors.deliver())
+
+    if true
+        it('throw', %)
+        POS: {file: null, line: 1}
+        assert.deepEq([{
+          pos: POS,
+          exc: {
+            pos: POS,
+            name: 'x',
+          },
+        }], buildForStmts('throw x'))
+
+        assert.deepEq([{
+          pos: POS,
+          exc: {
+            pos: POS,
+            callee: {
+              pos: POS,
+              name: 'y',
+            },
+            args: [{
+              pos: POS,
+              value: 0,
+            }, {
+              pos: POS,
+              value: 1,
+            }],
+          },
+        }], buildForStmts('throw y(0, 1,)'))
+
+    if true
+        it('for range', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          ref: 'i',
+          begin: {
+            pos: POS0,
+            value: 0,
+          },
+          end: {
+            pos: POS0,
+            name: 'x',
+          },
+          step: {
+            pos: POS0,
+            value: 1,
+          },
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [{
+              pos: POS1,
+              expr: {
+                pos: POS1,
+                callee: {
+                  pos: POS1,
+                  name: 'log',
+                },
+                args: [{
+                  pos: POS1,
+                  name: 'i',
+                }],
+              },
+            }],
+          },
+        }], buildForStmts('''
+            for i range x
+                log(i)
+        '''))
+
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 5}
+        assert.deepEq([{
+          pos: POS0,
+          ref: 'j',
+          begin: {
+            pos: POS0,
+            name: 'm',
+          },
+          end: {
+            pos: POS0,
+            name: 'n',
+          },
+          step: {
+            pos: POS0,
+            name: 'p',
+          },
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [{
+              pos: POS1,
+              ref: 'i',
+              begin: {
+                pos: POS1,
+                value: 1,
+              },
+              end: {
+                pos: POS1,
+                callee: {
+                  pos: POS1,
+                  name: 'y',
+                },
+                args: [],
+              },
+              step: {
+                pos: POS1,
+                value: 1,
+              },
+              body: {
+                pos: POS1,
+                funcs: [],
+                stmts: [{
+                  pos: POS2,
+                  expr: {
+                    pos: POS2,
+                    callee: {
+                      pos: POS2,
+                      name: 'log',
+                    },
+                    args: [{
+                      pos: POS2,
+                      name: 'i',
+                    }],
+                  },
+                }],
+              },
+            }, {
+              pos: POS3,
+              expr: {
+                pos: POS3,
+                callee: {
+                  pos: POS3,
+                  name: 'log',
+                },
+                args: [{
+                  pos: POS3,
+                  name: 'j',
+                }],
+              },
+            }],
+          },
+        }], buildForStmts('''
+            for j range m, n, p
+              for i range 1, y()
+                log(i)
+              log(j)
+        '''))
+
+    if true
+        it('break & continue', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        POS3: {file: null, line: 5}
+        POS4: {file: null, line: 6}
+        assert.deepEq([{
+          pos: POS0,
+          ref: 'i',
+          begin: {
+            pos: POS0,
+            value: 0,
+          },
+          end: {
+            pos: POS0,
+            name: 'a',
+          },
+          step: {
+            pos: POS0,
+            value: 1,
+          },
+          body: {
+            pos: POS0,
+            funcs: [],
+            stmts: [{
+              pos: POS1,
+              predicate: {
+                pos: POS1,
+                callee: {
+                  pos: POS1,
+                  name: 'm',
+                },
+                args: [{
+                  pos: POS1,
+                  name: 'i',
+                }],
+              },
+              consequence: {
+                pos: POS1,
+                funcs: [],
+                stmts: [{
+                  pos: POS2,
+                }],
+              },
+              alternative: {
+                pos: POS3,
+                funcs: [],
+                stmts: [{
+                  pos: POS4,
+                }],
+              },
+            }],
+          },
+        }], buildForStmts('''
+            for i range a
+                if m(i)
+                    break
+                else
+                    continue
+        '''))
+
+    if true
+        it('for range excessive args', %)
+        build.build('''
+            for i range a, b, c, d
+                log()
+        ''', null)
+        assert.deepEq([{
+            type: 'ExcessiveExprInForRange',
+            pos: {file: null, line: 2},
+        }], errors.deliver())
+
+    if true
+        it('enum', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        assert.deepEq([{
+          pos: POS0,
+          name: 'm',
+          init: {
+            pos: POS0,
+            value: 0,
+          },
+        }, {
+          pos: POS1,
+          name: 'x',
+          init: {
+            pos: POS1,
+            value: 0,
+          },
+        }, {
+          pos: POS1,
+          name: 'y',
+          init: {
+            pos: POS1,
+            value: 1,
+          },
+        }, {
+          pos: POS2,
+          name: 'z',
+          init: {
+            pos: POS2,
+            value: 2,
+          },
+        }], buildForStmts('''
+            enum m
+            enum x, y,
+                z
+        '''))
+
+    if true
+        it('include', %)
+        POS0: {file: null, line: 2}
+        assert.deepEq([{
+          pos: POS0,
+          includePath: 'my/utils.fls',
+          moduleAlias: 'utils',
+        }], buildForStmts('''
+            include "my/utils.fls" as utils
+        '''))
+
+    if true
+        it('include', %)
+        build.build('''
+            include "my/utils.fls" aa utils xxx yyy
+        ''', null)
+        assert.deepEq([{
+            type: 'UnexpectedToken',
+            pos: {file: null, line: 2},
+            image: 'aa',
+        }], errors.deliver())

@@ -1,0 +1,931 @@
+include 'errors.fls' as errors
+include 'parse/tokenize.fls' as tokens
+include 'parse/expressions.fls' as exprs
+include 'parse/statements.fls' as stmts
+include 'parse/function.fls' as fn
+include 'parse/class.fls' as cls
+
+class Automation
+    ctor(stack)
+        this.stack: stack
+
+    func activated()
+
+    func setPushFunc(tokenType, fn)
+        self: this
+        self['_push_' + tokenType]: (token): fn(self, token)
+
+    func delPushFunc(tokenType)
+        this['_push_' + tokenType]: (token): token.unexpected()
+
+    func nextToken(token)
+        f: '_push_' + token.type
+        if this[f]
+            return this[f](token)
+        token.unexpected()
+
+    func nextFactor(factor)
+        factor.unexpected()
+
+    func reduced(expr)
+    func reducedList(exprs)
+
+    func finish(pos)
+        this.stack.pop()
+
+    func finished()
+        return true
+
+enum FORCE_REDUCE, OR, AND, NOT, CMP, BITOP, ADD, PRODUCT, UNARY_ADD, MEMBER
+
+UNARY_OP_PRI: {
+    '!': NOT,
+    '*': UNARY_ADD,
+    '+': UNARY_ADD,
+    '-': UNARY_ADD,
+    '~': UNARY_ADD,
+    'typeof': UNARY_ADD,
+}
+
+BINARY_OP_PRI: {
+    '||': OR,
+    '&&': AND,
+
+    '=': CMP,
+    '!=': CMP,
+    '<=': CMP,
+    '>=': CMP,
+    '<': CMP,
+    '>': CMP,
+
+    '<<': BITOP,
+    '>>': BITOP,
+    '>>>': BITOP,
+    '&': BITOP,
+    '|': BITOP,
+    '^': BITOP,
+
+    '+': ADD,
+    '++': ADD,
+    '-': ADD,
+
+    '*': PRODUCT,
+    '/': PRODUCT,
+    '%': PRODUCT,
+
+    '.': MEMBER,
+}
+
+class ExprAutomationBase: Automation
+    ctor(stack) super(stack)
+        this._resetFollowings()
+
+    func _resetFollowings()
+        ['colon', 'comma', 'closeparen', 'closebracket', 'closebrace'] |: this._setFollowing($)
+
+    func _setFollowing(tokenType)
+        this.setPushFunc(tokenType, (self, token): self._finishAt(token))
+
+    func _finishAt(token)
+        this._checkFinished(token)
+        this.finish(token.pos)
+        token.act(this.stack.top())
+
+    func _checkFinished(token)
+
+class ArithAutomation: ExprAutomationBase
+    ctor(stack) super(stack)
+        this._needFactor: true
+        this._exprStack: []
+        this._opStack: []
+
+    func _checkFinished(token)
+        if this._exprStack.length = 0
+            token.unexpected()
+
+    func _push_else(token)
+        this._finishAt(token)
+
+    func _push_pipe_sep(token)
+        this._finishAt(token)
+
+    func finish(pos)
+        this._reduceBinary(FORCE_REDUCE)
+        this.stack.reduced(this._exprStack[0])
+
+    func finished()
+        return !this._needFactor
+
+    func _empty()
+        return this._exprStack.length = 0 && this._opStack.length = 0
+
+    func _push_dot(token)
+        token.type: 'operator'
+        token.construct: (exprStack):
+            rhs: exprStack.shift()
+            lhs: exprStack.shift()
+            return exprs.MemberAccess(token.pos, lhs, rhs)
+        return this._push_operator(token)
+
+    func _push_operator(token)
+        if this._empty() && token.image = '%'
+            return this.stack.replace(AsyncPlaceholderAutomation(this.stack, token.pos))
+        if this._needFactor
+            return this._pushUnaryOp(token)
+        token.construct: token.construct if token.construct else (exprStack):
+            rhs: exprStack.shift()
+            lhs: exprStack.shift()
+            return exprs.BinaryOp(token.pos, token.image, lhs, rhs)
+        token.pri: BINARY_OP_PRI[token.image]
+        this._reduceBinary(token.pri)
+        this._opStack.unshift(token)
+        this._needFactor: true
+
+    func _pushUnaryOp(token)
+        pri: UNARY_OP_PRI[token.image]
+        if pri = undefined
+            return token.unexpected()
+        token.pri: pri
+        token.construct: (exprStack):
+            rhs: exprStack.shift()
+            return exprs.UnaryOp(token.pos, token.image, rhs)
+        this._opStack.unshift(token)
+
+    func _reduceBinary(currentOpPri)
+        if this._opStack.length = 0
+            return
+        if this._opStack[0].pri >= currentOpPri
+            top: this._opStack.shift()
+            this._exprStack.unshift(top.construct(this._exprStack))
+            this._reduceBinary(currentOpPri)
+
+    func _pushValue(value)
+        this._needFactor: false
+        this._exprStack.unshift(value)
+
+    func nextFactor(factor)
+        ifnot this._needFactor
+            factor.unexpected()
+        this._pushValue(factor.expr)
+
+    func _push_openparen(token)
+        self: this
+        if this._needFactor
+            self.reduced: (expr): self._pushValue(expr)
+            return this.stack.push(NestedOrParamsAutomation(
+                        this.stack, token.pos, 'closeparen', ')'))
+        this.stack.push(MultiExprsAutomation(this.stack, token.pos, 'closeparen', ')'))
+        self.reducedList: (exprs_):
+            for i range exprs_.length - 1
+                if exprs_[i].empty()
+                    errors.ArgOmitted(exprs_[i].pos)
+            t: tokens.TypedToken(token.pos, '.', 'operator')
+            t.construct: (exprStack):
+                args: exprStack.shift()
+                callee: exprStack.shift()
+                return exprs.Call(token.pos, callee, args)
+            self._push_operator(t)
+            self._pushValue(exprs_ |? !$.empty())
+
+    func _push_openbracket(token)
+        self: this
+        if self._needFactor
+            self.reduced: (expr): self._pushValue(expr)
+            return this.stack.push(ListAutomation(this.stack, token.pos))
+        this.stack.push(MultiExprsAutomation(this.stack, token.pos, 'closebracket', ']'))
+        self.reducedList: (exprs_):
+            t: tokens.TypedToken(token.pos, '.', 'operator')
+            t.construct: (exprStack):
+                exprs_: exprStack.shift()
+                obj: exprStack.shift()
+                if exprs_.length = 1
+                    return exprs.Lookup(token.pos, obj, exprs_[0])
+                if exprs_.length > 4
+                    errors.TooManySliceParts(exprs_[3].pos)
+                return exprs.Slice(token.pos, obj, exprs_[0], exprs_[1], exprs_[2])
+            self._push_operator(t)
+            self._pushValue(exprs_)
+
+    func _push_openbrace(token)
+        ifnot this._needFactor
+            token.unexpected()
+        self: this
+        this.reduced: (expr): self._pushValue(expr)
+        this.stack.push(DictAutomation(this.stack, token.pos, 'closebrace', '}'))
+
+    func _push_if(token)
+        if this._needFactor
+            token.unexpected()
+        this._reduceBinary(FORCE_REDUCE)
+        e: this._exprStack.pop()
+        this.stack.push(ConditionalExprAutomation(this.stack, token.pos, e))
+        self: this
+        self.reduced: (expr): self._pushValue(expr)
+
+    func _push_super(token)
+        ifnot this._needFactor
+            return token.unexpected()
+        this._needFactor: false
+        this.stack.push(SuperCallAutomation(this.stack, token.pos))
+        self: this
+        self.reduced: (expr): self._pushValue(expr)
+
+class AsyncPlaceholderAutomation: Automation
+    ctor(stack, pos) super(stack)
+        this.pos: pos
+        ['comma', 'closeparen'] |: this.setPushFunc($, (self, token):
+            self._reduce([])
+            token.act(self.stack.top())
+        )
+
+    func _reduce(nameExprs)
+        this.stack.reduced(exprs.AsyncPlaceholder(this.pos, nameExprs |: $.reduceAsName()))
+
+    func _push_openparen(token)
+        this.stack.push(MultiExprsAutomation(this.stack, token.pos, 'closeparen', ')'))
+        this.reducedList: (exprs_): this._reduce(getListOfNonEmpty(exprs_))
+
+    func nextFactor(factor)
+        this._reduce([factor.expr])
+
+class ArithAutomationInquireEmptyFinish: ArithAutomation
+    ctor(stack, allowEmptyFinish) super(stack)
+        this.allowEmptyFinish: allowEmptyFinish
+
+    func _finishAt(token)
+        if this._empty()
+            return this.stack.tokenAfterReduced(exprs.Empty(token.pos), token)
+        return super._finishAt(token)
+
+    func finish(pos)
+        if this._empty()
+            return this.stack.reduced(exprs.Empty(pos))
+        return super.finish(pos)
+
+    func finished()
+        return this.allowEmptyFinish() && (this._empty() || super.finished())
+
+class ConditionalExprAutomation: Automation
+    ctor(stack, pos, consq) super(stack)
+        this.pos: pos
+        this._predicate: null
+        this._consequence: consq
+
+    func reduced(expr)
+        self: this
+        self._predicate: expr
+        self._push_else: (token):
+            self.stack.push(ArithAutomation(self.stack, token.pos))
+            self.reduced: (expr): self._finish(expr)
+
+    func activated()
+        this.stack.push(ArithAutomation(this.stack, this.pos))
+
+    func _finish(expr)
+        this.stack.reduced(exprs.Conditional(this.pos, this._predicate, this._consequence, expr))
+
+    func finished()
+        return false
+
+class SuperCallAutomation: Automation
+    ctor(stack, pos) super(stack)
+        this.pos: pos
+        this._property: null
+        this._dotPushed: false
+        ['comma', 'colon', 'operator', 'pipe_sep', 'openparen', 'closeparen',
+         'openbracket', 'closebracket', 'openbrace', 'closebrace', 'if', 'else'] |:
+            this.setPushFunc($, (self, token):
+                errors.SuperWithoutCall(token.pos)
+                self.stack.tokenAfterReduced(exprs.This(self.pos), token)
+            )
+
+    func _push_dot(token)
+        if this._dotPushed
+            token.unexpected()
+        else
+            this._dotPushed: true
+
+    func nextFactor(factor)
+        ifnot this._dotPushed
+            factor.unexpected()
+        this._property: factor.expr.reduceAsName()
+        this.setPushFunc('openparen', (self, token):
+            self.stack.push(MultiExprsAutomation(self.stack, token.pos, 'closeparen', ')'))
+            self.reducedList: (exprs_): self.stack.reduced(
+                exprs.Call(self.pos, exprs.SuperFunc(self.pos, self._property),
+                           getListOfNonEmpty(exprs_)))
+        )
+
+    func finished()
+        return false
+
+class PipelineWrapAutomation: Automation
+    ctor(stack, pos, closerType, closerImage) super(stack)
+        this.pos: pos
+        this.closerImage: closerImage
+        this.setPushFunc(closerType, (self, token): self.finish(token.pos))
+        this._expr: null
+
+    func activated()
+        this.stack.push(PipelineAutomation(this.stack, this.pos))
+
+    func reduced(expr)
+        this._expr: expr
+
+    func finish(pos)
+        this.stack.reduced(this._expr)
+
+    func finished()
+        return false
+
+    func _push_closeparen(token)
+        errors.MismatchParen(token.pos, this.closerImage)
+
+    func _push_closebracket(token)
+        errors.MismatchParen(token.pos, this.closerImage)
+
+    func _push_closebrace(token)
+        errors.MismatchParen(token.pos, this.closerImage)
+
+func getListOfNonEmpty(e)
+    for i range e.length - 1
+        if e[i].empty()
+            errors.ArrElementOmitted(e[i].pos)
+    return e |? !$.empty()
+
+class MultiExprsAutomation: PipelineWrapAutomation
+    ctor(stack, pos, closerType, closerImage) super(stack, pos, closerType, closerImage)
+        this._exprs: []
+
+    func activated()
+        this.stack.push(PipelineAutomationInquireEmptyFinish(this.stack, (): false))
+
+    func _push_comma()
+        this.activated()
+
+    func reduced(expr)
+        this._exprs.push(expr)
+
+    func _getListOfNonEmpty()
+        return getListOfNonEmpty(this._exprs)
+
+    func finish(pos)
+        this.stack.reducedList(this._exprs)
+
+class ListAutomation: MultiExprsAutomation
+    ctor(stack, pos) super(stack, pos, 'closebracket', ']')
+
+    func finish(pos)
+        this.stack.reduced(exprs.ArrayLiteral(this.pos, this._getListOfNonEmpty()))
+
+class NestedOrParamsAutomation: MultiExprsAutomation
+    ctor(stack, pos, closerType, closerImage) super(stack, pos, closerType, closerImage)
+        this.setPushFunc(closerType, (self, token): self._waitPossibleColon())
+
+    func _waitPossibleColon()
+        this.setPushFunc('colon', (self, token):
+            self.stack.push(PipelineAutomationAllowEmpty(self.stack))
+            self.reduced: (expr):
+                if expr.empty()
+                    return self._waitBreak(token.pos)
+                self.stack.reduced(exprs.Lambda(token.pos, self._getListOfNonEmpty(), expr))
+        )
+        ['comma', 'operator', 'pipe_sep', 'dot', 'if', 'else', 'openparen',
+         'closeparen', 'openbracket', 'closebracket', 'closebrace'] |: this.setPushFunc(
+            $, (self, token): self._reduceToExpr(token))
+        this.finished: (): true
+        this.finish: (): this.stack.reduced(this._getOnlyExpr())
+
+    func _waitBreak(colonPos)
+        tokens.ALL_TOKEN_TYPES |:
+            this.setPushFunc($, (self, token):
+                errors.LambdaRetOmitted(token.pos)
+                self.stack.tokenAfterReduced(
+                    exprs.Lambda(colonPos, self._getListOfNonEmpty(), exprs.Empty(colonPos)), token)
+            )
+        this.finish: ():
+            this.finished: (): false
+            this.stack.addSubBlockClauseForExpr(colonPos, %body)
+            this.stack.reduced(exprs.BlockLambda(colonPos, this._getListOfNonEmpty(), body))
+
+    func _getOnlyExpr()
+        this._getListOfNonEmpty()
+        if this._exprs.length = 1 && this._exprs[0].empty()
+            errors.NoWrappedExpr(this._exprs[0].pos)
+        if this._exprs.length > 1
+            errors.ExcessiveWrappedExpr(this._exprs[1].pos)
+        return this._exprs[0]
+
+    func _reduceToExpr(token)
+        return this.stack.tokenAfterReduced(this._getOnlyExpr(), token)
+
+class DictItemAutomation: Automation
+    ctor(stack, dictVal) super(stack)
+        this._name: null
+        this._dictVal: dictVal
+
+    func nextFactor(factor)
+        this._name: factor.expr.reduceAsKey()
+
+    func _push_colon(token)
+        if this._name = null
+            errors.ObjKeyOmitted(token.pos)
+        this.stack.push(PipelineAutomation(this.stack, token.pos))
+
+    func reduced(expr)
+        this._dictVal[this._name]: expr
+        this.finish(expr.pos)
+
+    func _push_closebrace(token)
+        if this._name = null
+            this.finish(token.pos)
+            return token.act(this.stack.top())
+        errors.ObjValueOmitted(token.pos)
+
+    func finished()
+        return false
+
+class DictAutomation: PipelineWrapAutomation
+    ctor(stack, pos, closerType, closerImage) super(stack, pos, closerType, closerImage)
+        this._dict: {}
+        this._key: null
+
+    func activated()
+        this.stack.push(DictItemAutomation(this.stack, this._dict))
+
+    func _push_comma()
+        this.activated()
+
+    func finish(pos)
+        this.stack.reduced(exprs.ObjectLiteral(this.pos, this._dict))
+
+class PipelineAutomation: ExprAutomationBase
+    ctor(stack) super(stack)
+        this._expr: null
+        this._lastOp: null
+        this._finished: true
+        this.reduced: (expr):
+            this._expr: expr
+            this.reduced: (expr):
+                if expr.empty()
+                    if this._lastOp.image = '|:'
+                        return this._waitBreak()
+                    errors.PipeBodyOmitted(expr.pos)
+                this._expr: exprs.BinaryOp(this._lastOp.pos, this._lastOp.image, this._expr, expr)
+
+    func _waitBreak()
+        tokens.ALL_TOKEN_TYPES |:
+            t: $
+            this.setPushFunc(t, (self, token):
+                errors.PipeBodyOmitted(token.pos)
+                if t != 'pipe_sep'
+                    self.stack.tokenAfterReduced(self._expr, token)
+                else
+                    self.activated()
+                    self._resetFollowings()
+            )
+        this.finish: ():
+            this._finished: false
+            this.stack.addSubBlockClauseForExpr(this._lastOp.pos, %body)
+            this.stack.reduced(exprs.BlockPipeline(this._lastOp.pos, this._expr, body))
+
+    func activated()
+        this.stack.push(ArithAutomation(this.stack))
+
+    func finished()
+        return this._finished
+
+    func finish(pos)
+        this.stack.reduced(this._expr)
+
+    func _push_pipe_sep(token)
+        this._lastOp: token
+        this.stack.push(ArithAutomationInquireEmptyFinish(this.stack, (): true))
+
+class PipelineAutomationInquireEmptyFinish: PipelineAutomation
+    ctor(stack, allowEmptyFinish) super(stack)
+        this.allowEmptyFinish: allowEmptyFinish
+
+    func activated()
+        this.stack.push(ArithAutomationInquireEmptyFinish(this.stack, this.allowEmptyFinish))
+
+class PipelineAutomationAllowEmpty: PipelineAutomationInquireEmptyFinish
+    ctor(stack) super(stack, (): true)
+
+class ArithStatementAutomation: Automation
+    ctor(stack) super(stack)
+        this._expr: null
+        this._assignment: null
+
+    func activated()
+        this.stack.push(PipelineAutomation(this.stack))
+
+    func _push_colon(token)
+        this.activated()
+
+    func reduced(expr)
+        if this._expr = null
+            this._expr: expr
+            return
+        if this._assignment = null
+            this._assignment: expr
+            return
+        errors.ExcessiveExprInStmt(expr.pos)
+
+    func finish(pos)
+        if this._assignment = null
+            this.stack.acceptStmt(stmts.Arithmetics(this._expr))
+        else
+            this.stack.acceptStmt(stmts.Assignment(this._expr, this._assignment))
+        super.finish(pos)
+
+class ReturnAutomation: Automation
+    ctor(stack) super(stack)
+
+    func activated()
+        this.stack.push(PipelineAutomationAllowEmpty(this.stack))
+
+    func reduced(expr)
+        this.stack.acceptStmt(stmts.Return(expr))
+
+class IdentListAutomation: Automation
+    ctor(stack, sep) super(stack)
+        this.setPushFunc(sep, (self, token): self.pushSep(token))
+        this._idents: []
+        this._needSep: false
+
+    func nextFactor(factor)
+        if this._needSep
+            return factor.unexpected()
+        this._idents.push(factor.expr)
+        this._needSep: true
+
+    func pushSep(token)
+        if this._needSep
+            this._needSep: false
+        else
+            token.unexpected()
+
+    func finished()
+        return this._needSep && this._idents.length != 0
+
+    func finish(pos)
+        this.stack.reducedList(this._idents)
+
+class ExternAutomation: Automation
+    ctor(stack, pos) super(stack)
+        this.pos: pos
+
+    func activated()
+        this.stack.push(IdentListAutomation(this.stack, 'comma'))
+
+    func reducedList(exprs_)
+        this.stack.acceptStmt(stmts.Extern(this.pos, exprs_ |: $.reduceAsName()))
+
+class ExportPathAutomation: IdentListAutomation
+    ctor(stack) super(stack, 'dot')
+
+    func finished()
+        return false
+
+    func _push_colon(token)
+        ifnot this._needSep
+            token.unexpected()
+        this.finish(token.pos)
+
+class ExportAutomation: Automation
+    ctor(stack, pos) super(stack)
+        this._exportPath: null
+        this.pos: pos
+
+    func nextFactor(factor)
+        ['func', 'class'] |: this.delPushFunc($)
+        this.stack.push(ExportPathAutomation(this.stack))
+        this.stack.top().nextFactor(factor)
+
+    func _push_func(token)
+        this.stack.replace(FuncAutomation(this.stack, true))
+
+    func _push_class(token)
+        this.stack.replace(ClassAutomation(this.stack, true))
+
+    func reducedList(exprs_)
+        this._exportPath: exprs_ |: $.reduceAsName()
+        this.stack.push(PipelineAutomation(this.stack))
+
+    func reduced(e)
+        this.stack.acceptStmt(stmts.Export(this.pos, this._exportPath, e))
+
+class IfAutomation: Automation
+    ctor(stack, pos) super(stack)
+
+    func activated()
+        this.stack.push(PipelineAutomationAllowEmpty(this.stack))
+
+    func reduced(expr)
+        this.finish(expr.pos)
+        if expr.empty()
+            errors.EmptyPredicate(expr.pos)
+        this.stack.addSubBlockClauseForStmt(expr.pos, %clause)
+        this.onDeliver(expr, clause)
+
+    func onDeliver(expr, clause)
+        this.stack.acceptStmt(stmts.If(expr, clause))
+
+class StandaloneKeywordAutomation: Automation
+    ctor(stack, pos, onDeliver) super(stack)
+        this.pos: pos
+        this.onDeliver: onDeliver
+
+    func finish(pos)
+        super.finish(pos)
+        this.stack.addSubBlockClauseForStmt(this.pos, this.onDeliver)
+
+class ElseAutomation: StandaloneKeywordAutomation
+    ctor(stack, pos) super(stack, pos, (clause): stack.acceptElse(clause))
+
+class IfnotAutomation: IfAutomation
+    ctor(stack) super(stack)
+
+    func onDeliver(expr, clause)
+        this.stack.acceptStmt(stmts.Ifnot(expr, clause))
+
+class TryAutomation: StandaloneKeywordAutomation
+    ctor(stack, pos) super(stack, pos, (clause): stack.acceptStmt(stmts.Try(clause)))
+
+class CatchAutomation: Automation
+    ctor(stack) super(stack)
+        this._excName: null
+
+    func nextFactor(factor)
+        this._excName: factor.expr.reduceAsName()
+        this.finish(factor.pos)
+
+    func finish(pos)
+        if this._excName = null
+            errors.CatchWithoutExcName(pos)
+        super.finish(pos)
+        this.stack.addSubBlockClauseForStmt(pos, %clause)
+        this.stack.acceptCatch(clause, this._excName)
+
+    func finished()
+        return true
+
+class ThrowAutomation: Automation
+    ctor(stack) super(stack)
+
+    func activated()
+        this.stack.push(PipelineAutomationAllowEmpty(this.stack))
+
+    func reduced(expr)
+        if expr.empty()
+            errors.ExceptionOmitted(expr.pos)
+        this.stack.acceptStmt(stmts.Throw(expr))
+
+class ForAutomation: Automation
+    ctor(stack) super(stack)
+        this._ref: null
+        this._finished: false
+        this._exprs: []
+
+    func reduced(e)
+        this._exprs.push(e)
+        this._finished: true
+
+    func nextFactor(factor)
+        if this._ref = null
+            this._ref: factor.expr
+            return
+        if factor.image = 'range'
+            this.stack.push(ArithAutomation(this.stack))
+            this.setPushFunc('comma', (self, token): self.stack.push(ArithAutomation(self.stack)))
+            return
+        factor.unexpected()
+        this._finished: true
+        this.stack.push(IgnoreAny(this.stack, false))
+
+    func finished()
+        return this._finished
+
+    func finish(pos)
+        ref: this._ref.reduceAsName()
+        if this._exprs.length > 3
+            errors.ExcessiveExprInForRange(this._ref.pos)
+        p: {
+            begin: exprs.Num(this._ref.pos, 0),
+            end: exprs.Num(this._ref.pos, 0),
+            step: exprs.Num(this._ref.pos, 1),
+        }
+        if this._exprs.length = 1
+            p.end: this._exprs[0]
+        if this._exprs.length = 2
+            p.begin: this._exprs[0]
+            p.end: this._exprs[1]
+        if this._exprs.length = 3
+            p.begin: this._exprs[0]
+            p.end: this._exprs[1]
+            p.step: this._exprs[2]
+        super.finish(pos)
+        this.stack.addSubBlockClauseForStmt(pos, %clause)
+        this.stack.acceptStmt(stmts.ForRange(this._ref.pos, ref, p.begin, p.end, p.step, clause))
+
+class FuncAutomation: Automation
+    ctor(stack, ex) super(stack)
+        this._export: ex
+
+    func nextFactor(factor)
+        name: factor.expr.reduceAsName()
+        this.setPushFunc('openparen', (self, token):
+            self.stack.push(MultiExprsAutomation(self.stack, token.pos, 'closeparen', ')'))
+            self.reducedList: (e): self._waitBody(factor.pos, name, getListOfNonEmpty(e))
+        )
+
+    func _waitBody(pos, name, params)
+        this.stack.addSubBlockClauseForStmt(pos, %clause)
+        this.stack.acceptFunc(fn.Func(pos, name, params, clause))
+        if this._export
+            this.stack.acceptStmt(stmts.Export(pos, [name], exprs.Identifier(pos, name)))
+        this.finish()
+
+    func finished()
+        return false
+
+class CtorAutomation: Automation
+    ctor(stack) super(stack)
+        this._finished: false
+        this._params: null
+        this._superArgs: null
+        this.setPushFunc('openparen', (self, token):
+            self.stack.push(MultiExprsAutomation(self.stack, token.pos, 'closeparen', ')'))
+            self.reducedList: (e): self._paramsReduced(token.pos, getListOfNonEmpty(e))
+        )
+
+    func _paramsReduced(pos, paramsExprs)
+        this._params: paramsExprs
+        this._finished: true
+        this.delPushFunc('openparen')
+        this.setPushFunc('super', (self, token):
+            self._finished: false
+            self.setPushFunc('openparen', (self, token):
+                self.stack.push(MultiExprsAutomation(self.stack, token.pos, 'closeparen', ')'))
+                self.reducedList: (e): self._superArgsReduced(token.pos, getListOfNonEmpty(e))
+            )
+        )
+
+    func _superArgsReduced(pos, args)
+        this._superArgs: args
+        this.finish(pos)
+
+    func finished()
+        return this._finished
+
+    func finish(pos)
+        super.finish(pos)
+        this.stack.addSubBlockClauseForStmt(pos, %clause)
+        this.stack.setCtor(cls.Constructor(pos, this._params, this._superArgs, clause))
+
+class ClassAutomation: Automation
+    ctor(stack, ex) super(stack)
+        this._export: ex
+        this._finished: false
+        this._name: null
+        this._extend: null
+
+    func nextFactor(factor)
+        if this._name != null
+            return factor.unexpected()
+        this._name: factor.expr.reduceAsName()
+        this._finished: true
+        this.setPushFunc('colon', (self, token): self.stack.push(ArithAutomation(self.stack)))
+
+    func reduced(e)
+        this._extend: e
+        this.finish(e.pos)
+
+    func finished()
+        return this._finished
+
+    func finish(pos)
+        super.finish(pos)
+        this.stack.addClassClause(pos, this._name, this._extend, this._export)
+
+class EnumAutomation: Automation
+    ctor(stack) super(stack)
+
+    func activated()
+        this.stack.push(IdentListAutomation(this.stack, 'comma'))
+
+    func reducedList(exprs_)
+        exprs_ |: this.stack.acceptStmt(stmts.Assignment($, exprs.Num($.pos, $i)))
+
+class IncludeAutomation: Automation
+    ctor(stack) super(stack)
+        this._includePath: null
+        this._moduleAlias: null
+
+    func nextFactor(factor)
+        pos: factor.pos
+        includePath: factor.expr.reduceAsKey()
+        this.nextFactor: (factor):
+            if factor.image != 'as'
+                factor.unexpected()
+                return this.stack.replace(IgnoreAny(this.stack, false))
+            this.nextFactor: (factor):
+                this.stack.acceptStmt(stmts.Include(pos, includePath, factor.expr.reduceAsName()))
+                this.finish(factor.pos)
+
+    func finished()
+        return false
+
+class IgnoreAny: Automation
+    ctor(stack, reportFirst) super(stack)
+        this.reportFirst: reportFirst
+
+    func _onToken(t)
+        if this.reportFirst
+            this.reportFirst: false
+            t.unexpected()
+
+    func nextToken(token)
+        this._onToken(token)
+
+    func nextFactor(factor)
+        this._onToken(factor)
+
+export class BootstrapAutomation: Automation
+    ctor(stack) super(stack)
+
+    func _replaceArith(token)
+        this.stack.replace(ArithStatementAutomation(this.stack))
+        token.act(this.stack.top())
+
+    func _push_operator(token)
+        this._replaceArith(token)
+
+    func _push_openparen(token)
+        this._replaceArith(token)
+
+    func _push_openbracket(token)
+        this._replaceArith(token)
+
+    func _push_openbrace(token)
+        this._replaceArith(token)
+
+    func _push_super(token)
+        this._replaceArith(token)
+
+    func _push_return(token)
+        this.stack.replace(ReturnAutomation(this.stack))
+
+    func _push_extern(token)
+        this.stack.replace(ExternAutomation(this.stack, token.pos))
+
+    func _push_export(token)
+        this.stack.replace(ExportAutomation(this.stack, token.pos))
+
+    func _push_if(token)
+        this.stack.replace(IfAutomation(this.stack))
+
+    func _push_ifnot(token)
+        this.stack.replace(IfnotAutomation(this.stack))
+
+    func _push_else(token)
+        this.stack.replace(ElseAutomation(this.stack, token.pos))
+
+    func _push_try(token)
+        this.stack.replace(TryAutomation(this.stack, token.pos))
+
+    func _push_catch(token)
+        this.stack.replace(CatchAutomation(this.stack))
+
+    func _push_throw(token)
+        this.stack.replace(ThrowAutomation(this.stack))
+
+    func _push_for(token)
+        this.stack.replace(ForAutomation(this.stack))
+
+    func _push_break(token)
+        this.stack.acceptStmt(stmts.Break(token.pos))
+        this.stack.replace(IgnoreAny(this.stack, true))
+
+    func _push_continue(token)
+        this.stack.acceptStmt(stmts.Continue(token.pos))
+        this.stack.replace(IgnoreAny(this.stack, true))
+
+    func _push_func(token)
+        this.stack.replace(FuncAutomation(this.stack, false))
+
+    func _push_ctor(token)
+        this.stack.replace(CtorAutomation(this.stack))
+
+    func _push_class(token)
+        this.stack.replace(ClassAutomation(this.stack, false))
+
+    func _push_enum(token)
+        this.stack.replace(EnumAutomation(this.stack))
+
+    func _push_include(token)
+        this.stack.replace(IncludeAutomation(this.stack))
+
+    func nextFactor(factor)
+        this._replaceArith(factor)

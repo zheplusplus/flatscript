@@ -1,0 +1,45 @@
+include 'resolve/scope.fls' as sc
+include 'backend/function.fls' as backend
+include 'backend/expressions.fls' as backend_exprs
+
+export class SyncFunc
+    ctor(pos, name, params, body)
+        this.pos: pos
+        this.name: name
+        this.params: params
+        this.body: body
+
+    func compile(scope, allowSuper, %%)
+        params_body: this._compileParamsBody(scope, allowSuper, %%)
+        return backend.SyncFunction(scope.sym().compileRef(this.pos, this.name), this.params,
+                                    params_body[1])
+
+    func compileToLambda(scope, allowSuper, %%)
+        params_body: this._compileParamsBody(scope, allowSuper, %%)
+        return backend.SyncLambda(params_body[0], params_body[1], false)
+
+    func _makeBodyScope(scope, allowSuper)
+        return sc.SyncFuncScope(this.pos, scope, this.params, allowSuper)
+
+    func _compileParamsBody(scope, allowSuper, %%)
+        bodyScope: this._makeBodyScope(scope, allowSuper)
+        this.body.compile(bodyScope, %%)
+        params: this.params |: bodyScope.sym().compileRef(this.pos, $)
+        return [params, bodyScope.deliver(%%)]
+
+export class RegularAsyncFunc: SyncFunc
+    ctor(pos, name, params, asyncIndex, body) super(pos, name, params, body)
+        this.asyncIndex: asyncIndex
+
+    func compile(scope, allowSuper, %%)
+        params_body: this._compileParamsBody(scope, allowSuper, %%)
+        return backend.RegularAsyncFunction(
+            scope.sym().compileRef(this.pos, this.name), this.params,
+            this.asyncIndex, params_body[1])
+
+    func compileToLambda(scope, allowSuper, %%)
+        params_body: this._compileParamsBody(scope, allowSuper, %%)
+        return backend.RegularAsyncLambda(params_body[0], this.asyncIndex, params_body[1])
+
+    func _makeBodyScope(scope, allowSuper)
+        return sc.AsyncFuncScope(this.pos, scope, this.params, allowSuper)

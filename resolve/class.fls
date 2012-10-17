@@ -1,0 +1,81 @@
+include 'errors.fls' as errors
+include 'resolve/statements.fls' as base
+include 'resolve/scope.fls' as sc
+include 'backend/class.fls' as backend
+include 'backend/statements.fls' as backend_stmts
+
+class SuperConstructorCall
+    ctor(pos, clsName, args)
+        this.pos: pos
+        this.clsName: clsName
+        this.args: args
+
+    func compile(scope, %%)
+        scope.addStmt(this.pos, backend.SuperConstructorCall(
+            this.clsName, this.args |: $.compile(scope, %%)))
+
+    func isAsync()
+        this.args |:
+            if $.isAsync()
+                return true
+        return false
+
+export class Constructor
+    ctor(pos, params, clsName, superArgs, body)
+        this.pos: pos
+        this.params: params
+        this.body: body
+        this.superInitCall: null if superArgs = null
+            else SuperConstructorCall(pos, clsName, superArgs)
+
+    func superInit()
+        return this.superInitCall != null
+
+    func hasSuper()
+        return this.superInitCall != null
+
+    func compile(scope, hasBase, %%)
+        if hasBase && !this.superInit()
+            errors.ContructorNotCallSuper(this.pos)
+        if this.superInit() && !hasBase
+            errors.NoSuperClass(this.pos)
+
+        ctorScope: sc.SyncFuncScope(this.pos, scope, this.params, false)
+        if hasBase
+            ctorScope.referenceThis(this.pos)
+        if this.superInitCall != null
+            this.superInitCall.compile(ctorScope, %%)
+        ctorScope.setAllowSuper(this.hasSuper())
+        this.body.compile(ctorScope, %%)
+        paramsRefs: this.params |: ctorScope.sym().compileRef(this.pos, $)
+        return backend.Constructor(paramsRefs, ctorScope.deliver(%%))
+
+export class Class: base.Statement
+    ctor(pos, name, base, ct, body) super(pos)
+        this.ct: ct
+        this.name: name
+        this.base: base
+        this.body: body
+
+    func isAsync()
+        return false
+
+    func hasBaseClass()
+        return this.base != null
+
+    func compile(scope, %%)
+        if this.ct = null && this.hasBaseClass()
+            errors.ContructorNotCallSuper(this.pos)
+        ct: backend.Constructor([], backend_stmts.Block()) if this.ct = null
+            else this.ct.compile(scope, this.hasBaseClass(), %%)
+        base: null if this.base = null else this.base.compile(scope, %%)
+
+        body: backend_stmts.Block()
+        memfnDefPos: {}
+        memfns: {}
+        this.body.funcs |:
+            if memfnDefPos.hasOwnProperty($.name)
+                return errors.DuplicateMemFunc($.pos, $.name, memfnDefPos[$.name])
+            memfnDefPos[$.name]: $.pos
+            memfns[$.name]: $
+        scope.addClass(this.pos, this.name, base, ct, memfns)

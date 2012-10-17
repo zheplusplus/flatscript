@@ -1,0 +1,61 @@
+ls: [5, 1, 6, 7, 2, 9, 4, 3, 8, 0]
+
+console.log(ls |: $ * $)
+console.log(ls |: $ % 2 = 0)
+console.log(ls |? $ % 2 = 0)
+
+func head(list, n)
+    return list |? $i < n
+
+func after(list, n)
+    return list |? $i >= n
+
+console.log(head(ls, 4))
+console.log(after(ls, 4))
+console.log(ls |: $ * $ % 7 |? $ < 4)
+
+console.log('--- x ---')
+console.log(ls |: (['sd', 'a', 'ab', 'abc'] |? $.length % 2 = 0) ++ [$])
+
+func getIndex(i)
+    return (): i
+ils: ls |: getIndex($i)
+console.log(ils |: $())
+
+func getKey(k)
+    return (): k
+kls: ls |: getKey($k)
+console.log(kls |: $())
+
+console.log(ls |:
+    sqr: $ * $
+    if sqr % 3 = 0
+        $r.push(sqr)
+    else
+        $r.push(-sqr)
+)
+
+console.log(ls |:
+    sqr: $ * $
+    if sqr % 3 = 0
+        $r.push(sqr)
+)
+
+console.log(ls |:
+    sqr: $ * $
+    # oh lost push
+)
+
+console.log('-- references in nested --')
+
+func nestedPiping(x)
+    x |:
+        i: $
+        x |:
+            console.log('+', i + $)
+        console.log('.', $, $i, $k)
+
+nestedPiping([0, 1])
+nestedPiping('ab')
+
+console.log('End')

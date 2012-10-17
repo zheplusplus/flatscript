@@ -1,0 +1,2 @@
+samples/errors/throw-nothing.fls:2
+    exception omitted in throw statement

@@ -1,0 +1,46 @@
+if true
+    describe('parse', %)
+    if true
+        include 'test/parse/tokenize.fls' as t
+        t.run(%%)
+    if true
+        include 'test/parse/expr_automations.fls' as t
+        t.run()
+    if true
+        include 'test/parse/stmt_automations.fls' as t
+        t.run()
+    if true
+        include 'test/parse/sub_block_automations.fls' as t
+        t.run()
+    if true
+        include 'test/parse/expressions.fls' as t
+        t.run()
+    if true
+        include 'test/parse/func.fls' as t
+        t.run()
+    if true
+        include 'test/parse/class.fls' as t
+        t.run()
+if true
+    describe('resolve', %)
+    if true
+        include 'test/resolve/symbol_table.fls' as t
+        t.run()
+    if true
+        include 'test/resolve/literal.fls' as t
+        t.run()
+    if true
+        include 'test/resolve/statements.fls' as t
+        t.run(%%)
+    if true
+        include 'test/resolve/pipeline.fls' as t
+        t.run(%%)
+    if true
+        include 'test/resolve/function.fls' as t
+        t.run(%%)
+    if true
+        include 'test/resolve/class.fls' as t
+        t.run(%%)
+    if true
+        include 'test/resolve/unresolvables.fls' as t
+        t.run(%%)

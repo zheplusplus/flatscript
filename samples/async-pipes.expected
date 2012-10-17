@@ -1,0 +1,33 @@
+Element: 4
+Index: 0
+Element: 2
+Index: 1
+Element: 3
+Index: 2
+Element: 1
+Index: 3
+[ 0, 0, 0, 0 ]
+[ 16, 4, 9, 1 ]
+[ 16, 4, 1 ]
+0:4
+1:2
+2:3
+3:1
+-- references in nested --
++ 0
++ 1
+. 0 0
++ 1
++ 2
+. 1 1
++ aa
++ ab
+. a 0
++ ba
++ bb
+. b 1
+---- async on object ----
+[ 'brown quick', 'lazy' ]
+[ 0, 1 ]
+[ 'dog', 'fox' ]
+End

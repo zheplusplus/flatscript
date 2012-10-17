@@ -1,0 +1,11 @@
+include 'misc.fls' as misc
+
+console.log(JSON.stringify({
+    name: 'flatscript',
+    version: misc.__version__,
+    main: 'flsc-recur.js',
+    license: 'MIT',
+    files: ['flsc', 'flsc-recur.js'],
+    preferGlobal: true,
+    bin: {flsc: './flsc'},
+}))

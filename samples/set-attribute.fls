@@ -1,0 +1,8 @@
+func echo(x)
+    console.log(x)
+
+cl: (): console
+
+console.echo_x: echo
+cl().a_x: 42
+console.echo_x(console.a_x)

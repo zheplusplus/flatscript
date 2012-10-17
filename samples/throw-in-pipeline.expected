@@ -1,0 +1,15 @@
+sync pipeline throw:3
+async pipeline throw:3
+aGet throw:2
+sGet throw:2
+======
+#x 0:1
+#x 2:3
+%x aGet throw:2
+#y 0:1
+#y 2:3
+%y sGet throw:2
+#z 0:1
+#z 2:3
+%z aGet throw:2
+end

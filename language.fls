@@ -1,0 +1,39 @@
+BIN_JSOP: {
+    '=': '===',
+    '!=': '!==',
+}
+
+export func mapBinOp(op)
+    return BIN_JSOP[op] if BIN_JSOP[op] else op
+
+JS_RESERVED_WORD: {
+    'break': true,
+    'case': true,
+    'catch': true,
+    'continue': true,
+    'debugger': true,
+    'default': true,
+    'delete': true,
+    'do': true,
+    'else': true,
+    'finally': true,
+    'for': true,
+    'function': true,
+    'if': true,
+    'in': true,
+    'instanceof': true,
+    'new': true,
+    'return': true,
+    'switch': true,
+    'this': true,
+    'throw': true,
+    'try': true,
+    'typeof': true,
+    'var': true,
+    'void': true,
+    'while': true,
+    'with': true,
+}
+
+export func isReservedWord(n)
+    return JS_RESERVED_WORD.hasOwnProperty(n)

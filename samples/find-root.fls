@@ -1,0 +1,31 @@
+write: console.log
+
+PRECISION: .00001
+
+func average(x, y)
+    return (x + y) / 2
+
+func half_interval(f, neg_point, pos_point)
+    func is_close_enough()
+        return pos_point - neg_point < PRECISION
+
+    midpoint: average(neg_point, pos_point)
+    if is_close_enough()
+        return midpoint
+
+    test_value: f(midpoint)
+    if test_value > 0
+        return half_interval(f, neg_point, midpoint)
+    if test_value < 0
+        return half_interval(f, midpoint, pos_point)
+    return midpoint
+
+func g(x)
+    return x * x * x - 2 * x - 3
+
+write(half_interval(g, 1.0, 2.0))
+
+func h(x)
+    return x * x * x - 10
+
+write(half_interval(h, 2.0, 3.0))

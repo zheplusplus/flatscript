@@ -1,0 +1,306 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'parse/tokenize.fls' as t
+
+fs: require('fs')
+
+func assertFactorEq(expected, token)
+    assert.ok(token.expr != undefined || token.expr != null)
+    assert.deepEq(expected.pos, token.pos)
+    assert.eq(expected.image, token.image)
+    assert.eq(expected.value, token.expr.value)
+    assert.eq(expected.name, token.expr.name)
+
+func assertTypedEq(expected, token)
+    assert.ok(token.expr != undefined || token.expr != null)
+    assert.deepEq(expected.pos, token.pos)
+    assert.eq(expected.image, token.image)
+    assert.eq(expected.type, token.type)
+
+export func run(%%)
+    describe('tokenize', %)
+    if true
+        it('empty', %)
+        r: t.tokenize('', null, 1)
+        assert.eq(0, r.tokens.length)
+        assert.eq(0, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+
+    if true
+        it('eol only', %)
+        r: t.tokenize('\n', null, 1)
+        assert.eq(0, r.tokens.length)
+        assert.eq(1, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+
+    if true
+        it('comment', %)
+        r: t.tokenize('# aa bb cc', null, 1)
+        assert.eq(0, r.tokens.length)
+        assert.eq(0, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+
+    if true
+        it('comment multilines', %)
+        r: t.tokenize('# aa bb cc\n# dd ee ff', null, 1)
+        assert.eq(0, r.tokens.length)
+        assert.eq(1, r.lineInc)
+        assert.eq('# dd ee ff', r.source)
+        assert.not(errors.hasError())
+
+    if true
+        it('literal number', %)
+        r: t.tokenize('1 1. 1.1 .1', null, 1)
+        assert.eq(4, r.tokens.length)
+        assert.eq(0, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: '1',
+            value: 1,
+        }, r.tokens[0])
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: '1.',
+            value: 1,
+        }, r.tokens[1])
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: '1.1',
+            value: 1.1,
+        }, r.tokens[2])
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: '.1',
+            value: .1,
+        }, r.tokens[3])
+
+    if true
+        it('regex', %)
+        r: t.tokenize('/a/ /@/i', null, 2)
+        assert.eq(2, r.tokens.length)
+        assert.eq(0, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+
+        assert.ok(r.tokens[0].expr != undefined || r.tokens[0].expr != null)
+        assert.deepEq({file: null, line: 2}, r.tokens[0].pos)
+        assert.eq('/a/', r.tokens[0].image)
+
+        assert.ok(r.tokens[1].expr != undefined || r.tokens[1].expr != null)
+        assert.deepEq({file: null, line: 2}, r.tokens[1].pos)
+        assert.eq('/@/i', r.tokens[1].image)
+
+    if true
+        it('regex not finished eol', %)
+        r: t.tokenize('/a\n1 + 0', null, 3)
+        assert.eq(2, r.tokens.length)
+        assert.eq(1, r.lineInc)
+        assert.eq('1 + 0', r.source)
+        assert.not(errors.hasError())
+        assertTypedEq({
+            pos: {file: null, line: 3},
+            image: '/',
+            type: 'operator',
+        }, r.tokens[0])
+        assertFactorEq({
+            pos: {file: null, line: 3},
+            image: 'a',
+            name: 'a',
+        }, r.tokens[1])
+
+    if true
+        it('operator sequence', %)
+        r: t.tokenize('++--**//||&&|:|?|', null, 4)
+        assert.eq(12, r.tokens.length)
+        assert.eq(0, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+        ops: ['++', '-', '-', '*', '*', '/', '/', '||', '&&']
+        ops |: assertTypedEq({
+            pos: {file: null, line: 4},
+            image: $,
+            type: 'operator',
+        }, r.tokens[$i])
+
+        assertTypedEq({
+            pos: {file: null, line: 4},
+            image: '|:',
+            type: 'pipe_sep',
+        }, r.tokens[ops.length])
+        assertTypedEq({
+            pos: {file: null, line: 4},
+            image: '|?',
+            type: 'pipe_sep',
+        }, r.tokens[ops.length + 1])
+
+        assertTypedEq({
+            pos: {file: null, line: 4},
+            image: '|',
+            type: 'operator',
+        }, r.tokens[ops.length + 2])
+
+    if true
+        it('strings', %done)
+        r: t.tokenize(fs.readFile('test/parse/test-sample-str.txt', %%), null, 1)
+        assert.not(errors.hasError())
+        assert.eq(4, r.tokens.length)
+        assert.eq(1, r.lineInc)
+
+        ["''", '""', "'\\''", '"\\""'] |: assertFactorEq({
+            pos: {file: null, line: 1},
+            image: $,
+            value: eval($),
+        }, r.tokens[$i])
+
+        r1: t.tokenize(r.source, null, 1 + r.lineInc)
+        assert.not(errors.hasError())
+        assert.eq(2, r1.tokens.length)
+        assert.eq(1, r1.lineInc)
+
+        ["""'"'""", '''"'"'''] |: assertFactorEq({
+            pos: {file: null, line: 2},
+            image: $,
+            value: eval($),
+        }, r1.tokens[$i])
+
+        r2: t.tokenize(r1.source, null, 1 + r.lineInc + r1.lineInc)
+        assert.not(errors.hasError())
+        assert.eq(3, r2.tokens.length)
+        assert.eq(3, r2.lineInc)
+
+        assertFactorEq({
+            pos: {file: null, line: 3},
+            image: """
+'''
+'The quick brown fox'
+'''
+            """.trim(),
+            value: "\n'The quick brown fox'\n",
+        }, r2.tokens[0])
+        assertTypedEq({
+            pos: {file: null, line: 5},
+            image: '+',
+            type: 'operator',
+        }, r2.tokens[1])
+        assertFactorEq({
+            pos: {file: null, line: 5},
+            image: '''"el"''',
+            value: 'el',
+        }, r2.tokens[2])
+
+        r3: t.tokenize(r2.source, null, 1 + r.lineInc + r1.lineInc + r2.lineInc)
+        assert.not(errors.hasError())
+        assert.eq(3, r3.tokens.length)
+        assert.eq(3, r3.lineInc)
+
+        assertFactorEq({
+            pos: {file: null, line: 6},
+            image: '''
+"""
+"jumps over a lazy dog"
+"""
+            '''.trim(),
+            value: '\n"jumps over a lazy dog"\n',
+        }, r3.tokens[0])
+        assertTypedEq({
+            pos: {file: null, line: 8},
+            image: '+',
+            type: 'operator',
+        }, r3.tokens[1])
+        assertFactorEq({
+            pos: {file: null, line: 8},
+            image: """'psy'""",
+            value: 'psy',
+        }, r3.tokens[2])
+
+        r4: t.tokenize(r3.source, null, 1)
+        assert.not(errors.hasError())
+        assert.eq(3, r4.tokens.length)
+        assert.eq(1, r4.lineInc)
+
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: """'''\\\\\\''''""",
+            value: "\\'",
+        }, r4.tokens[0])
+        assertTypedEq({
+            pos: {file: null, line: 1},
+            image: '+',
+            type: 'operator',
+        }, r4.tokens[1])
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: '''"""\\\\\\""""''',
+            value: '\\"',
+        }, r4.tokens[2])
+
+        done()
+
+    if true
+        it('inv char', %)
+        r: t.tokenize('console;log\n01', null, 1)
+        assert.eq(1, errors.count())
+        assert.deepEq({
+            type: 'IllegalToken',
+            pos: {file: null, line: 1},
+            image: ';',
+        }, errors.all[0])
+
+        assert.eq(1, r.lineInc)
+        assert.eq('01', r.source)
+        errors.clear()
+
+    if true
+        it('keywords', %)
+        r: t.tokenize('for if else true false typeof for0', null, 1)
+        assert.eq(7, r.tokens.length)
+        assert.eq(0, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+
+        assertTypedEq({
+            pos: {file: null, line: 1},
+            image: 'for',
+            type: 'for',
+        }, r.tokens[0])
+
+        assertTypedEq({
+            pos: {file: null, line: 1},
+            image: 'if',
+            type: 'if',
+        }, r.tokens[1])
+
+        assertTypedEq({
+            pos: {file: null, line: 1},
+            image: 'else',
+            type: 'else',
+        }, r.tokens[2])
+
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: 'true',
+            value: true,
+        }, r.tokens[3])
+
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: 'false',
+            value: false,
+        }, r.tokens[4])
+
+        assertTypedEq({
+            pos: {file: null, line: 1},
+            image: 'typeof',
+            type: 'operator',
+        }, r.tokens[5])
+
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: 'for0',
+            name: 'for0',
+        }, r.tokens[6])

@@ -1,0 +1,16 @@
+class Animal
+    ctor(name)
+        this.name: name
+
+    func sound()
+        return '''Animal doesn't have a sound'''
+
+class Cat: Animal
+    ctor(name) super(name)
+        0
+
+    func sound()
+        return this.name + ' meow'
+
+export Animal: Animal
+export Cat: Cat

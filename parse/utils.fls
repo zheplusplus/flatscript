@@ -1,0 +1,52 @@
+include 'errors.fls' as errors
+
+class ParamReducingEnv
+    ctor()
+        this.asyncIndex: null
+        this.params: []
+
+    func addParam(p)
+        this.params.push(p)
+
+    func setAsync(pos, index)
+        if this.asyncSet()
+            return errors.MoreThanOneAsyncPlaceholder(pos)
+        this.asyncIndex: index
+
+    func asyncSet()
+        return this.asyncIndex != null
+
+class ArgReducingEnv
+    ctor()
+        this.asyncIndex: null
+        this.asyncDecls: null
+        this.regularAsync: false
+        this.args: []
+
+    func addArg(p)
+        this.args.push(p)
+
+    func setAsync(pos, index, decls)
+        if this.asyncSet()
+            return errors.MoreThanOneAsyncPlaceholder(pos)
+        this.asyncIndex: index
+        this.asyncDecls: decls
+
+    func setRegularAsync(pos, index)
+        if this.asyncSet()
+            return errors.MoreThanOneAsyncPlaceholder(pos)
+        this.asyncIndex: index
+        this.regularAsync: true
+
+    func asyncSet()
+        return this.asyncIndex != null
+
+export func compileParams(params)
+    env: ParamReducingEnv()
+    params |: $.reduceForParam(env, $i)
+    return env
+
+export func compileArgs(args)
+    env: ArgReducingEnv()
+    args |: $.reduceForArg(env, $i)
+    return env

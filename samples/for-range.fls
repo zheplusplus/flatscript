@@ -1,0 +1,35 @@
+x: 1 - 2
+console.log('--- AS ---')
+for i range 10
+    if i % 3 = 1
+        continue
+    for j range 10, 0, x
+        if j % 3 = 0
+            continue
+        console.log(i, j)
+    setTimeout(%, 1)
+console.log('--- SS ---')
+for i range 10
+    if i % 3 = 2
+        continue
+    for j range 10, 0, x
+        if j % 3 = 2
+            break
+        console.log(i, j)
+
+console.log('- Return -')
+func findMod3S(begin, end)
+    for i range begin, end
+        if i % 3 = 0
+            return i
+    return null
+console.log('S', findMod3S(4, 7))
+
+func findMod3A(begin, end, %%)
+    for i range begin, end
+        setTimeout(%, 1)
+        if i % 3 = 0
+            return i
+    return null
+console.log('A', findMod3A(7, 10, %%))
+console.log('end')

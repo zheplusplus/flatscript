@@ -1,0 +1,32 @@
+assert: require('assert')
+
+export eq: assert.strictEqual
+export ok: (pred): assert.ok(pred)
+export not: (pred): assert.ok(!pred)
+export uid: (uid):
+    ifnot uid
+        console.error('not uid')
+        return assert.ok(false)
+    assert.strictEqual('number', typeof uid.id)
+    assert.ok(0 <= uid.id)
+    assert.ok('-' < uid.toString())
+    return uid
+
+func deepEqPath(path, expected, actual)
+    if typeof expected = 'object' && typeof actual = 'object'
+        compared: {}
+        expected |:
+            deepEqPath(path ++ [$k], $, actual[$k])
+            compared[$k]: true
+        actual |:
+            if compared[$k]
+                continue
+            deepEqPath(path ++ [$k], expected[$k], $)
+        return
+    if expected != actual
+        console.error('Difference at:', path.join('.'))
+        console.error('    ', expected, '<>', actual)
+        assert.strictEqual(expected, actual)
+
+export func deepEq(expected, actual)
+    deepEqPath([], expected, actual)

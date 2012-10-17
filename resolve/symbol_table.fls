@@ -1,0 +1,185 @@
+include 'errors.fls' as errors
+include 'misc.fls' as misc
+include 'backend/expressions.fls' as backend
+include 'backend/loop.fls' as backend_loop
+
+class Symbol
+    ctor(defPos)
+        this.pos: defPos
+
+    func literalValue()
+        return null
+
+    func addToLocalDef()
+        return true
+
+    func makeReference(name)
+        return backend.Reference(name)
+
+    func makeSubReference(name, uid)
+        return backend.SubReference(name, uid)
+
+class LiteralSymbol: Symbol
+    ctor(defPos, value) super(defPos)
+        this.value: value
+
+    func addToLocalDef()
+        return false
+
+    func literalValue()
+        return this.value
+
+    func makeReference(name)
+        return this.value.syncCompile()
+
+    func makeSubReference(name, uid)
+        return this.makeReference(name)
+
+class ExternalSymbol: Symbol
+    ctor(defPos) super(defPos)
+
+    func addToLocalDef()
+        return false
+
+    func makeReference(name)
+        return backend.FixedReference(name)
+
+    func makeSubReference(name, uid)
+        return this.makeReference(name)
+
+class FuncSymbol: Symbol
+    ctor(defPos) super(defPos)
+
+    func addToLocalDef()
+        return false
+
+class ParamSymbol: Symbol
+    ctor(defPos) super(defPos)
+
+    func addToLocalDef()
+        return false
+
+class LoopDeclSymbol: Symbol
+    ctor(defPos, loopId) super(defPos)
+        this.loopId: loopId
+
+    func addToLocalDef()
+        return false
+
+    func makeReference(name)
+        return backend_loop.LoopDecl(this.loopId)
+
+    func makeSubReference(name, uid)
+        return this.makeReference(name)
+
+class ModuleSymbol: Symbol
+    ctor(defPos, uid) super(defPos)
+        this.uid: uid
+
+    func makeReference(name)
+        return backend.Module(this.uid)
+
+    func makeSubReference(name, uid)
+        return this.makeReference(name)
+
+    func addToLocalDef()
+        return false
+
+class SymbolTableBase
+    ctor(extSym)
+        this.extSym: extSym
+        this._symbols: {}
+        this._refPosLists: {}
+
+    func _defSymbol(name, symbol)
+        if this._symbols[name]
+            return errors.SymbolRedefined(symbol.pos, name, this._symbols[name].pos)
+        if this._refPosLists[name]
+            errors.SymbolDefAfterRefs(symbol.pos, name, this._refPosLists[name])
+        this._symbols[name]: symbol
+
+    func addExternals(pos, externals)
+        errors.ExternOnlyInGlobal(pos)
+
+    func defName(pos, name)
+        this._defSymbol(name, Symbol(pos))
+
+    func localDefs()
+        return this._symbols |:
+            if $.addToLocalDef()
+                $result.push(this._makeRefFor($k, $))
+
+    func defLiteral(pos, name, value)
+        this._defSymbol(name, LiteralSymbol(pos, value))
+
+    func defFunc(pos, name)
+
+    func defParam(pos, name)
+        this._defSymbol(name, ParamSymbol(pos))
+
+    func defAsyncParam(pos, name)
+        this._defSymbol(name, ParamSymbol(pos))
+
+    func loopDecl(pos, name, loopId)
+        this._defSymbol(name, LoopDeclSymbol(pos, loopId))
+
+    func _refName(pos, name)
+        ifnot this._refPosLists[name]
+            this._refPosLists[name]: []
+        this._refPosLists[name].push(pos)
+
+    func refNames(pos, names)
+        names |: this._refName(pos, $)
+
+    func _makeRefFor(name, symbol)
+        return symbol.makeReference(name)
+
+    func compileRef(pos, name)
+        if this._symbols[name]
+            return this._makeRefFor(name, this._symbols[name])
+        if this.extSym != null
+            this._refName(pos, name)
+            return this.extSym.compileRef(pos, name)
+        errors.SymbolNotDef(pos, name)
+        return backend.Undefined()
+
+    func literalValue(pos, name)
+        if this._symbols[name]
+            return this._symbols[name].literalValue()
+        if this.extSym != null
+            this._refName(pos, name)
+            return this.extSym.literalValue(pos, name)
+        return null
+
+    func defModule(pos, name, moduleUid)
+        this._defSymbol(name, ModuleSymbol(pos, moduleUid))
+
+    func makeFuncSymbolTable(pos, params)
+        s: FuncSymbolTable(this)
+        params |: s.defParam(pos, $)
+        return s
+
+    func makeSubSymbolTable()
+        return SubSymbolTable(this)
+
+export class FuncSymbolTable: SymbolTableBase
+    ctor(extSym) super(extSym)
+
+    func defFunc(pos, name)
+        this._defSymbol(name, FuncSymbol(pos))
+
+class SubSymbolTable: SymbolTableBase
+    ctor(extSym) super(extSym)
+        this.uid: misc.uid()
+
+    func defFunc(pos, name)
+        errors.FuncDefNotAllowed(pos)
+
+    func _makeRefFor(name, symbol)
+        return symbol.makeSubReference(name, this.uid)
+
+export class GlobalSymbolTable: FuncSymbolTable
+    ctor() super(null)
+
+    func addExternals(pos, externals)
+        externals |: this._defSymbol($, ExternalSymbol(pos))

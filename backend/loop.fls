@@ -1,0 +1,245 @@
+include 'backend/expressions.fls' as base_exprs
+include 'backend/statements.fls' as base_stmts
+include 'backend/methods.fls' as methods
+include 'backend/mangle.fls' as mangle
+
+class LoopItem: base_exprs.AtomicItem
+    ctor(loopId) super()
+        this.loopId: loopId
+
+export class LoopElement: LoopItem
+    ctor(loopId) super(loopId)
+
+    func toString()
+        return "$peL" + this.loopId.toString()
+
+export class LoopIndex: LoopItem
+    ctor(loopId) super(loopId)
+
+    func toString()
+        return "$piX" + this.loopId.toString()
+
+export class LoopKey: LoopItem
+    ctor(loopId) super(loopId)
+
+    func toString()
+        return "$pkE" + this.loopId.toString()
+
+export class LoopResult: LoopItem
+    ctor(loopId) super(loopId)
+
+    func toString()
+        return "$prS" + this.loopId.toString()
+
+export class LoopDecl: LoopItem
+    ctor(loopId) super()
+        this.loopId: loopId
+
+    func toString()
+        return "$pdL" + this.loopId.toString()
+
+export class Break: base_exprs.AtomicItem
+    ctor(loopId) super()
+        this.breakId: loopId
+
+    func toString()
+        return "$brK" + this.breakId.toString()
+
+export class Continue: base_exprs.AtomicItem
+    ctor(loopId) super()
+        this.continueId: loopId
+
+    func toString()
+        return "$nX" + this.continueId.toString()
+
+class Pipeline: base_exprs.Expression
+    ctor(arr, body, pipeId) super()
+        this.arr: arr
+        this.body: body
+        this.pipeId: pipeId
+
+    func mayThrow()
+        return true
+
+export class SyncPipeline: Pipeline
+    ctor(arr, body, pipeId) super(arr, body, pipeId)
+
+    func toString()
+        return ('($listpipesync(#ARRAY#, function($piX#PIPE_ID#, $pkE#PIPE_ID#,'
+                + ' $peL#PIPE_ID#, $prS#PIPE_ID#) {#BODY#}))'
+            ).replace(/#ARRAY#/g, this.arr.toString()
+            ).replace(/#PIPE_ID#/g, this.pipeId.toString()
+            ).replace(/#BODY#/g, this.body.toString()
+            )
+
+ASYNC_PIPE_TEMPL: (
+    '(function ($o) {'
++       'function $arrayiter($arr) {'
++           'function $brK#PIPE_ID#() { $nP#PIPE_ID#($arr.length) }'
++           'function $nP#PIPE_ID#($piX#PIPE_ID#, $prS#PIPE_ID#) {'
++               'var $pkE#PIPE_ID# = $piX#PIPE_ID#.toString();'
++               'function $nX#PIPE_ID#() { $nP#PIPE_ID#($piX#PIPE_ID# + 1, $prS#PIPE_ID#) }'
++               'if ($piX#PIPE_ID# === $arr.length) {'
++                   '#SUCCESSIVE_STATEMENTS#'
++               '} else {'
++                   'var $peL#PIPE_ID# = $arr[$piX#PIPE_ID#];'
++                   '#BODY#'
++               '}'
++           '}'
++           '$nP#PIPE_ID#(0, []);'
++       '}'
++       'function $objiter($obj) {'
++           'var $keys = Object.keys($obj);'
++           'function $brK#PIPE_ID#() { $nP#PIPE_ID#($keys.length) }'
++           'function $nP#PIPE_ID#($piX#PIPE_ID#, $prS#PIPE_ID#) {'
++               'var $pkE#PIPE_ID# = $keys[$piX#PIPE_ID#];'
++               'function $nX#PIPE_ID#() { $nP#PIPE_ID#($piX#PIPE_ID# + 1, $prS#PIPE_ID#) }'
++               'if ($piX#PIPE_ID# === $keys.length) {'
++                   '#SUCCESSIVE_STATEMENTS#'
++               '} else {'
++                   'var $peL#PIPE_ID# = $obj[$pkE#PIPE_ID#];'
++                   '#BODY#'
++               '}'
++           '}'
++           '$nP#PIPE_ID#(0, []);'
++       '}'
++       'if ($o === null || $o === undefined) #RAISE_EXC#'
++       'if (Array.isArray($o) || $o.constructor === String) { return $arrayiter($o) }'
++       'return $objiter($o)'
++   '})(#ARRAY#)'
+)
+
+export class AsyncPipeline: Pipeline
+    ctor(arr, body, succession, pipeId, throwMethod) super(arr, body, pipeId)
+        this.succession: succession
+        this.throwMethod: throwMethod
+
+    func toString()
+        return ASYNC_PIPE_TEMPL.replace(/#PIPE_ID#/g, this.pipeId.toString()
+                              ).replace(/#ARRAY#/g, this.arr.toString()
+                              ).replace(/#BODY#/g, this.body.toString()
+                              ).replace(/#SUCCESSIVE_STATEMENTS#/g, this.succession.toString()
+                              ).replace(/#RAISE_EXC#/g, this.throwMethod.scheme(
+                                      'new TypeError("Pipeline on non-object")')
+                              )
+
+SYNC_PIPE_TEMPLATE_RET: 'if ($retF#PIPE_ID#) {#EXT_RETURN#}'
+SYNC_PIPE_TEMPLATE_BREAK: 'if ($brK#PIPE_ID#) {break}'
+
+func iterationTempl(templ, hasRet, hasBreak)
+    return templ.replace(/#RETURN#/g, SYNC_PIPE_TEMPLATE_RET if hasRet else ''
+               ).replace(/#BREAK#/g, SYNC_PIPE_TEMPLATE_BREAK if hasBreak else ''
+               )
+
+ROOT_SYNC_PIPE_TEMPLATE: (
+    '{'
++       'var $piX#PIPE_ID#=0, $brK#PIPE_ID#=false, $retV#PIPE_ID#, $retF#PIPE_ID#=false,'
++           '$arr=#ARRAY#, $prS#PIPE_ID#=[], $nX#PIPE_ID#;'
++       'for (var $k in $arr) {'
++           'if ($arr.hasOwnProperty($k)) {'
++               '(function ($pkE#PIPE_ID#, $peL#PIPE_ID#) {'
++                   '#BODY#'
++               '})($k, $arr[$k]);'
++               '#RETURN#'
++               '#BREAK#'
++               '++$piX#PIPE_ID#;'
++           '}'
++       '}'
++   '}'
+)
+
+export class RootSyncPipeline: base_stmts.Statement
+    ctor(arr, body, extRet, pipeId, ret, brk) super()
+        this.arr: arr
+        this.body: body
+        this.extRet: extRet
+        this.pipeId: pipeId
+        this.hasRet: ret
+        this.hasBreak: brk
+
+    func mayThrow()
+        return true
+
+    func toString()
+        return iterationTempl(ROOT_SYNC_PIPE_TEMPLATE, this.hasRet, this.hasBreak
+            ).replace(/#ARRAY#/g, this.arr.toString()
+            ).replace(/#PIPE_ID#/g, this.pipeId.toString()
+            ).replace(/#BODY#/g, this.body.toString()
+            ).replace(/#EXT_RETURN#/g, this.extRet.scheme(mangle.loopReturnValue(this.pipeId))
+            )
+
+class ForRange: base_stmts.Statement
+    ctor(ref, begin, end, step, body, loopId) super()
+        this.ref: ref
+        this.begin: begin
+        this.end: end
+        this.step: step
+        this.body: body
+        this.loopId: loopId
+
+    func mayThrow()
+        return this.begin.mayThrow() || this.end.mayThrow() || this.body.mayThrow()
+
+SYNC_FOR_TEMPLATE: (
+'{'
++   'var $idX#PIPE_ID#, $brK#PIPE_ID#=false, $retV#PIPE_ID#, $retF#PIPE_ID#=false,'
++       '$nX#PIPE_ID#, $enD#PIPE_ID#=#END#;'
++   'for ($idX#PIPE_ID# = #BEGIN#; $idX#PIPE_ID# #CMP# $enD#PIPE_ID#; $idX#PIPE_ID# += #STEP#) {'
++       '(function (#REFERENCE#) {'
++           '#BODY#'
++       '})($idX#PIPE_ID#);'
++       '#RETURN#'
++       '#BREAK#'
++   '}'
++ '}'
+)
+
+export class SyncForRange: ForRange
+    ctor(ref, begin, end, step, body, retMethod, loopId, hasRet, hasBreak) super
+                                                (ref, begin, end, step, body, loopId)
+        this.retMethod: retMethod
+        this.hasRet: hasRet
+        this.hasBreak: hasBreak
+
+    func toString()
+        return iterationTempl(SYNC_FOR_TEMPLATE, this.hasRet, this.hasBreak
+            ).replace(/#PIPE_ID#/g, this.loopId.toString()
+            ).replace(/#REFERENCE#/g, this.ref.toString()
+            ).replace(/#BEGIN#/g, this.begin.toString()
+            ).replace(/#END#/g, this.end.toString()
+            ).replace(/#STEP#/g, this.step.toString()
+            ).replace(/#CMP#/g, '<' if 0 < this.step else '>'
+            ).replace(/#BODY#/g, this.body.toString()
+            ).replace(/#EXT_RETURN#/g, this.retMethod.scheme(mangle.loopReturnValue(this.loopId))
+            )
+
+ASYNC_FOR_TEMPLATE: (
+'{'
++   'var $enD#PIPE_ID# = #END#;'
++   'function $brK#PIPE_ID#() { $nP#PIPE_ID#($enD#PIPE_ID#) }'
++   'function $nP#PIPE_ID#(#REFERENCE#) {'
++       'function $nX#PIPE_ID#() { $nP#PIPE_ID#(#REFERENCE# + #STEP#) }'
++       'if (#REFERENCE# #CMP# $enD#PIPE_ID#) {'
++           '#BODY#'
++       '} else {'
++           '#SUCCESSIVE_STATEMENTS#'
++       '}'
++   '}'
++   '$nP#PIPE_ID#(#BEGIN#);'
++ '}'
+)
+
+export class AsyncForRange: ForRange
+    ctor(ref, begin, end, step, body, succession, loopId) super(ref, begin, end, step, body, loopId)
+        this.succession: succession
+
+    func toString()
+        return ASYNC_FOR_TEMPLATE.replace(/#PIPE_ID#/g, this.loopId.toString()
+            ).replace(/#REFERENCE#/g, this.ref.toString()
+            ).replace(/#BEGIN#/g, this.begin.toString()
+            ).replace(/#END#/g, this.end.toString()
+            ).replace(/#STEP#/g, this.step.toString()
+            ).replace(/#CMP#/g, '<' if 0 < this.step else '>'
+            ).replace(/#BODY#/g, this.body.toString()
+            ).replace(/#SUCCESSIVE_STATEMENTS#/g, this.succession.toString()
+            )

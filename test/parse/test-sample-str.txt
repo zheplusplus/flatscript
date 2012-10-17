@@ -1,0 +1,9 @@
+'' "" '\'' "\""
+'"' "'"
+'''
+'The quick brown fox'
+''' + "el"
+"""
+"jumps over a lazy dog"
+""" + 'psy'
+'''\\\'''' + """\\\""""

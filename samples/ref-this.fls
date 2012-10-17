@@ -1,0 +1,33 @@
+func hex2(n)
+    s: (n & 255).toString(16)
+    if s.length = 1
+        return '0' + s
+    return s
+
+func Color(r, g, b)
+    this.r: Math.floor(r)
+    this.g: Math.floor(g)
+    this.b: Math.floor(b)
+    this["to-string"]: (): '#' + hex2(this.r) + hex2(this.g) + hex2(this.b)
+    this.toString: this['to-string']
+
+red: *Color(255, 0, 0)
+console.log(red.toString())
+
+teal: *Color(0, 255, 255)
+console.log(teal['to-string']())
+
+whatTheHell: *Color(345, 567, 10.24)
+console.log(whatTheHell["to-string"]())
+
+func logLines(lines)
+    lines |:
+        this.line: $
+        setTimeout(%, 1)
+        console.log(this.line)
+    console.log(this.line)
+    console.log('Done')
+
+logLines(['a', 'b', 'c'])
+
+console.log('End')

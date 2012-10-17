@@ -1,0 +1,29 @@
+include 'globals.fls' as g
+include 'parse/statements.fls' as base
+include 'resolve/class.fls' as resolve
+
+export class Constructor
+    ctor(pos, params, superArgs, body)
+        this.pos: pos
+        this.paramsExprs: params
+        this.superArgs: superArgs
+        this.body: body
+
+    func compile(clsName)
+        return resolve.Constructor(
+            this.pos, this.paramsExprs |: $.reduceAsName(), clsName,
+            null if this.superArgs = null else (this.superArgs |: $.compileAsExpr()),
+            this.body.compile())
+
+export class Class: base.Statement
+    ctor(pos, name, base, body) super(pos)
+        this.name: name
+        this.base: base
+        this.body: body
+
+    func compile()
+        if this.base != null
+            g.useClassExt()
+        base: null if this.base = null else this.base.compileAsExpr()
+        ct: null if this.body.getCtor() = null else this.body.getCtor().compile(this.name)
+        return resolve.Class(this.pos, this.name, base, ct, this.body.compile())

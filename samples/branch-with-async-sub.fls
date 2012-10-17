@@ -1,0 +1,78 @@
+x: []
+x.push(false)
+x.push(true)
+
+func g(%%)
+    setTimeout(%, 1)
+    console.log('g called')
+
+func h()
+    console.log('h called')
+
+func f(pred, %%)
+    if pred
+        g(%%)
+    else
+        h()
+    console.log('f called')
+
+f(x[0], %%)
+f(x[1], %%)
+
+console.log('===')
+
+func e(pred, %%)
+    try
+        if !pred
+            throw 0
+        g(%%)
+    catch e
+        h()
+    console.log('e called')
+
+e(x[0], %%)
+e(x[1], %%)
+
+y: []
+
+if x[1]
+    if x[0]
+        y.push('if+')
+    else
+        setTimeout(%, 1)
+        y.push('else+')
+else
+    setTimeout(%, 1)
+    y.push('else-')
+
+console.log(y.length)
+console.log(y[0])
+
+if x[0]
+    setTimeout(%, 1)
+    y.push('else-')
+else
+    if x[1]
+        setTimeout(%, 1)
+        y.push('if@')
+    else
+        y.push('else@')
+
+console.log(y.length)
+console.log(y[1])
+
+console.log('---')
+
+if x[0]
+    console.log('if*')
+else
+    setTimeout(%, 1)
+    console.log('else*')
+console.log('*')
+
+if x[1]
+    setTimeout(%, 1)
+    console.log('if#')
+else
+    console.log('else#')
+console.log('#')

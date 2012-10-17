@@ -1,0 +1,77 @@
+include 'backend/statements.fls' as base
+include 'backend/mangle.fls' as mangle
+
+CTOR_TEMPL: (
+    'function #NAME#(#PARAMS#) {'
++       'if (!(this instanceof #NAME#)) {'
++           'return new #NAME#(#PARAMS#)'
++       '}'
++       '#BODY#'
++   '}'
+)
+
+export class Constructor
+    ctor(paramsRefs, body)
+        this.paramsRefs: paramsRefs
+        this.body: body
+
+    func toString(name)
+        return CTOR_TEMPL.replace(/#NAME#/g, name
+                        ).replace(/#PARAMS#/g, (this.paramsRefs |: $.toString()).join(',')
+                        ).replace(/#BODY#/g, this.body.toString()
+                        )
+
+export class SuperConstructorCall: base.Statement
+    ctor(clsName, args) super()
+        this.clsName: clsName
+        this.args: args
+
+    func mayThrow()
+        return true
+
+    func toString()
+        return this.clsName + '.$super.constructor.apply($this,[' +
+               (this.args |: $.toString()).join(',') + ']);'
+
+export class ClassInitCall: base.Statement
+    ctor(name, base) super()
+        this.name: name
+        this.base: base
+
+    func mayThrow()
+        return true
+
+    func toString()
+        return '#NAME# = #INIT#(#BASE#);'.replace(/#NAME#/g, mangle.ref(this.name)
+                                        ).replace(/#INIT#/g, mangle.classInit(this.name)
+                                        ).replace(/#BASE#/g, '' if this.base = null
+                                                                else this.base.toString()
+                                        )
+
+func inherit(name)
+    return '$extend(#NAME#, $b); var $super = #NAME#.$super;'.replace(/#NAME#/g, name)
+
+func memfuncs(name, memfns)
+    fno: []
+    memfns |:
+        fno.push(name + '.prototype.' + $k + '=' + $.toString() + ';')
+    return fno.join('')
+
+export class ClassInitDecl: base.Statement
+    ctor(name, inherit, memfns, ct) super()
+        this.name: name
+        this.inherit: inherit
+        this.memfns: memfns
+        this.ct: ct
+
+    func mayThrow()
+        return false
+
+    func toString()
+        return 'function ' + mangle.classInit(this.name) + '(' +
+                                        ('$b' if this.inherit else '') + ') {' +
+                    this.ct.toString(this.name) +
+                    (inherit(this.name) if this.inherit else '') +
+                    memfuncs(this.name, this.memfns) +
+                    'return ' + this.name +
+               '}'

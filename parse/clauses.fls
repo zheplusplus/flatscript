@@ -1,0 +1,144 @@
+include 'errors.fls' as errors
+include 'parse/statements.fls' as base
+include 'parse/expressions.fls' as exprs
+include 'parse/class.fls' as cls
+include 'parse/automation.fls' as am
+include 'resolve/statements.fls' as resolve
+
+class PlaceholderStatement: base.Statement
+    ctor(pos) super(pos)
+
+class ClauseBase: base.Statement
+    ctor(pos, builder, indent) super(pos)
+        this.builder: builder
+        this.indent: indent
+        this._memberIndent: -1
+        this.funcs: []
+        this.stmts: [PlaceholderStatement(pos)]
+        this._automations: []
+
+    func acceptFunc(fn)
+        this.funcs.push(fn)
+
+    func acceptStmt(st)
+        this.stmts.push(st)
+
+    func acceptElse(elseBlock)
+        this.stmts[this.stmts.length - 1].acceptElse(elseBlock)
+
+    func acceptCatch(catch_pos, catch_block, exc_name)
+        this.stmts[this.stmts.length - 1].acceptCatch(catch_pos, catch_block, exc_name)
+
+    func setCtor(ct)
+        errors.CtorNotInClass(ct.pos)
+
+    func compile()
+        return resolve.Block(this.pos, this.stmts[1,] |: $.compile(), this.funcs |: $.compile())
+
+    func deliver()
+
+    func prepare()
+        this.push(am.BootstrapAutomation(this))
+
+    func push(am)
+        this._automations.push(am)
+        am.activated()
+
+    func replace(am)
+        this.pop()
+        this.push(am)
+
+    func top()
+        return this._automations[this._automations.length - 1]
+
+    func reduced(expr)
+        this.pop()
+        this.top().reduced(expr)
+
+    func reducedList(exprs)
+        this.pop()
+        this.top().reducedList(exprs)
+
+    func reducedBlock(st)
+        this.pop()
+        this.top().reducedBlock(st)
+
+    func tokenAfterReduced(expr, token)
+        this.reduced(expr)
+        token.act(this.top())
+
+    func pop()
+        this._automations.pop()
+
+    func empty()
+        return this._automations.length = 0
+
+    func tryFinish(pos)
+        if this.empty()
+            return true
+        ifnot this.top().finished()
+            return false
+        this.top().finish(pos)
+        return this.tryFinish(pos)
+
+    func setMemberIndent(pos, indent)
+        if this._memberIndent = -1
+            this._memberIndent: indent
+            return
+        if this._memberIndent != indent
+            errors.InvalidIndent(pos)
+
+    func memberIndent()
+        return this._memberIndent
+
+    func shrinkOn(level)
+        return level <= this.indent
+
+    func addSubBlockClauseForStmt(pos, onDeliver)
+        this.builder.push(SubBlockClause(pos, this.builder, this._memberIndent, onDeliver))
+
+    func addSubBlockClauseForExpr(pos, onDeliver)
+        this.builder.push(ExprSubBlockClause(pos, this.builder, this.indent, onDeliver))
+
+    func addClassClause(pos, name, extend, ex)
+        this.builder.push(ClassClause(pos, this, name, extend, ex))
+
+export class GlobalClause: ClauseBase
+    ctor(file, builder) super({file: file, line: 1}, builder, -1)
+
+class SubBlockClause: ClauseBase
+    ctor(pos, builder, indent, onDeliver) super(pos, builder, indent)
+        this.onDeliver: onDeliver
+
+    func deliver()
+        this.onDeliver(this)
+
+class ExprSubBlockClause: SubBlockClause
+    ctor(pos, builder, indent, onDeliver) super(pos, builder, indent, onDeliver)
+
+    func shrinkOn(level)
+        if this._memberIndent = -1
+            return super.shrinkOn(level)
+        return level < this._memberIndent
+
+class ClassClause: ClauseBase
+    ctor(pos, parent, name, extend, ex) super(pos, parent.builder, parent.memberIndent())
+        this.parent: parent
+        this.name: name
+        this.extend: extend
+        this._export: ex
+        this._ctor: null
+
+    func deliver()
+        this.parent.acceptStmt(cls.Class(this.pos, this.name, this.extend, this))
+        if this._export
+            this.parent.acceptStmt(base.Export(this.pos, [this.name],
+                                               exprs.Identifier(this.pos, this.name)))
+
+    func setCtor(ct)
+        if this._ctor != null
+            errors.duplicateCtor(this._ctor.pos, ct.pos)
+        this._ctor: ct
+
+    func getCtor()
+        return this._ctor

@@ -1,0 +1,5 @@
+func foo()
+    include "samples/include/nodep.fls" as nodep
+    return nodep.ep.bar() + 1
+
+export foo: foo

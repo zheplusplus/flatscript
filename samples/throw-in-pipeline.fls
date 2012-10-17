@@ -1,0 +1,72 @@
+x: [0, 1, 2, 3]
+
+try
+    x |:
+        if $ % 4 = 3
+            throw 'sync pipeline throw:' + $
+catch e
+    console.log(e)
+
+try
+    x |:
+        setTimeout(%, 1)
+        if $ % 4 = 3
+            throw 'async pipeline throw:' + $
+catch e
+    console.log(e)
+
+func aGet(n, %%)
+    if n % 3 = 2
+        throw 'aGet throw:' + n
+
+func sGet(n)
+    if n % 3 = 2
+        throw 'sGet throw:' + n
+
+func piping(%%)
+    try
+        x |: aGet($, %%)
+    catch e
+        console.log(e)
+    try
+        x |: sGet($)
+    catch e
+        console.log(e)
+
+piping(%%)
+
+console.log('======')
+
+y: [
+    [0, 1],
+    [2, 3],
+]
+
+func mixing_pipes(%%)
+    try
+        y |:
+            console.log('#x', $.join(':'))
+            $ |:
+                aGet($, %%)
+    catch e
+        console.log('%x', e)
+
+    try
+        y |:
+            console.log('#y', $.join(':'))
+            $ |:
+                sGet($)
+    catch e
+        console.log('%y', e)
+
+    y |:
+        console.log('#z', $.join(':'))
+        $ |:
+            aGet($, %%)
+
+try
+    mixing_pipes(%%)
+catch e
+    console.log('%z', e)
+
+console.log('end')

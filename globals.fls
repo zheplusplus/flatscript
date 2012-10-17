@@ -1,0 +1,50 @@
+_g: {
+    use_class_ext: false,
+    use_export: false,
+    use_list_slice: false,
+    use_pipeline: false,
+    built_in_names: [
+        'console', 'eval', 'setTimeout', 'setInterval', 'clearTimeout', 'parseInt', 'parseFloat',
+        'isFinite', 'isNaN', 'Number', 'Array', 'Object', 'Function', 'JSON', 'RegExp', 'Math',
+        'String', 'Date', 'NaN', 'undefined', 'Infinity', 'null', 'escape', 'unescape', 'encodeURI',
+        'decodeURI', 'encodeURIComponent', 'decodeURIComponent', 'Error', 'EvalError', 'RangeError',
+        'ReferenceError', 'SyntaxError', 'TypeError', 'URIError',
+    ],
+    opt_externs: [],
+    opt_input: null,
+    opt_output: null,
+    opt_export_point: null,
+}
+
+export func useClassExt()
+    _g.use_class_ext: true
+
+export func useExport()
+    _g.use_export: true
+
+export func useListSlice()
+    _g.use_list_slice: true
+
+export func usePipeline()
+    _g.use_pipeline: true
+
+export func addExterns(e)
+    e |: _g.opt_externs.push($)
+
+export func setInput(i)
+    if _g.opt_input
+        throw Error('`input file` option already set')
+    _g.opt_input: i
+
+export func setOutput(o)
+    if _g.opt_output
+        throw Error('`output file` option already set')
+    _g.opt_output: o
+
+export func setExportPoint(p)
+    if _g.opt_export_point
+        throw Error('`export point` option already set')
+    _g.opt_export_point: p
+
+export func g()
+    return _g

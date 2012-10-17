@@ -1,0 +1,44 @@
+export class pos
+    ctor(file, line)
+        this.file: file
+        this.line: line
+
+    func asLine()
+        return 'Line ' + this.line
+
+    func toString()
+        r: []
+        if this.file
+            r.push(this.file)
+        else
+            r.push('<stdin>')
+        r.push(this.line)
+        return r.join(':')
+
+class SpecialPos
+    ctor(pos)
+        this.pos: pos
+
+    func asLine()
+        return this.toString()
+
+    func toString()
+        return this.pos
+
+export func posBuiltIn()
+    return SpecialPos('built-in')
+
+export func posComplOpt()
+    return SpecialPos('compiler option')
+
+_uid: {current: 0}
+
+export class uid
+    ctor()
+        this.id: _uid.current
+        _uid.current: _uid.current + 1
+
+    func toString()
+        return this.id.toString(36)
+
+export __version__: '0.1.0'

@@ -1,0 +1,9 @@
+ func m(x, y, z)
+     write(x + y)
+   write(y + z)
+
+  if false
+    return
+
+func nothing()
+        return

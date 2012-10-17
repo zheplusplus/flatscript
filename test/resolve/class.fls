@@ -1,0 +1,146 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/resolve/utils.fls' as utils
+include 'resolve/scope.fls' as scope
+
+buildAndCompile: utils.buildAndCompile
+buildForAll: utils.buildForAll
+
+export func run(%%)
+    describe('classes', %)
+    if true
+        it('super not def', %done)
+        buildAndCompile('''
+            class MyClass: HerClass
+                ctor(x) super()
+                    this.x: x
+        ''', %%)
+        assert.deepEq([{
+            pos: {file: null, line: 2},
+            type: 'SymbolNotDef',
+            name: 'HerClass',
+        }], errors.deliver())
+        done()
+
+    if true
+        it('def with constructor', %done)
+        assert.deepEq({
+          localDefs: [{name: 'MyClass'}],
+          funcs: [],
+          stmts: [{
+            name: 'MyClass',
+            inherit: true,
+            ct: {
+              paramsRefs: [{name: 'x'}],
+              body: {
+                localDefs: [],
+                funcs: [],
+                stmts: [{
+                }, {
+                  clsName: 'MyClass',
+                  args: [],
+                }, {
+                  setPoint: {
+                    obj: {},
+                    prop: 'x',
+                  },
+                  value: {
+                    name: 'x',
+                  },
+                }],
+              },
+            },
+            memfns: {
+              f: {
+                params: [],
+                body: {
+                  localDefs: [],
+                  funcs: [],
+                  stmts: [{
+                  }, {
+                    method: {
+                      throwing: false,
+                    },
+                    expr: {
+                      op: '+',
+                      lhs: {
+                        obj: {},
+                        prop: 'x',
+                      },
+                      rhs: {
+                        value: 1,
+                      },
+                    },
+                  }],
+                }
+              },
+              g: {
+                params: [{name: 'y'}],
+                body: {
+                  localDefs: [],
+                  funcs: [],
+                  stmts: [{
+                  }, {
+                    method: {
+                      throwing: false,
+                    },
+                    expr: {
+                      op: '+',
+                      lhs: {
+                        obj: {},
+                        prop: 'x',
+                      },
+                      rhs: {
+                        name: 'y',
+                      },
+                    },
+                  }],
+                }
+              },
+            },
+          }, {
+            name: 'MyClass',
+            base: {
+              image: 'HerClass',
+            },
+          }, {
+            exportPath: ['MyClass'],
+            value: {
+              name: 'MyClass',
+            },
+          }],
+        }, buildForAll('''
+            extern HerClass
+
+            export class MyClass: HerClass
+                ctor(x) super()
+                    this.x: x
+
+                func f()
+                    return this.x + 1
+
+                func g(y)
+                    return this.x + y
+        ''', %%))
+        done()
+
+    if true
+        it('duplicate memfn', %done)
+        buildAndCompile('''
+            class MyClass
+                ctor()
+                    this.x: 0
+
+                func f()
+                    return this.x + 1
+
+                func f(y)
+                    return this.x + y
+        ''', %%)
+        assert.deepEq([{
+            pos: {file: null, line: 9},
+            type: 'DuplicateMemFunc',
+            name: 'f',
+            defPos: {file: null, line: 6},
+        }], errors.deliver())
+        done()

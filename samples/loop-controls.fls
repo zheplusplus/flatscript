@@ -1,0 +1,119 @@
+x: [0, 1, 2, 3, 4, 5]
+
+console.log('----- break -----')
+
+x |:
+    console.log($)
+    break
+
+x |:
+    if $ % 5 = 4
+        break
+    i: $
+    x |:
+        if $ % 4 = 3
+            break
+        console.log('SS', i, $)
+
+x |:
+    if $ % 5 = 3
+        break
+    setTimeout(%, 1)
+    i: $
+    x |:
+        if $ % 4 = 3
+            break
+        console.log('AS', i, $)
+
+x |:
+    if $ % 5 = 4
+        break
+    i: $
+    x |:
+        if $ % 4 = 2
+            break
+        setTimeout(%, 1)
+        console.log('SA', i, $)
+
+x |:
+    setTimeout(%, 1)
+    if $ % 5 = 3
+        break
+    i: $
+    x |:
+        if $ % 4 = 2
+            break
+        console.log('AA', i, $)
+        setTimeout(%, 1)
+
+console.log('---- in func ----')
+
+func aab(%%)
+    x |:
+        i: $
+        setTimeout(%, 1)
+        x |:
+            console.log('FAA', i, $)
+            setTimeout(%, 1)
+            if $ % 4 = 2
+                break
+        if $ % 5 = 2
+            break
+
+func sab(%%)
+    x |:
+        i: $
+        x |:
+            console.log('FSA', i, $)
+            setTimeout(%, 1)
+            if $ % 4 = 3
+                break
+        if $ % 5 = 1
+            break
+
+aab(%%)
+sab(%%)
+
+console.log('---- continue ---')
+
+x |:
+    if $ % 3 = 2
+        continue
+    i: $
+    x |:
+        if $ % 2 = 1
+            continue
+        console.log('SS', i, $)
+
+x |:
+    if $ % 3 = 0
+        continue
+    i: $
+    x |:
+        setTimeout(%, 1)
+        if $ % 2 = 0
+            continue
+        console.log('SA', i, $)
+
+x |:
+    if $ % 3 = 2
+        continue
+    setTimeout(%, 1)
+    i: $
+    x |:
+        if $ % 2 = 1
+            continue
+        console.log('AS', i, $)
+
+x |:
+    setTimeout(%, 1)
+    if $ % 3 = 1
+        continue
+    i: $
+    x |:
+        if $ % 2 = 0
+            continue
+        console.log('AA', i, $)
+        setTimeout(%, 1)
+
+console.log('------ end ------')

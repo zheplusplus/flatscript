@@ -1,0 +1,415 @@
+include 'test/assert.fls' as assert
+include 'test/resolve/utils.fls' as utils
+include 'resolve/scope.fls' as scope
+
+buildForAll: utils.buildForAll
+
+export func run(%%)
+    describe('functions', %)
+    if true
+        it('sync', %done)
+        assert.deepEq({
+          localDefs: [],
+          funcs: [{
+            _nameRef: {
+              name: 'x'
+            },
+            _params: [],
+            _body: {
+              localDefs: [{
+                name: 'y',
+              }],
+              funcs: [],
+              stmts: [{
+                setPoint: {
+                  name: 'y',
+                },
+                value: {
+                  callee: {
+                    image: 'a',
+                  },
+                  args: [],
+                },
+              }, {
+                method: {
+                  throwing: false,
+                },
+                expr: {
+                  name: 'y',
+                },
+              }],
+            },
+          }],
+          stmts: [{
+            expr: {
+              callee: {
+                name: 'x',
+              },
+              args: [],
+            },
+          }],
+        }, buildForAll('''
+            extern a
+
+            func x()
+                y: a()
+                return y
+
+            x()
+        ''', %%))
+
+        assert.deepEq({
+          localDefs: [],
+          funcs: [{
+            _nameRef: {
+              name: 'x'
+            },
+            _params: ['m'],
+            _body: {
+              localDefs: [{
+                name: 'y',
+              }],
+              funcs: [],
+              stmts: [{
+                setPoint: {
+                  name: 'y',
+                },
+                value: {
+                  callee: {
+                    name: 'm',
+                  },
+                  args: [{
+                    op: '+',
+                    lhs: {
+                      image: 'b',
+                    },
+                    rhs: {
+                      value: 1,
+                    },
+                  }],
+                },
+              }, {
+                method: {
+                  throwing: false,
+                },
+                expr: {
+                  name: 'y',
+                },
+              }],
+            },
+          }],
+          stmts: [{
+            expr: {
+              callee: {
+                name: 'x',
+              },
+              args: [{
+                image: 'a',
+              }],
+            },
+          }],
+        }, buildForAll('''
+            extern a, b
+
+            func x(m)
+                g: 1
+                y: m(b + g)
+                return y
+
+            x(a)
+        ''', %%))
+        done()
+
+    if true
+        it('sync contains return in loop', %done)
+        r: buildForAll('''
+            func find(m)
+                m |:
+                    if $ = 0
+                        return true
+        ''', %%)
+        uid: assert.uid(r.funcs[0]._body.stmts[0].pipeId)
+        assert.deepEq({
+          localDefs: [],
+          funcs: [{
+            _nameRef: {
+              name: 'find'
+            },
+            _params: ['m'],
+            _body: {
+              localDefs: [],
+              funcs: [],
+              stmts: [{
+                arr: {
+                  name: 'm',
+                },
+                body: {
+                  localDefs: [],
+                  funcs: [],
+                  stmts: [{
+                    predicate: {
+                      op: '===',
+                      lhs: {loopId: uid},
+                      rhs: {value: 0},
+                    },
+                    consequence: {
+                      localDefs: [],
+                      funcs: [],
+                      stmts: [{
+                        method: {
+                          throwing: false,
+                          loopId: uid,
+                        },
+                        expr: {value: true},
+                      }],
+                    },
+                    alternative: {
+                      localDefs: [],
+                      funcs: [],
+                      stmts: [],
+                    },
+                  }],
+                },
+                extRet: {
+                  throwing: false,
+                },
+                hasRet: true,
+                hasBreak: false,
+                pipeId: uid,
+              }],
+            },
+          }],
+          stmts: [],
+        }, r)
+        done()
+
+    if true
+        it('async with return', %done)
+        r: buildForAll('''
+            extern a
+
+            func x(%%)
+                setTimeout(%, 1)
+                y: a()
+                return y
+
+            x(%%)
+            a()
+        ''', %%)
+        assert.eq(0, r.localDefs.length)
+        assert.eq(1, r.funcs.length)
+        assert.eq(1, r.stmts.length)
+
+        assert.deepEq({
+          _nameRef: {
+            name: 'x',
+          },
+          _params: [],
+          _asyncIndex: 0,
+          _body: {
+            localDefs: [{
+              name: 'y',
+            }],
+            funcs: [],
+            stmts: [{
+              tryBlock: {
+                localDefs: [],
+                funcs: [],
+                stmts: [{
+                  decl: false,
+                  defId: null,
+                  expr: {
+                    callee: {
+                      image: 'setTimeout',
+                    },
+                    args: [{
+                      params: [],
+                      body: {
+                        localDefs: [],
+                        funcs: [],
+                        stmts: [{
+                          tryBlock: {
+                            localDefs: [],
+                            funcs: [],
+                            stmts: [{
+                              setPoint: {
+                                name: 'y',
+                              },
+                              value: {
+                                callee: {
+                                  image: 'a',
+                                },
+                                args: [],
+                              },
+                            }, {
+                              method: {
+                                throwing: false,
+                              },
+                              expr: {
+                                name: 'y',
+                              },
+                            }],
+                          },
+                          catchBlock: {
+                            expr: {},
+                            method: {
+                              throwing: false,
+                            },
+                          },
+                          excRef: {},
+                        }],
+                      },
+                    }, {
+                      value: 1,
+                    }],
+                  },
+                }],
+              },
+              catchBlock: {
+                expr: {},
+                method: {
+                  throwing: false,
+                },
+              },
+              excRef: {},
+            }],
+          },
+        }, r.funcs[0])
+
+        uid: assert.uid(r.stmts[0].expr.args[0].id)
+        assert.deepEq({
+          expr: {
+            callee: {
+              name: 'x',
+            },
+            args: [{
+              id: uid,
+              throwMethod: {
+                throwing: true,
+              },
+              asyncFlow: {
+                localDefs: [],
+                funcs: [],
+                stmts: [{
+                  expr: {
+                    callee: {
+                      image: 'a',
+                    },
+                    args: [],
+                  },
+                }],
+              },
+            }],
+          },
+        }, r.stmts[0])
+        done()
+
+    if true
+        it('async without return', %done)
+        r: buildForAll('''
+            extern a
+
+            func x(%%)
+                setTimeout(%, 1)
+                y: a()
+
+            x(%%)
+        ''', %%)
+        assert.eq(0, r.localDefs.length)
+        assert.eq(1, r.funcs.length)
+        assert.eq(1, r.stmts.length)
+
+        assert.deepEq({
+          _nameRef: {
+            name: 'x',
+          },
+          _params: [],
+          _asyncIndex: 0,
+          _body: {
+            localDefs: [{
+              name: 'y',
+            }],
+            funcs: [],
+            stmts: [{
+              tryBlock: {
+                localDefs: [],
+                funcs: [],
+                stmts: [{
+                  decl: false,
+                  defId: null,
+                  expr: {
+                    callee: {
+                      image: 'setTimeout',
+                    },
+                    args: [{
+                      params: [],
+                      body: {
+                        localDefs: [],
+                        funcs: [],
+                        stmts: [{
+                          tryBlock: {
+                            localDefs: [],
+                            funcs: [],
+                            stmts: [{
+                              setPoint: {
+                                name: 'y',
+                              },
+                              value: {
+                                callee: {
+                                  image: 'a',
+                                },
+                                args: [],
+                              },
+                            }, {
+                              method: {
+                                throwing: false,
+                              },
+                              expr: {},
+                            }],
+                          },
+                          catchBlock: {
+                            expr: {},
+                            method: {
+                              throwing: false,
+                            },
+                          },
+                          excRef: {},
+                        }],
+                      },
+                    }, {
+                      value: 1,
+                    }],
+                  },
+                }],
+              },
+              catchBlock: {
+                expr: {},
+                method: {
+                  throwing: false,
+                },
+              },
+              excRef: {},
+            }],
+          },
+        }, r.funcs[0])
+
+        uid: assert.uid(r.stmts[0].expr.args[0].id)
+        assert.deepEq({
+          expr: {
+            callee: {
+              name: 'x',
+            },
+            args: [{
+              id: uid,
+              throwMethod: {
+                throwing: true,
+              },
+              asyncFlow: {
+                localDefs: [],
+                funcs: [],
+                stmts: [],
+              },
+            }],
+          },
+        }, r.stmts[0])
+        done()

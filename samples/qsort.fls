@@ -1,0 +1,27 @@
+func sort(list)
+    if list.length = 0
+        return []
+    first: list[0]
+    tail: list[1,]
+    return sort(tail |? $ <= first) ++ [first] ++ sort(tail |? $ > first)
+
+console.log(sort([]))
+console.log(sort([2, 4, 3]))
+console.log(sort([
+25, 1, 36, 49, 4,
+    81, 16, 9, 64, 0 ]))
+
+less: (a, b, %%):
+    setTimeout(%, 1)
+    return a < b
+
+func asort(list, %%)
+    if list.length = 0
+        return list
+    first: list[0]
+    tail: list[1,]
+    return asort(tail |? less($, first, %%), %%) ++
+           [first] ++
+           asort(tail |? !less($, first, %%), %%)
+
+console.log(asort([5, 1, 6, 0, 7, 2, 9, 3, 8, 4], %%))

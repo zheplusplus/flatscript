@@ -1,0 +1,4 @@
+*.js
+tmp.*
+flsc
+package.json

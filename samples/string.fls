@@ -1,0 +1,25 @@
+func ret_string()
+    return "ste" + 'kin'
+stekin: ret_string()
+console.log(stekin)
+
+console.log(stekin + true)
+stekin2: stekin + stekin
+console.log(stekin2)
+
+x: 112
+console.log(x + stekin)
+
+console.log(3.14 + "" + 3.14)
+
+func add_str(s)
+    func adding(a)
+        return s + a
+    return adding
+
+y: add_str('abc
+    ')
+console.log(y(10))
+console.log(y(false))
+
+console.log('abcabc'.replace(*RegExp('b', 'g'), 'mm'))

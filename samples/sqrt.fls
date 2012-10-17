@@ -1,0 +1,26 @@
+func abs(x)
+    if x < 0
+        return -x
+    return x
+
+func square(x)
+    return x * x
+
+func average(x, y)
+    return (x + y) / 2
+
+func sqrt(x)
+    PRECISION: 0.001
+    func is_good_enough(guess)
+        return abs(square(guess) - x) < PRECISION
+    func improve_guess(guess)
+        return average(guess, x / guess)
+    func sqrt_iter(guess)
+        if is_good_enough(guess)
+            return guess
+        return sqrt_iter(improve_guess(guess))
+    return sqrt_iter(1.0)
+
+console.log(sqrt(10.24))
+console.log(sqrt(10.2))
+console.log(sqrt(10.0))

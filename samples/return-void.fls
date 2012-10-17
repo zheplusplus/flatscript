@@ -1,0 +1,4 @@
+func return_void()
+    return
+
+console.log(return_void())

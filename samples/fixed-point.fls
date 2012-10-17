@@ -1,0 +1,27 @@
+PRECISION: .0001
+
+func abs(x)
+    if x < 0
+        return -x
+    return x
+
+func average(x, y)
+    return (x + y) / 2
+
+func fixed_point(f, first_guess)
+    func is_close_enough(a, b)
+        return abs(a - b) < PRECISION
+    func try_guessing(guess)
+        next: f(guess)
+        if is_close_enough(guess, next)
+            return next
+        return try_guessing(next)
+    return try_guessing(first_guess)
+
+func sqrt(x)
+    func f(y)
+        return average(y, x / y)
+    return fixed_point(f, 1.0)
+
+console.log(sqrt(2.0))
+console.log(sqrt(3.0))

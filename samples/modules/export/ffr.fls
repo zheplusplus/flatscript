@@ -1,0 +1,7 @@
+fs: require('fs')
+
+export readMultiple: (files, %%):
+    r: []
+    for i range files.length
+        r.push(fs.readFile(files[i], %%))
+    return r.join('')

@@ -1,0 +1,60 @@
+include 'errors.fls' as errors
+include 'misc.fls' as misc
+include 'globals.fls' as g
+include 'compiler.fls' as compiler
+include 'backend/global.fls' as backend
+
+OptParser: require('optparse').OptionParser
+fs: require('fs')
+
+parser: *OptParser([
+    ['-i', '--input-file FILE', 'Input file, or stdin if not specified'],
+    ['-o', '--output-file FILE', 'Output file, or stdout if not specified'],
+    ['-e', '--externs EXTERNS', 'Add predefined external names'],
+    ['-p', '--export-point EXPPT', 'Override export point ONLY for browser env,'
+                                   + ' thus exporting names to window.EXPORT_POINT'],
+    ['-h', '--help', 'Show this help message and exit'],
+])
+parser.on('input-file', (opt, val):
+    g.setInput(val)
+)
+parser.on('output-file', (opt, val):
+    g.setOutput(val)
+)
+parser.on('externs', (opt, val):
+    g.addExterns(val.split(':'))
+)
+parser.on('export-point', (opt, val):
+    g.setExportPoint(val)
+)
+parser.on('help', ():
+    console.error(parser.toString())
+    process.exit(0)
+)
+try
+    parser.parse(process.argv)
+catch e
+    console.error(e)
+    console.error(parser.toString())
+    process.exit(1)
+
+func compileFlow(flow, %%)
+    s: compiler.Scope()
+    flow.compile(s, %%)
+    return s.deliver(%%)
+
+func compile(%%)
+    f: compileFlow(compiler.parseFile(g.g().opt_input, misc.posComplOpt(), %%), %%)
+    if errors.hasError()
+        errors.printErrors()
+        process.exit(1)
+    r: backend.wrapGlobal(f)
+    if g.g().opt_output = null
+        return console.log(r)
+    fs.writeFile(g.g().opt_output, r, %%)
+
+try
+    compile(%%)
+catch e
+    console.trace(e)
+    process.exit(1)

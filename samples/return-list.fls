@@ -1,0 +1,17 @@
+func rlist(x, y, z)
+    return [z, y] ++ [x]
+
+console.log(rlist(0, 1, 2))
+
+func list20(x, y, z)
+    return [z] ++ [x]
+
+console.log(list20(0, 1, 2))
+
+func elist(n)
+    if n = 0
+        return []
+    return [n]
+console.log(elist(0))
+console.log(elist(1))
+console.log(elist(2))

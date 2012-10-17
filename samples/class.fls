@@ -1,0 +1,47 @@
+class Animal
+    ctor(name)
+        this.name: name
+
+    func move(x)
+        return this.name + ' moved ' + x + ' meters'
+
+class Bird: Animal
+    ctor(name, speed) super(name)
+        this.speed: speed
+
+    func move(x)
+        if this.speed = 1
+            return 'Bird ' + super.move(x)
+        return 'Bird ' + this.name + ' flied ' + x * this.speed + ' meters'
+
+func makeClass()
+    class Cat: Animal
+        ctor(name) super(name)
+            0
+
+        func move(x)
+            return 'Cat ' + this.name + ''' won't move at all'''
+
+        func meow(t, %%)
+            if t <= 0
+                return
+            setTimeout(%, 10 * t)
+            console.log(this.name + ': meow ' + t)
+            this.meow(t - 1, %%)
+
+    return Cat
+
+a: Animal('Alche')
+console.log(a.move(5))
+
+b: Bird('Rokh', 2)
+console.log(b.move(4))
+
+d: Bird('Duck', 1)
+console.log(d.move(3))
+
+Neko: makeClass()
+c: Neko('Cherry')
+console.log(c.name)
+console.log(c.move(10))
+c.meow(3, %%)

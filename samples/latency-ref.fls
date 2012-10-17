@@ -1,0 +1,8 @@
+func first()
+    return second()
+
+x: 10
+console.log(first())
+
+func second()
+    return x

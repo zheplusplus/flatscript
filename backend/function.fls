@@ -1,0 +1,126 @@
+include 'misc.fls' as misc
+include 'backend/expressions.fls' as exprs
+include 'backend/statements.fls' as stmts
+include 'backend/mangle.fls' as mangle
+
+class Callable
+    func callMe(args)
+        return exprs.Call(this.nameRef(), args)
+
+    func body()
+        throw 'abstract Callable.body'
+
+    func nameRef()
+        throw 'abstract Callable.nameRef'
+
+    func paramsRefs()
+        throw 'abstract Callable.parameters'
+
+    func toString()
+        return ['function ' + this.nameRef().toString() +
+                        '(' + (this.paramsRefs() |: $.toString()).join(',') + ') {',
+                    this.body().toString(),
+                '}',
+               ].join('')
+
+export class SyncFunction: Callable
+    ctor(nameRef, params, body) super()
+        this._nameRef: nameRef
+        this._params: params
+        this._body: body
+
+    func body()
+        return this._body
+
+    func nameRef()
+        return this._nameRef
+
+    func paramsRefs()
+        return this._params |: exprs.Reference($)
+
+class RegularAsyncCallback: exprs.Expression
+    ctor() super()
+
+    func mayThrow()
+        return false
+
+    func toString()
+        return mangle.TERM_REGULAR_ASYNC_CALLBACK
+
+export func callRegularAsyncCallback(error, result)
+    return exprs.SyncArgsCall(RegularAsyncCallback(), [error, result])
+
+export class RegularAsyncFunction: SyncFunction
+    ctor(nameRef, params, asyncIndex, body) super(nameRef, params, body)
+        this._asyncIndex: asyncIndex
+
+    func paramsRefs()
+        p: this._params |: exprs.Reference($)
+        p.splice(this._asyncIndex, 0, RegularAsyncCallback())
+        return p
+
+class AnonymousCallback: Callable
+    ctor() super()
+        this.id: misc.uid()
+        this._body: stmts.Block()
+
+    func nameRef()
+        return exprs.AnonymousRef(this.id)
+
+    func body()
+        return this._body
+
+class ConditionalCallbackParameter: exprs.AtomicItem
+    ctor() super()
+
+    func toString()
+        return mangle.TERM_CONDITIONAL_CALLBACK_PARAMETER
+
+export class ConditionalCallback: AnonymousCallback
+    ctor() super()
+
+    func paramsRefs()
+        return [ConditionalCallbackParameter()]
+
+export class NoParamCallback: AnonymousCallback
+    ctor() super()
+
+    func paramsRefs()
+        return []
+
+export class AsyncCatchFunc: AnonymousCallback
+    ctor(excRef) super()
+        this.excRef: excRef
+
+    func paramsRefs()
+        return [this.excRef]
+
+export class SyncLambda: exprs.Expression
+    ctor(params, body) super()
+        this.params: params
+        this.body: body
+
+    func mayThrow()
+        return false
+
+    func toString()
+        return '(function(' + (this.params |: $.toString()).join(',') + ') {' +
+               this.body.toString() + '})'
+
+export class RegularAsyncLambda: SyncLambda
+    ctor(params, asyncIndex, body) super(params, body)
+        this.params.splice(asyncIndex, 0, RegularAsyncCallback())
+
+export class ModuleInitFunc: Callable
+    ctor(moduleId, body) super()
+        this.moduleId: moduleId
+        this._body: body
+
+    func body()
+        return this._body
+
+    func nameRef()
+        return '$miF' + this.moduleId.toString()
+
+    func paramsRefs()
+        return [mangle.TERM_EXPORT]

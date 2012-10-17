@@ -1,0 +1,103 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/utils.fls' as utils
+include 'parse/build.fls' as parse
+include 'resolve/scope.fls' as scope
+
+class FakeScope: scope.GlobalScope
+    ctor(sources) super()
+        this.sources: sources
+
+    func parseFile(path, includePos, %%)
+        if this.sources.hasOwnProperty(path)
+            r: parse.build(this.sources[path], path)
+            if errors.count() != 0
+                console.error('>>> Unexpected Errors: when parsing', path)
+                console.error(errors.deliver())
+                console.error('<<< End of Unexpected Errors')
+                assert.ok(false)
+            return r
+        console.error('No such source', path)
+        assert.ok(false)
+
+func buildAndCompile(entry, otherSources, %%)
+    g: FakeScope(otherSources)
+    c: utils.buildNoError(entry).compile(g, %%)
+    return g.deliver(%%)
+
+export func run(%%)
+    describe('unresolvable deps error', %)
+    if true
+        it('circular deps', %done)
+        buildAndCompile('''
+            include 'f.fls' as f
+            console.log(f.fff())
+        ''', {
+            'f.fls': '''
+                include 'g.fls' as g
+
+                export func fff()
+                    return g.ggg()
+            ''',
+            'g.fls': '''
+                include 'f.fls' as f
+
+                export func ggg()
+                    return f.fff()
+            ''',
+        }, %%)
+        assert.deepEq([{
+            type: 'DepenedenciesUnresolvable',
+            circularDeps: ['f.fls', 'g.fls'],
+        }], errors.deliver())
+
+        buildAndCompile('''
+            include 'g.fls' as g
+            console.log(g.ggg())
+        ''', {
+            'f.fls': '''
+                include 'g.fls' as g
+
+                export func fff()
+                    return g.ggg()
+            ''',
+            'g.fls': '''
+                include 'f.fls' as f
+
+                export func ggg()
+                    return f.fff()
+            ''',
+        }, %%)
+        assert.deepEq([{
+            type: 'DepenedenciesUnresolvable',
+            circularDeps: ['g.fls', 'f.fls'],
+        }], errors.deliver())
+
+        buildAndCompile('''
+            include 'f.fls' as f
+            console.log(f.fff())
+        ''', {
+            'f.fls': '''
+                include 'g.fls' as g
+
+                export func fff()
+                    return g.ggg()
+            ''',
+            'g.fls': '''
+                include 'h.fls' as h
+
+                export func ggg()
+                    return h.hhh()
+            ''',
+            'h.fls': '''
+                include 'g.fls' as g
+
+                export func hhh()
+                    return g.ggg()
+            ''',
+        }, %%)
+        assert.deepEq([{
+            type: 'DepenedenciesUnresolvable',
+            circularDeps: ['g.fls', 'h.fls'],
+        }], errors.deliver())
+        done()

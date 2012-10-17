@@ -1,0 +1,98 @@
+include 'misc.fls' as misc
+include 'errors.fls' as errors
+include 'resolve/expressions.fls' as base
+include 'resolve/statements.fls' as stmts
+include 'resolve/scope.fls' as sc
+include 'backend/loop.fls' as backend
+include 'backend/statements.fls' as backend_stmts
+include 'backend/methods.fls' as backend_methods
+
+export class Pipeline: base.Expression
+    ctor(pos, arr, body) super(pos)
+        this.arr: arr
+        this.body: body
+
+    func isAsync()
+        return this.arr.isAsync() || this.body.isAsync()
+
+    func _compile(scope, asStmt, %%)
+        uid: misc.uid()
+        return this._compileAsync(scope, uid, asStmt, %%) if this.body.isAsync()
+                else this._compileSync(scope, uid, asStmt, %%)
+
+    func compile(scope, %%)
+        return this._compile(scope, false, %%)
+
+    func compileAsStmt(scope, %%)
+        return this._compile(scope, true, %%)
+
+    func _compileSync(scope, pipeId, asStmt, %%)
+        arr: this.arr.compile(scope, %%)
+        pipeScope: sc.SyncPipelineScope(scope, pipeId, asStmt)
+        this.body.compile(pipeScope, %%)
+        ifnot asStmt
+            return backend.SyncPipeline(arr, pipeScope.deliver(%%), pipeId)
+        ret: pipeScope.firstReturn()
+        if ret != null
+            return scope.addStmt(this.pos, backend.RootSyncPipeline(arr, pipeScope.deliver(%%),
+                                 scope.retMethod(ret), pipeId, true, pipeScope.hasBreak()))
+        return scope.addStmt(this.pos, backend.RootSyncPipeline(arr, pipeScope.deliver(%%),
+                             backend_methods.Place(), pipeId, false, pipeScope.hasBreak()))
+
+    func _compileAsync(scope, pipeId, asStmt, %%)
+        arr: this.arr.compile(scope, %%)
+        currentFlow: scope.block()
+        successionFlow: backend_stmts.Block()
+        scope.setAsyncSpace(this.pos, [], successionFlow)
+
+        pipeScope: sc.AsyncPipelineScope(scope, pipeId, asStmt)
+        this.body.compile(pipeScope, %%)
+        currentFlow.addStmt(backend_stmts.AsyncCallResultDef(backend.AsyncPipeline(
+            arr, pipeScope.deliver(%%), successionFlow, pipeId, scope.throwMethod()), false, null))
+        return null if asStmt else backend.LoopResult(pipeId)
+
+func pushPipeResult(e)
+    return base.SyncArgsCall(e.pos, base.MemberAccess(e.pos, PipeResult(e.pos), 'push'), [e])
+
+export func mapPipeline(pos, arr, e)
+    return Pipeline(pos, arr, stmts.wrapSingle(stmts.Arithmetics(pushPipeResult(e))))
+
+export func filterPipeline(pos, arr, e)
+    return Pipeline(pos, arr, stmts.wrapSingle(
+        stmts.Branch(e, stmts.wrapSingle(stmts.Arithmetics(pushPipeResult(PipeElement(e.pos)))),
+                     stmts.emptyBlock(e.pos))))
+
+class PipeItem: base.AtomicItem
+    ctor(pos) super(pos)
+
+    func syncCompile(scope)
+        ifnot scope.inPipe()
+            errors.PipeItemOutOfContext(this.pos)
+        return this._compile(scope.scopeId())
+
+    func _compile(scope)
+        throw 'abstract PipeItem._compile'
+
+export class PipeElement: PipeItem
+    ctor(pos) super(pos)
+
+    func _compile(scopeId)
+        return backend.LoopElement(scopeId)
+
+export class PipeIndex: PipeItem
+    ctor(pos) super(pos)
+
+    func _compile(scopeId)
+        return backend.LoopIndex(scopeId)
+
+export class PipeKey: PipeItem
+    ctor(pos) super(pos)
+
+    func _compile(scopeId)
+        return backend.LoopKey(scopeId)
+
+export class PipeResult: PipeItem
+    ctor(pos) super(pos)
+
+    func _compile(scopeId)
+        return backend.LoopResult(scopeId)

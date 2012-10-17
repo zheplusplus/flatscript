@@ -1,0 +1,26 @@
+export TERM_EXPORT: "$export"
+export TERM_THIS: "$this"
+export TERM_REGULAR_ASYNC_CALLBACK: "$racb"
+export TERM_EXCEPTION: "$exception"
+export TERM_CONDITIONAL_CALLBACK_PARAMETER: "$ccp"
+
+export func loopReturnFlag(id)
+    return '$retF' + id.toString()
+
+export func loopReturnValue(id)
+    return '$retV' + id.toString()
+
+export func anonymousRef(id)
+    return '$aR' + id.toString()
+
+export func ref(name)
+    return '$R' + name
+
+export func subref(name, id)
+    return '$R' + name + '$' + id.toString()
+
+export func classInit(name)
+    return '$clS' + name
+
+export func module(id)
+    return '$moD' + id.toString()

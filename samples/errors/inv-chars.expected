@@ -1,0 +1,6 @@
+samples/errors/inv-chars.fls:1
+    illegal token: `
+samples/errors/inv-chars.fls:2
+    illegal token: ?
+samples/errors/inv-chars.fls:4
+    illegal token: ;

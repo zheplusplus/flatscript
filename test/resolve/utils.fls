@@ -1,0 +1,18 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/utils.fls' as utils
+include 'resolve/scope.fls' as scope
+
+export func buildAndCompile(source, %%)
+    g: scope.GlobalScope()
+    c: utils.buildNoError(source).compile(g, %%)
+    return g
+
+export func buildForAll(source, %%)
+    g: buildAndCompile(source, %%)
+    if errors.count() != 0
+        console.error('>>> >> >>> Unexpected Errors')
+        console.error(errors.deliver())
+        console.error('<<< End of Unexpected Errors')
+        assert.ok(false)
+    return g.deliver(%%)

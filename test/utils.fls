@@ -1,0 +1,27 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'parse/build.fls' as build
+
+export func buildNoError(source)
+    c: build.build(source, null)
+    if errors.count() != 0
+        console.error('>>> >> >>> Unexpected Errors')
+        console.error(errors.deliver())
+        console.error('<<< End of Unexpected Errors')
+        assert.ok(false)
+    return c
+
+export func buildForOneExpr(source)
+    c: buildNoError(source)
+    assert.eq(1, c.stmts.length)
+    assert.eq(0, c.funcs.length)
+    return c.stmts[0].expr
+
+export func buildForStmts(source)
+    c: buildNoError(source)
+    assert.eq(0, c.funcs.length)
+    return c.stmts
+
+export func buildForAll(source)
+    c: buildNoError(source)
+    return {stmts: c.stmts, funcs: c.funcs}

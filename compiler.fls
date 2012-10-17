@@ -1,0 +1,34 @@
+include 'errors.fls' as errors
+include 'parse/build.fls' as parse
+include 'resolve/scope.fls' as scope
+
+fs: require('fs')
+
+func readStdin(callback)
+    r: []
+    process.stdin.on('data', (chunk): r.push(chunk))
+    process.stdin.on('end', (): callback(null, r.join('')))
+    process.stdin.on('error', (e): callback(e))
+
+func printErrorsExit()
+    errors.printErrors()
+    process.exit(1)
+
+func read(file, includePos, %%)
+    try
+        return readStdin(%%) if file = null else fs.readFile(file, %%)
+    catch e
+        errors.ExternalError(includePos, e.message)
+        printErrorsExit()
+
+export func parseFile(file, includePos, %%)
+    r: parse.build(read(file, includePos, %%).toString(), file)
+    if errors.hasError()
+        printErrorsExit()
+    return r
+
+export class Scope: scope.GlobalScope
+    ctor() super()
+
+    func parseFile(path, includePos, %%)
+        return parseFile(path, includePos, %%)

@@ -1,0 +1,20 @@
+animals: require('./animals')
+console.log(animals.Animal().sound())
+console.log(animals.Cat('Sakamoto').sound())
+
+class Wolf: animals.Animal
+    ctor(name) super(name)
+        0
+
+    func sound()
+        return this.name + ' auuu'
+
+class Dog: Wolf
+    ctor(name) super(name)
+        0
+
+    func sound()
+        return this.name + ' waon'
+
+console.log(Wolf('Nagisa').sound())
+console.log(Dog('Pyon').sound())

@@ -1,0 +1,6 @@
+console.log(/a/.exec('a') != null)
+console.log(/a/.exec('A') != null)
+console.log(/a/i.exec('A') != null)
+console.log(/a/i.exec('b') != null)
+console.log(/[0-9]/i.exec('0') != null)
+console.log(/[0-9]/i.exec('a') != null)

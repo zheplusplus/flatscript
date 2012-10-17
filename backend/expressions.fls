@@ -1,0 +1,236 @@
+include 'misc.fls' as misc
+include 'backend/mangle.fls' as mangle
+
+export class Expression
+    func mayThrow()
+        throw 'abstract Expression.mayThrow'
+
+    func toString()
+        throw 'abstract Expression.toString'
+
+export class AtomicItem: Expression
+    ctor() super()
+
+    func mayThrow()
+        return false
+
+export class Undefined: AtomicItem
+    ctor() super()
+
+    func toString()
+        return 'undefined'
+
+export class Literal: AtomicItem
+    ctor(value) super()
+        this.value: value
+
+    func toString()
+        if typeof this.value = 'string'
+            return JSON.stringify(this.value)
+        return this.value.toString()
+
+export class Reference: AtomicItem
+    ctor(name) super()
+        this.name: name
+
+    func toString()
+        return mangle.ref(this.name)
+
+export class SubReference: AtomicItem
+    ctor(name, uid) super()
+        this.name: name
+        this.uid: uid
+
+    func toString()
+        return mangle.subref(this.name, this.uid)
+
+export class FixedReference: AtomicItem
+    ctor(image) super()
+        this.image: image
+
+    func toString()
+        return this.image
+
+export class Module: AtomicItem
+    ctor(uid) super()
+        this.uid: uid
+
+    func toString()
+        return mangle.module(this.uid)
+
+export class This: AtomicItem
+    ctor() super()
+
+    func toString()
+        return mangle.TERM_THIS
+
+export class MemberAccess: Expression
+    ctor(obj, prop) super()
+        this.obj: obj
+        this.prop: prop
+
+    func mayThrow()
+        return this.obj.mayThrow()
+
+    func toString()
+        return '(' + this.obj.toString() + ').' + this.prop
+
+export class UnaryOp: Expression
+    ctor(op, rhs) super()
+        this.op: op
+        this.rhs: rhs
+
+    func mayThrow()
+        return this.rhs.mayThrow()
+
+    func toString()
+        return this.op + '(' + this.rhs.toString() + ')'
+
+export class BinaryOp: Expression
+    ctor(op, lhs, rhs) super()
+        this.op: op
+        this.lhs: lhs
+        this.rhs: rhs
+
+    func mayThrow()
+        return this.lhs.mayThrow() || this.rhs.mayThrow()
+
+    func toString()
+        return '(' + this.lhs.toString() + ')' + this.op + '(' + this.rhs.toString() + ')'
+
+export class New: Expression
+    ctor(rhs) super()
+        this.rhs: rhs
+
+    func mayThrow()
+        return this.rhs.mayThrow()
+
+    func toString()
+        return 'new ' + this.rhs.toString()
+
+export class ArrayLiteral: Expression
+    ctor(arr) super()
+        this.arr: arr
+
+    func mayThrow()
+        this.arr |:
+            if $.mayThrow()
+                return true
+        return false
+
+    func toString()
+        return '[' + (this.arr |: $.toString()).join(',') + ']'
+
+export class ArrayConcat: Expression
+    ctor(lhs, rhs) super()
+        this.lhs: lhs
+        this.rhs: rhs
+
+    func mayThrow()
+        return this.lhs.mayThrow() || this.rhs.mayThrow()
+
+    func toString()
+        return '(' + this.lhs.toString() + ').concat(' + this.rhs.toString() + ')'
+
+export class ObjectLiteral: Expression
+    ctor(obj) super()
+        this.obj: obj
+
+    func mayThrow()
+        this.arr |:
+            if $.mayThrow()
+                return true
+        return false
+
+    func toString()
+        return '{' + (this.obj |: JSON.stringify($k) + ':' + $.toString()).join(',') + '}'
+
+export class Lookup: Expression
+    ctor(obj, key) super()
+        this.obj: obj
+        this.key: key
+
+    func mayThrow()
+        return this.obj.mayThrow() || this.key.mayThrow()
+
+    func toString()
+        return '(' + this.obj.toString() + ')[' + this.key.toString() + ']'
+
+export class Slice: Expression
+    ctor(arr, begin, end, step) super()
+        this.arr: arr
+        this.begin: begin
+        this.end: end
+        this.step: step
+
+    func mayThrow()
+        return this.arr.mayThrow() || this.begin.mayThrow() || this.end.mayThrow()
+
+    func toString()
+        return '$listslice(' + [this.arr.toString(), this.begin.toString(), this.end.toString(),
+                                this.step.toString()].join(',') + ')'
+
+export class Call: Expression
+    ctor(callee, args) super()
+        this.callee: callee
+        this.args: args
+
+    func mayThrow()
+        return true
+
+    func toString()
+        return '(' + this.callee.toString() + ')(' + (this.args |: $.toString()).join(',') + ')'
+
+export class Conditional: Expression
+    ctor(pred, consq, alter) super()
+        this.predicate: pred
+        this.consequence: consq
+        this.alternative: alter
+
+    func mayThrow()
+        return this.predicate.mayThrow() || this.consequence.mayThrow() ||
+               this.alternative.mayThrow()
+
+    func toString()
+        return '(' + this.predicate.toString() + ')?(' + this.consequence.toString() + '):(' +
+               this.alternative.toString() + ')'
+
+export class SuperCall: Expression
+    ctor(property, args) super()
+        this.property: property
+        this.args: args
+
+    func mayThrow()
+        return true
+
+    func toString()
+        return '$super.' + this.property + '.call($this' +
+               (this.args |: ',' + $.toString()).join(',') + ')'
+
+export class AnonymousRef: AtomicItem
+    ctor(refId) super()
+        this.refId: refId
+
+    func toString()
+        return mangle.anonymousRef(this.refId)
+
+export class RegularAsyncCallbackArg: Expression
+    ctor(asyncFlow, throwMethod) super()
+        this.asyncFlow: asyncFlow
+        this.throwMethod: throwMethod
+        this.id: misc.uid()
+
+    func mayThrow()
+        return false
+
+    func toString()
+        return ['function($cbE,', mangle.anonymousRef(this.id), ') {',
+                    'if ($cbE)', this.throwMethod.scheme('$cbE'),
+                    this.asyncFlow.toString(),
+                '}'].join('')
+
+export class ExceptionRef: AtomicItem
+    ctor() super()
+
+    func toString()
+        return mangle.TERM_EXCEPTION
