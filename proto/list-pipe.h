@@ -14,8 +14,7 @@ namespace proto {
             : expr(std::move(e))
         {}
 
-        virtual void writeBegin() const = 0;
-        virtual void writeEnd() const = 0;
+        virtual std::string stringify(std::string const& list_repr) const = 0;
 
         util::sptr<Expression const> expr;
     };
@@ -27,8 +26,7 @@ namespace proto {
             : PipeBase(std::move(expr))
         {}
 
-        void writeBegin() const;
-        void writeEnd() const;
+        std::string stringify(std::string const& list_repr) const;
     };
 
     struct PipeFilter
@@ -38,8 +36,7 @@ namespace proto {
             : PipeBase(std::move(expr))
         {}
 
-        void writeBegin() const;
-        void writeEnd() const;
+        std::string stringify(std::string const& list_repr) const;
     };
 
     struct ListPipeline
@@ -53,8 +50,7 @@ namespace proto {
             , pipeline(std::move(p))
         {}
 
-        void write() const;
-        void writeAsPipe() const;
+        std::string stringify(bool in_pipe) const;
 
         util::sptr<Expression const> const list;
         std::vector<util::sptr<PipeBase const>> const pipeline;

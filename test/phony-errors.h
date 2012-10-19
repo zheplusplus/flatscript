@@ -33,6 +33,24 @@ namespace test {
         int const character;
     };
 
+    struct ModifyNameRec {
+        ModifyNameRec(misc::position const& ps, std::string const& n)
+            : pos(ps)
+            , name(n)
+        {}
+
+        misc::position const pos;
+        std::string const name;
+    };
+
+    struct SliceStepOmitRec {
+        explicit SliceStepOmitRec(misc::position const& ps)
+            : pos(ps)
+        {}
+
+        misc::position const pos;
+    };
+
     struct ElseNotMatchRec {
         misc::position const pos;
 
@@ -79,12 +97,12 @@ namespace test {
         {}
     };
 
-    struct VarRedefRec {
+    struct NameRedefRec {
         misc::position const prev_pos;
         misc::position const this_pos;
         std::string const name;
 
-        VarRedefRec(misc::position const& ppos, misc::position const& tpos, std::string const& n)
+        NameRedefRec(misc::position const& ppos, misc::position const& tpos, std::string const& n)
             : prev_pos(ppos)
             , this_pos(tpos)
             , name(n)
@@ -117,11 +135,11 @@ namespace test {
         {}
     };
 
-    struct VarNondefRec {
+    struct NameNondefRec {
         misc::position const ref_pos;
         std::string const name;
 
-        VarNondefRec(misc::position const& rpos, std::string const& n)
+        NameNondefRec(misc::position const& rpos, std::string const& n)
             : ref_pos(rpos)
             , name(n)
         {}
@@ -192,20 +210,20 @@ namespace test {
         {}
     };
 
-    struct VariableNotCallableRec {
+    struct NameNotCallableRec {
         misc::position const call_pos;
 
-        explicit VariableNotCallableRec(misc::position const& cp)
+        explicit NameNotCallableRec(misc::position const& cp)
             : call_pos(cp)
         {}
     };
 
-    struct VarCallArgCountWrong {
+    struct NameCallArgCountWrong {
         misc::position const call_pos;
         int const actual;
         int const wanted;
 
-        VarCallArgCountWrong(misc::position const& c, int a, int w)
+        NameCallArgCountWrong(misc::position const& c, int a, int w)
             : call_pos(c)
             , actual(a)
             , wanted(w)
@@ -253,22 +271,24 @@ namespace test {
     std::vector<TabAsIndRec> getTabAsIndents();
     std::vector<BadIndentRec> getBadIndents();
     std::vector<InvCharRec> getInvCharRecs();
+    std::vector<ModifyNameRec> getModifyNameRecs();
+    std::vector<SliceStepOmitRec> getSliceStepOmits();
     std::vector<ElseNotMatchRec> getElseNotMatches();
     std::vector<IfMatchedRec> getIfMatchedRecs();
     std::vector<ExcessIndRec> getExcessInds();
     std::vector<FlowTerminatedRec> getFlowTerminatedRecs();
     std::vector<FuncForbiddenRec> getForbiddenFuncs();
-    std::vector<ForbidDefRec> getForbidVarDefs();
-    std::vector<VarRedefRec> getLocalRedefs();
+    std::vector<ForbidDefRec> getForbidNameDefs();
+    std::vector<NameRedefRec> getLocalRedefs();
     std::vector<InvalidRefRec> getInvalidRefs();
-    std::vector<VarNondefRec> getNondefs();
+    std::vector<NameNondefRec> getNondefs();
     std::vector<NABinaryOpRec> getNABinaryOps();
     std::vector<NAPreUnaryOpRec> getNAPreUnaryOps();
     std::vector<RetTypeConflictRec> getRetTypeConflicts();
     std::vector<RetTypeUnresolvableRec> getRetTypeUnresolvables();
     std::vector<CondNotBoolRec> getCondNotBools();
-    std::vector<VariableNotCallableRec> getVariableNotCallables();
-    std::vector<VarCallArgCountWrong> getVarCallArgCountWrong();
+    std::vector<NameNotCallableRec> getNameNotCallables();
+    std::vector<NameCallArgCountWrong> getNameCallArgCountWrong();
     std::vector<ListMemberTypesNotSame> getListMemberTypesNotSame();
     std::vector<MemberCallNotFound> getMemberCallNotFound();
     std::vector<PipeRefNotInListContext> getPipeRefNotInListContext();

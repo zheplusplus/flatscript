@@ -41,6 +41,20 @@ void error::invalidChar(misc::position const& pos, int character)
               << " (decimal value: " << character << ")." << std::endl;
 }
 
+void error::modifyName(misc::position const& pos, std::string const& name)
+{
+    has_error = true;
+    std::cerr << pos.str() << std::endl;
+    std::cerr << "    attempt to modify name: " << name << std::endl;
+}
+
+void error::sliceStepOmitted(misc::position const& pos)
+{
+    has_error = true;
+    std::cerr << pos.str() << std::endl;
+    std::cerr << "    slice step omitted, or omit the colon together." << std::endl;
+}
+
 void error::elseNotMatchIf(misc::position const& else_pos)
 {
     has_error = true;
@@ -79,31 +93,31 @@ void error::forbidDefFunc(misc::position const& pos, std::string const& name)
               << std::endl;
 }
 
-void error::forbidDefVar(misc::position const& pos, std::string const& name)
+void error::forbidDefName(misc::position const& pos, std::string const& name)
 {
     has_error = true;
     std::cerr << pos.str() << std::endl;
-    std::cerr << "    " << "attempt define variable `" << name << "' but forbidden here."
+    std::cerr << "    " << "attempt define name `" << name << "' but forbidden here."
               << std::endl;
 }
 
-void error::varAlreadyInLocal(misc::position const& prev_def_pos
-                            , misc::position const& this_def_pos
-                            , std::string const& var_name)
+void error::nameAlreadyInLocal(misc::position const& prev_def_pos
+                             , misc::position const& this_def_pos
+                             , std::string const& name)
 {
     has_error = true;
     std::cerr << this_def_pos.str() << std::endl;
-    std::cerr << "    variable `" << var_name << "' already defined." << std::endl;
+    std::cerr << "    name `" << name << "' already defined." << std::endl;
     std::cerr << "    see previous definition in local at " << prev_def_pos.str() << std::endl;
 }
 
-void error::varRefBeforeDef(misc::position const& def_pos
+void error::nameRefBeforeDef(misc::position const& def_pos
                           , std::list<misc::position> const& ref_positions
                           , std::string const& name)
 {
     has_error = true;
     std::cerr << def_pos.str() << std::endl;
-    std::cerr << "    variable `" << name << "' definition after reference. see references at:"
+    std::cerr << "    name `" << name << "' definition after reference. see references at:"
               << std::endl;
     std::for_each(ref_positions.begin()
                 , ref_positions.end()
@@ -113,11 +127,11 @@ void error::varRefBeforeDef(misc::position const& def_pos
                   });
 }
 
-void error::varNotDef(misc::position const& ref_pos, std::string const& name)
+void error::nameNotDef(misc::position const& ref_pos, std::string const& name)
 {
     has_error = true;
     std::cerr << ref_pos.str() << std::endl;
-    std::cerr << "    variable `" << name << "' not defined." << std::endl;
+    std::cerr << "    name `" << name << "' not defined." << std::endl;
 }
 
 void error::binaryOpNotAvai(misc::position const& pos
@@ -172,18 +186,18 @@ void error::condNotBool(misc::position const& pos, std::string const& actual_typ
     std::cerr << "    condition type is not boolean, actual type: " << actual_type << std::endl;
 }
 
-void error::requestVariableNotCallable(misc::position const& call_pos)
+void error::requestNameNotCallable(misc::position const& call_pos)
 {
     has_error = true;
     std::cerr << call_pos.str() << std::endl;
-    std::cerr << "    variable not callable." << std::endl;
+    std::cerr << "    name not callable." << std::endl;
 }
 
-void error::callVariableArgCountWrong(misc::position const& call_pos, int actual, int wanted)
+void error::callNameArgCountWrong(misc::position const& call_pos, int actual, int wanted)
 {
     has_error = true;
     std::cerr << call_pos.str() << std::endl;
-    std::cerr << "    call variable with " << actual << " arguments, but " << wanted << " needed."
+    std::cerr << "    call name with " << actual << " arguments, but " << wanted << " needed."
               << std::endl;
 }
 

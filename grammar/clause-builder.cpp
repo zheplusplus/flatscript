@@ -17,7 +17,7 @@ namespace {
             : Acceptor(misc::position())
         {}
 
-        void acceptStmt(util::sptr<Statement const>) {}
+        void acceptStmt(util::sptr<Statement>) {}
         void acceptFunc(util::sptr<Function const>) {}
         void deliverTo(util::sref<Acceptor>) {}
     };
@@ -30,7 +30,7 @@ void AcceptorStack::add(int level, util::sptr<Acceptor> acc)
     _acceptors.push_back(std::move(acc));
 }
 
-void AcceptorStack::nextStmt(int level, util::sptr<Statement const> stmt)
+void AcceptorStack::nextStmt(int level, util::sptr<Statement> stmt)
 {
     _prepareLevel(level, stmt->pos);
     _acceptors.back()->acceptStmt(std::move(stmt));
@@ -53,7 +53,7 @@ void AcceptorStack::_fillTo(int level, misc::position const& pos)
     if (int(_acceptors.size()) <= level) {
         error::excessiveIndent(pos);
         while (int(_acceptors.size()) <= level) {
-            _acceptors.push_back(std::move(util::mkptr(new DummyAcceptor)));
+            _acceptors.push_back(util::mkptr(new DummyAcceptor));
         }
     }
 }
@@ -91,7 +91,7 @@ util::sref<AcceptorStack::AcceptorOfPack> AcceptorStack::_prepare1stAcceptor()
     return ref;
 }
 
-void AcceptorStack::AcceptorOfPack::acceptStmt(util::sptr<Statement const> stmt)
+void AcceptorStack::AcceptorOfPack::acceptStmt(util::sptr<Statement> stmt)
 {
     _pack.addStmt(std::move(stmt));
 }
@@ -106,29 +106,44 @@ Block AcceptorStack::AcceptorOfPack::pack()
     return std::move(_pack);
 }
 
-void ClauseBuilder::addArith(int indent_len, util::sptr<Expression const> arith)
+void ClauseBuilder::addArith(int indent_len, util::sptr<flchk::Expression const> arith)
 {
     misc::position pos(arith->pos);
-    _stack.nextStmt(indent_len, std::move(util::mkptr(new Arithmetics(pos, std::move(arith)))));
+    _stack.nextStmt(indent_len, util::mkptr(new Arithmetics(pos, std::move(arith))));
 }
 
-void ClauseBuilder::addVarDef(int indent_len
-                            , std::string const& name
-                            , util::sptr<Expression const> init)
+void ClauseBuilder::addNameDef(int indent_len
+                             , std::string const& name
+                             , util::sptr<flchk::Expression const> init)
 {
     misc::position pos(init->pos);
-    _stack.nextStmt(indent_len, std::move(util::mkptr(new VarDef(pos, name, std::move(init)))));
+    _stack.nextStmt(indent_len, util::mkptr(new NameDef(pos, name, std::move(init))));
 }
 
-void ClauseBuilder::addReturn(int indent_len, util::sptr<Expression const> ret_val)
+void ClauseBuilder::addReturn(int indent_len, util::sptr<flchk::Expression const> ret_val)
 {
     misc::position pos(ret_val->pos);
-    _stack.nextStmt(indent_len, std::move(util::mkptr(new Return(pos, std::move(ret_val)))));
+    _stack.nextStmt(indent_len, util::mkptr(new Return(pos, std::move(ret_val))));
 }
 
 void ClauseBuilder::addReturnNothing(int indent_len, misc::position const& pos)
 {
-    _stack.nextStmt(indent_len, std::move(util::mkptr(new ReturnNothing(pos))));
+    _stack.nextStmt(indent_len, util::mkptr(new ReturnNothing(pos)));
+}
+
+void ClauseBuilder::addImport(int indent_len
+                            , misc::position const& pos
+                            , std::vector<std::string> const& names)
+{
+    _stack.nextStmt(indent_len, util::mkptr(new Import(pos, names)));
+}
+
+void ClauseBuilder::addAttrSet(int indent_len
+                             , util::sptr<flchk::Expression const> set_point
+                             , util::sptr<flchk::Expression const> value)
+{
+    _stack.nextStmt(indent_len, util::mkptr(
+                new AttrSet(set_point->pos, std::move(set_point), std::move(value))));
 }
 
 void ClauseBuilder::addFunction(int indent_len
@@ -136,19 +151,17 @@ void ClauseBuilder::addFunction(int indent_len
                               , std::string const& name
                               , std::vector<std::string> const& params)
 {
-    _stack.add(indent_len, std::move(util::mkptr(new FunctionAcceptor(pos, name, params))));
+    _stack.add(indent_len, util::mkptr(new FunctionAcceptor(pos, name, params)));
 }
 
-void ClauseBuilder::addIf(int indent_len, util::sptr<Expression const> condition)
+void ClauseBuilder::addIf(int indent_len, util::sptr<flchk::Expression const> predicate)
 {
-    misc::position pos(condition->pos);
-    _stack.add(indent_len, std::move(util::mkptr(new IfAcceptor(pos, std::move(condition)))));
+    _stack.add(indent_len, util::mkptr(new IfAcceptor(predicate->pos, std::move(predicate))));
 }
 
-void ClauseBuilder::addIfnot(int indent_len, util::sptr<Expression const> condition)
+void ClauseBuilder::addIfnot(int indent_len, util::sptr<flchk::Expression const> predicate)
 {
-    misc::position pos(condition->pos);
-    _stack.add(indent_len, std::move(util::mkptr(new IfnotAcceptor(pos, std::move(condition)))));
+    _stack.add(indent_len, util::mkptr(new IfnotAcceptor(predicate->pos, std::move(predicate))));
 }
 
 void ClauseBuilder::addElse(int indent_len, misc::position const& pos)

@@ -1,9 +1,0 @@
-func fn0()
-    func ambiguous(x, y)
-        return x + y
-    return ambiguous
-
-func ambiguous(a, b, c)
-    return a * b * c
-
-fn0()

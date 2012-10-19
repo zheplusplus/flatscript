@@ -23,33 +23,33 @@ TEST_F(ExprNodesTest, SimpleLiterals)
     util::sptr<proto::Block> block(new proto::Block);
     flchk::SymbolTable st;
     flchk::IntLiteral int0(pos, "20110116");
-    int0.compile(util::mkref(st))->write();
+    int0.compile(util::mkref(st))->stringify(false);
     EXPECT_TRUE(int0.isLiteral());
 
     flchk::FloatLiteral float0(pos, "19.50");
-    float0.compile(util::mkref(st))->write();
+    float0.compile(util::mkref(st))->stringify(false);
     EXPECT_TRUE(float0.isLiteral());
 
     flchk::BoolLiteral bool0(pos, true);
-    bool0.compile(util::mkref(st))->write();
+    bool0.compile(util::mkref(st))->stringify(false);
     EXPECT_TRUE(bool0.isLiteral());
     EXPECT_TRUE(bool0.boolValue());
 
     flchk::IntLiteral int1(pos, "441499");
-    int1.compile(util::mkref(st))->write();
+    int1.compile(util::mkref(st))->stringify(false);
     EXPECT_TRUE(int1.isLiteral());
 
     flchk::FloatLiteral float1(pos, "0.1950");
-    float1.compile(util::mkref(st))->write();
+    float1.compile(util::mkref(st))->stringify(false);
     EXPECT_TRUE(float1.isLiteral());
 
     flchk::BoolLiteral bool1(pos, false);
-    bool1.compile(util::mkref(st))->write();
+    bool1.compile(util::mkref(st))->stringify(false);
     EXPECT_TRUE(bool1.isLiteral());
     EXPECT_FALSE(bool1.boolValue());
 
     flchk::StringLiteral str(pos, "");
-    str.compile(util::mkref(st))->write();
+    str.compile(util::mkref(st))->stringify(false);
     EXPECT_FALSE(str.isLiteral());
     EXPECT_FALSE(str.boolValue());
     EXPECT_FALSE(error::hasError());
@@ -78,7 +78,7 @@ TEST_F(ExprNodesTest, ListLiterals)
     members.push_back(util::mkptr(new flchk::FloatLiteral(pos, "20.54")));
 
     flchk::ListLiteral ls(pos, std::move(members));
-    ls.compile(util::mkref(st))->write();
+    ls.compile(util::mkref(st))->stringify(false);
     EXPECT_FALSE(ls.isLiteral());
 
     EXPECT_FALSE(error::hasError());
@@ -96,16 +96,16 @@ TEST_F(ExprNodesTest, Reference)
     misc::position pos(3);
     util::sptr<proto::Block> block(new proto::Block);
     flchk::GlobalFilter filter;
-    filter.getSymbols()->defVar(pos, "a20110116");
-    filter.getSymbols()->defVar(pos, "b1950");
+    filter.getSymbols()->defName(pos, "a20110116");
+    filter.getSymbols()->defName(pos, "b1950");
 
     flchk::Reference ref0(pos, "a20110116");
     EXPECT_FALSE(ref0.isLiteral());
-    ref0.compile(filter.getSymbols())->write();
+    ref0.compile(filter.getSymbols())->stringify(false);
 
     flchk::Reference ref1(pos, "b1950");
     EXPECT_FALSE(ref0.isLiteral());
-    ref1.compile(filter.getSymbols())->write();
+    ref1.compile(filter.getSymbols())->stringify(false);
 
     EXPECT_FALSE(error::hasError());
 
@@ -120,8 +120,8 @@ TEST_F(ExprNodesTest, Operations)
     misc::position pos(4);
     util::sptr<proto::Block> block(new proto::Block);
     flchk::GlobalFilter filter;
-    filter.getSymbols()->defVar(pos, "wasureru");
-    filter.getSymbols()->defVar(pos, "koto");
+    filter.getSymbols()->defName(pos, "wasureru");
+    filter.getSymbols()->defName(pos, "koto");
 
     flchk::BinaryOp binary0(pos
                           , std::move(util::mkptr(new flchk::IntLiteral(pos, "1")))
@@ -149,26 +149,26 @@ TEST_F(ExprNodesTest, Operations)
                           , util::mkptr(new flchk::IntLiteral(pos, "2")));
     flchk::Negation nega(pos, util::mkptr(new flchk::FloatLiteral(pos, "1954.01")));
 
-    binary0.compile(filter.getSymbols())->write();
+    binary0.compile(filter.getSymbols())->stringify(false);
     EXPECT_TRUE(binary0.isLiteral());
 
-    binary1.compile(filter.getSymbols())->write();
+    binary1.compile(filter.getSymbols())->stringify(false);
     EXPECT_TRUE(binary1.isLiteral());
     EXPECT_TRUE(binary1.boolValue());
 
-    pre_unary0.compile(filter.getSymbols())->write();
+    pre_unary0.compile(filter.getSymbols())->stringify(false);
     EXPECT_TRUE(pre_unary0.isLiteral());
 
-    pre_unary1.compile(filter.getSymbols())->write();
+    pre_unary1.compile(filter.getSymbols())->stringify(false);
     EXPECT_FALSE(pre_unary1.isLiteral());
 
-    conj.compile(filter.getSymbols())->write();
+    conj.compile(filter.getSymbols())->stringify(false);
     EXPECT_FALSE(conj.isLiteral());
 
-    disj.compile(filter.getSymbols())->write();
+    disj.compile(filter.getSymbols())->stringify(false);
     EXPECT_TRUE(disj.isLiteral());
 
-    nega.compile(filter.getSymbols())->write();
+    nega.compile(filter.getSymbols())->stringify(false);
     EXPECT_TRUE(nega.isLiteral());
 
     EXPECT_FALSE(error::hasError());
@@ -203,14 +203,14 @@ TEST_F(ExprNodesTest, Calls)
     misc::position pos_d(300);
     util::sptr<proto::Block> block(new proto::Block);
     flchk::GlobalFilter filter;
-    filter.getSymbols()->defVar(pos, "darekatasukete");
-    filter.getSymbols()->defVar(pos, "leap");
+    filter.getSymbols()->defName(pos, "darekatasukete");
+    filter.getSymbols()->defName(pos, "leap");
 
     filter.defFunc(pos_d, "fib", std::vector<std::string>(), util::mkptr(new flchk::FuncBodyFilter(
                     pos, filter.getSymbols(), std::vector<std::string>())));
 
     std::vector<util::sptr<flchk::Expression const>> args;
-    flchk::Call Call0(pos, "fib", std::move(args));
+    flchk::Call Call0(pos, util::mkptr(new flchk::Reference(pos, "fib")), std::move(args));
 
     args.push_back(util::mkptr(new flchk::BoolLiteral(pos, false)));
     args.push_back(util::mkptr(new flchk::PreUnaryOp(pos, "-", util::mkptr(
@@ -218,19 +218,21 @@ TEST_F(ExprNodesTest, Calls)
     args.push_back(util::mkptr(new flchk::Negation(pos, util::mkptr(
                                             new flchk::IntLiteral(pos, "21")))));
     args.push_back(util::mkptr(new flchk::Reference(pos, "darekatasukete")));
-    flchk::Call Call1(pos, "leap", std::move(args));
+    flchk::Call Call1(pos, util::mkptr(new flchk::Reference(pos, "leap")), std::move(args));
 
-    Call0.compile(filter.getSymbols())->write();
+    Call0.compile(filter.getSymbols())->stringify(false);
     EXPECT_FALSE(Call0.isLiteral());
 
-    Call1.compile(filter.getSymbols())->write();
+    Call1.compile(filter.getSymbols())->stringify(false);
     EXPECT_FALSE(Call1.isLiteral());
 
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, CALL, "fib", 0)
-        (pos, CALL, "leap", 4)
+        (pos, CALL, 0)
+            (pos, REFERENCE, "fib")
+        (pos, CALL, 4)
+            (pos, REFERENCE, "leap")
             (pos, BOOLEAN, "false")
             (pos, PRE_UNARY_OP, "-")
                 (pos, FLOATING, "11.11")
@@ -299,17 +301,17 @@ TEST_F(ExprNodesTest, ListAppending)
     misc::position pos(8);
     util::sptr<proto::Block> block(new proto::Block);
     flchk::GlobalFilter filter;
-    filter.getSymbols()->defVar(pos, "chiaki");
-    filter.getSymbols()->defVar(pos, "douma");
+    filter.getSymbols()->defName(pos, "chiaki");
+    filter.getSymbols()->defName(pos, "douma");
 
     flchk::ListAppend lsa(pos
                         , util::mkptr(new flchk::Reference(pos, "chiaki"))
                         , util::mkptr(new flchk::Reference(pos, "douma")));
 
-    lsa.compile(filter.getSymbols())->write();
+    lsa.compile(filter.getSymbols())->stringify(false);
     ASSERT_FALSE(error::hasError());
 
-    lsa.fold()->compile(filter.getSymbols())->write();
+    lsa.fold()->compile(filter.getSymbols())->stringify(false);
 
     DataTree::expectOne()
         (pos, BINARY_OP, "++")

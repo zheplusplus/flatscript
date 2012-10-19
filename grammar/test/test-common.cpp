@@ -59,30 +59,44 @@ std::ostream& operator<<(std::ostream& os, GrammarData const& data)
                                     : (os << data.pos << " arg size=" << data.func_arg_size);
 }
 
-std::string const test::VAR_DEF_FILTERED(" var def filtered");
+std::string const test::NAME_DEF_FILTERED(" name def filtered");
 std::string const test::FUNC_DEF_FILTERED(" func def filtered");
 
 NodeType const test::BOOLEAN("boolean");
 NodeType const test::INTEGER("integer");
 NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
-NodeType const test::REFERENCE("reference");
-NodeType const test::LIST("list");
-NodeType const test::LIST_ELEMENT("list element");
-NodeType const test::LIST_INDEX("list index");
+NodeType const test::IDENTIFIER("identifier");
+NodeType const test::LIST_BEGIN("list begin");
+NodeType const test::LIST_END("list end");
 
 NodeType const test::BINARY_OP("binary operation");
 NodeType const test::PRE_UNARY_OP("prefix unary operation");
-NodeType const test::LIST_PIPELINE("list pipeline");
+NodeType const test::OPERAND("operand");
+NodeType const test::LIST_PIPELINE_BEGIN("list pipeline begin");
+NodeType const test::LIST_PIPELINE_END("list pipeline end");
 NodeType const test::PIPE_MAP("pipeline map");
 NodeType const test::PIPE_FILTER("pipeline filter");
+NodeType const test::LIST_ELEMENT("list element");
+NodeType const test::LIST_INDEX("list index");
 
-NodeType const test::CALL("call");
+NodeType const test::CALL_BEGIN("call begin");
+NodeType const test::CALL_END("call end");
+NodeType const test::ARGUMENTS("arguments");
+NodeType const test::LIST_SLICE_BEGIN("list slice begin");
+NodeType const test::LIST_SLICE_END("list slice end");
+NodeType const test::LIST_SLICE_DEFAULT("list slice default");
 
-NodeType const test::VAR_DEF("var def");
+NodeType const test::DICT_BEGIN("dictionary begin");
+NodeType const test::DICT_END("dictionary end");
+NodeType const test::DICT_ITEM("dictionary item");
+
+NodeType const test::NAME_DEF("name def");
 NodeType const test::ARITHMETICS("arithmetics");
 NodeType const test::RETURN("return");
 NodeType const test::RETURN_NOTHING("return nothing");
+NodeType const test::IMPORT("import");
+NodeType const test::ATTR_SET("attribute set");
 
 NodeType const test::FUNC_DEF("func def");
 NodeType const test::PARAMETER("parameter");

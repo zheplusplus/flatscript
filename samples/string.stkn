@@ -1,16 +1,18 @@
+import console
+
 func ret_string()
     return "ste" 'kin'
 stekin: ret_string()
-write(stekin)
+console.log(stekin)
 
-write(stekin + true)
+console.log(stekin + true)
 stekin2: stekin + stekin
-write(stekin2)
+console.log(stekin2)
 
 x: 112
-write(x + stekin)
+console.log(x + stekin)
 
-write(3.14 + "" + 3.14)
+console.log(3.14 + "" + 3.14)
 
 func add_str(s)
     func adding(a)
@@ -19,5 +21,5 @@ func add_str(s)
 
 y: add_str('abc
     ')
-write(y(10))
-write(y(false))
+console.log(y(10))
+console.log(y(false))

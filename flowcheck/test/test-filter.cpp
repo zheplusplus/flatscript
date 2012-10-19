@@ -27,15 +27,15 @@ TEST_F(FilterTest, GlobalFilter)
                               , util::mkptr(new flchk::FloatLiteral(pos, "235.7"))));
 
     flchk::GlobalFilter filter0;
-    filter0.getSymbols()->defVar(pos, "kobayakawa");
-    filter0.getSymbols()->defVar(pos, "yutaka");
-    filter0.getSymbols()->defVar(pos, "tamura");
-    filter0.getSymbols()->defVar(pos, "hiyori");
-    filter0.getSymbols()->defVar(pos, "minami");
+    filter0.getSymbols()->defName(pos, "kobayakawa");
+    filter0.getSymbols()->defName(pos, "yutaka");
+    filter0.getSymbols()->defName(pos, "tamura");
+    filter0.getSymbols()->defName(pos, "hiyori");
+    filter0.getSymbols()->defName(pos, "minami");
 
     filter0.addArith(pos, util::mkptr(new flchk::BoolLiteral(pos, true)));
-    filter0.defVar(pos, "soujirou", std::move(binary));
-    filter0.defVar(pos, "iwasaki", util::mkptr(new flchk::Reference(pos, "minami")));
+    filter0.defName(pos, "soujirou", std::move(binary));
+    filter0.defName(pos, "iwasaki", util::mkptr(new flchk::Reference(pos, "minami")));
 
     util::sptr<flchk::Filter> filter_consq(new flchk::SymbolDefFilter(filter0.getSymbols()));
     misc::position pos_consq(100);
@@ -60,9 +60,9 @@ TEST_F(FilterTest, GlobalFilter)
         (SCOPE_BEGIN)
             (ARITHMETICS)
                 (pos, BOOLEAN, "true")
-            (VAR_DEF, "soujirou")
+            (NAME_DEF, "soujirou")
                 (pos, FLOATING, "236.7")
-            (VAR_DEF, "iwasaki")
+            (NAME_DEF, "iwasaki")
                 (pos, REFERENCE, "minami")
             (BRANCH)
             (pos, REFERENCE, "tamura")
@@ -88,7 +88,7 @@ TEST_F(FilterTest, TerminatedError)
     misc::position pos_ignored(201);
 
     flchk::GlobalFilter filter0;
-    filter0.defVar(pos, "patricia", util::mkptr(new flchk::Reference(pos, "martin")));
+    filter0.defName(pos, "patricia", util::mkptr(new flchk::Reference(pos, "martin")));
     filter0.addReturnNothing(pos);
     filter0.addReturn(pos_error, util::mkptr(new flchk::Reference(pos, "patty")));
     filter0.addReturnNothing(pos_ignored);
@@ -182,8 +182,8 @@ TEST_F(FilterTest, TwoPathBranchFoldedOnFalse)
                               , util::mkptr(new flchk::FloatLiteral(pos, "11235.8"))));
 
     flchk::GlobalFilter filter0;
-    filter0.getSymbols()->defVar(pos, "yui");
-    filter0.getSymbols()->defVar(pos, "narumi");
+    filter0.getSymbols()->defName(pos, "yui");
+    filter0.getSymbols()->defName(pos, "narumi");
 
     util::sptr<flchk::Filter> filter_consq(new flchk::SymbolDefFilter(filter0.getSymbols()));
     misc::position pos_consq(600);
@@ -220,8 +220,8 @@ TEST_F(FilterTest, TwoPathBranchFoldedOnTrue)
                               , util::mkptr(new flchk::FloatLiteral(pos, "11235.8"))));
 
     flchk::GlobalFilter filter0;
-    filter0.getSymbols()->defVar(pos, "yui");
-    filter0.getSymbols()->defVar(pos, "narumi");
+    filter0.getSymbols()->defName(pos, "yui");
+    filter0.getSymbols()->defName(pos, "narumi");
 
     util::sptr<flchk::Filter> filter_consq(new flchk::SymbolDefFilter(filter0.getSymbols()));
     misc::position pos_consq(700);
@@ -258,7 +258,7 @@ TEST_F(FilterTest, IfNotFoldedOnFalse)
                               , util::mkptr(new flchk::FloatLiteral(pos, "11235.8"))));
 
     flchk::GlobalFilter filter0;
-    filter0.getSymbols()->defVar(pos, "narumi");
+    filter0.getSymbols()->defName(pos, "narumi");
 
     util::sptr<flchk::Filter> filter_alter(new flchk::SymbolDefFilter(filter0.getSymbols()));
     misc::position pos_alter(801);

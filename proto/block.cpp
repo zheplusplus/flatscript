@@ -1,6 +1,5 @@
 #include <algorithm>
-
-#include <output/stmt-writer.h>
+#include <iostream>
 
 #include "block.h"
 #include "function.h"
@@ -19,7 +18,7 @@ void Block::addFunc(util::sptr<Function const> func)
 
 void Block::write() const
 {
-    output::blockBegin();
+    std::cout << "{" << std::endl;
     std::for_each(_funcs.begin()
                 , _funcs.end()
                 , [&](util::sptr<Function const> const& func)
@@ -32,5 +31,5 @@ void Block::write() const
                   {
                       stmt->write();
                   });
-    output::blockEnd();
+    std::cout << "}" << std::endl;
 }

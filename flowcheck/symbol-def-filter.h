@@ -12,9 +12,9 @@ namespace flchk {
             : _symbols(symbols)
         {}
     public:
-        void defVar(misc::position const& pos
-                  , std::string const& name
-                  , util::sptr<Expression const>);
+        void defName(misc::position const& pos
+                   , std::string const& name
+                   , util::sptr<Expression const>);
         util::sref<SymbolTable> getSymbols();
         void defFunc(misc::position const& pos
                    , std::string const& name

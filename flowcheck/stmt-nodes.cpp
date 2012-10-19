@@ -22,11 +22,11 @@ util::sptr<proto::Statement const> Branch::compile(util::sref<SymbolTable> st) c
                                        , alternative.compile(st)));
 }
 
-util::sptr<proto::Statement const> VarDef::compile(util::sref<SymbolTable> st) const
+util::sptr<proto::Statement const> NameDef::compile(util::sref<SymbolTable> st) const
 {
     util::sptr<proto::Expression const> init_value(init->compile(st));
-    st->defVar(pos, name);
-    return util::mkptr(new proto::VarDef(name, std::move(init_value)));
+    st->defName(pos, name);
+    return util::mkptr(new proto::NameDef(name, std::move(init_value)));
 }
 
 util::sptr<proto::Statement const> Return::compile(util::sref<SymbolTable> st) const
@@ -37,4 +37,20 @@ util::sptr<proto::Statement const> Return::compile(util::sref<SymbolTable> st) c
 util::sptr<proto::Statement const> ReturnNothing::compile(util::sref<SymbolTable>) const
 {
     return util::mkptr(new proto::ReturnNothing);
+}
+
+util::sptr<proto::Statement const> Import::compile(util::sref<SymbolTable> st) const
+{
+    std::for_each(names.begin()
+                , names.end()
+                , [&](std::string const& name)
+                  {
+                      st->defName(pos, name);
+                  });
+    return util::mkptr(new proto::Import(names));
+}
+
+util::sptr<proto::Statement const> AttrSet::compile(util::sref<SymbolTable> st) const
+{
+    return util::mkptr(new proto::AttrSet(set_point->compile(st), value->compile(st)));
 }

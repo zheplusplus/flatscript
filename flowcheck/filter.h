@@ -20,6 +20,10 @@ namespace flchk {
         void addReturn(misc::position const& pos, util::sptr<Expression const> ret_val);
         void addReturnNothing(misc::position const& pos);
         void addArith(misc::position const& pos, util::sptr<Expression const> expr);
+        void addImport(misc::position const& pos, std::vector<std::string> const& names);
+        void addAttrSet(misc::position const& pos
+                      , util::sptr<Expression const> set_point
+                      , util::sptr<Expression const> value);
 
         void addBranch(misc::position const& pos
                      , util::sptr<Expression const> predicate
@@ -34,9 +38,9 @@ namespace flchk {
                               , util::sptr<Expression const> predicate
                               , util::sptr<Filter> alternative);
     public:
-        virtual void defVar(misc::position const& pos
-                          , std::string const& name
-                          , util::sptr<Expression const> init) = 0;
+        virtual void defName(misc::position const& pos
+                           , std::string const& name
+                           , util::sptr<Expression const> init) = 0;
         virtual void defFunc(misc::position const& pos
                            , std::string const& name
                            , std::vector<std::string> const& param_names

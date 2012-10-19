@@ -10,7 +10,7 @@ namespace grammar {
     struct Statement {
         misc::position const pos;
 
-        virtual void compile(util::sref<flchk::Filter> filter) const = 0;
+        virtual void compile(util::sref<flchk::Filter> filter) = 0;
 
         virtual ~Statement() {}
     protected:
@@ -19,20 +19,6 @@ namespace grammar {
         {}
 
         Statement(Statement const&) = delete;
-    };
-
-    struct Expression {
-        misc::position const pos;
-
-        virtual util::sptr<flchk::Expression const> compile() const = 0;
-
-        virtual ~Expression() {}
-    protected:
-        explicit Expression(misc::position const& ps)
-            : pos(ps)
-        {}
-
-        Expression(Expression const&) = delete;
     };
 
 }

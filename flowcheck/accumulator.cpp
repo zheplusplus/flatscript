@@ -29,6 +29,20 @@ void Accumulator::addArith(misc::position const& pos, util::sptr<Expression cons
     _block.addStmt(util::mkptr(new Arithmetics(pos, std::move(expr))));
 }
 
+void Accumulator::addImport(misc::position const& pos, std::vector<std::string> const& names)
+{
+    _checkNotTerminated(pos);
+    _block.addStmt(util::mkptr(new Import(pos, names)));
+}
+
+void Accumulator::addAttrSet(misc::position const& pos
+                           , util::sptr<Expression const> set_point
+                           , util::sptr<Expression const> value)
+{
+    _checkNotTerminated(pos);
+    _block.addStmt(util::mkptr(new AttrSet(pos, std::move(set_point), std::move(value))));
+}
+
 void Accumulator::addBranch(misc::position const& pos
                           , util::sptr<Expression const> predicate
                           , Accumulator consequence
@@ -74,12 +88,12 @@ void Accumulator::addBlock(Accumulator b)
     _setSelfTerminated(std::move(b));
 }
 
-void Accumulator::defVar(misc::position const& pos
-                       , std::string const& name
-                       , util::sptr<Expression const> init)
+void Accumulator::defName(misc::position const& pos
+                        , std::string const& name
+                        , util::sptr<Expression const> init)
 {
     _checkNotTerminated(pos);
-    _block.addStmt(util::mkptr(new VarDef(pos, name, std::move(init))));
+    _block.addStmt(util::mkptr(new NameDef(pos, name, std::move(init))));
 }
 
 util::sref<Function const> Accumulator::defFunc(misc::position const& pos

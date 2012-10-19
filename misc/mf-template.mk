@@ -16,14 +16,14 @@ CFLAGS=-Wall -Wextra -Wold-style-cast -Werror $(OPT_FLAGS)
 MKTMP := $(shell mktemp)
 
 LIB_DIR=libs
-EXTERN_LIBS=-lgmp -lgmpxx -ltrace -lbacktracpp
+EXTERN_LIBS=-lgmp -lgmpxx
 TEST_EXTERN_LIBS=-lgtest -lgtest_main -lpthread
 LIBS=-L$(LIB_DIR) -lstkn $(EXTERN_LIBS)
 TEST_LIBS=-L$(LIB_DIR) -lstkntest -lstkn $(TEST_EXTERN_LIBS) $(EXTERN_LIBS)
 
 SAMPLEDIR=samples
 ERRSAMPLEDIR=$(SAMPLEDIR)/errors
-CHEKC_MEMONRY=valgrind --log-file=tmp.log.memcheck --leak-check=full
+CHKMEM=valgrind --log-file=tmp.log.memcheck --leak-check=full
 
 COMPILE=$(CC) $(CFLAGS) $(INCLUDE)
 COMPILE_GENERATED=$(CC) $(INCLUDE)

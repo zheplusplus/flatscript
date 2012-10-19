@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <sstream>
+
 #include "string.h"
 
 std::string util::replace_all(std::string src
@@ -17,8 +19,24 @@ std::string util::replace_all(std::string src
     return src;
 }
 
-template <typename _T>
-static std::string str_from_something(_T const& t)
+std::string util::join(std::string const& sep, std::vector<std::string> const& values)
+{
+    if (values.empty()) {
+        return "";
+    }
+    std::string result(values[0]);
+    std::for_each(++values.begin()
+                , values.end()
+                , [&](std::string const& v)
+                  {
+                      result += sep;
+                      result += v;
+                  });
+    return result;
+}
+
+template <typename T>
+static std::string str_from_something(T const& t)
 {
     std::stringstream ss;
     ss << t;

@@ -1,0 +1,22 @@
+BEGIN {
+  print "YACC=bison -d"
+  print "WORKDIR=grammar";
+  print "include misc/mf-template.mk"
+}
+
+{
+  for (i = 1; "" != $i && "\\" != $i; ++i)
+  {
+    if ("syn-include.o:" == $i) {
+      print "$(WORKDIR)/syn.o: $(WORKDIR)/syn-include.h \\";
+    } else {
+      print $i " \\";
+    }
+  }
+}
+
+END {
+  print "$(WORKDIR)/syntacticall.y"
+  print "	$(YACC) -o $(WORKDIR)/syn.cpp $(WORKDIR)/syntacticall.y"
+  print "	$(COMPILE_GENERATED) $(WORKDIR)/syn.cpp -o $(WORKDIR)/syn.o"
+}

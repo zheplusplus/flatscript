@@ -1,15 +1,24 @@
 #include <algorithm>
+#include <iostream>
 
-#include <output/func-writer.h>
+#include <util/string.h>
 
 #include "function.h"
-#include "stmt-nodes.h"
+#include "node-base.h"
+#include "name-mangler.h"
 
 using namespace proto;
 
+static std::string const FUNCTION(
+    "function $FUNC_NAME($PARAMETERS) {"
+    "$BODY"
+    "}"
+);
+
 void Function::write() const
 {
-    output::writeFuncBegin(name, param_names);
+    std::cout << "function " << formName(name) << "(" << util::join(",", formNames(param_names))
+              << ") {" << std::endl;
     body->write();
-    output::writeFuncEnd();
+    std::cout << "}" << std::endl;
 }

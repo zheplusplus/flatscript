@@ -1,6 +1,7 @@
-parser/lex.cpp
-parser/syn.cpp
-parser/syn.hpp
+stekin
+grammar/lex.cpp
+grammar/syn.cpp
+grammar/syn.hpp
 *.o
 *.out
 tmp.*

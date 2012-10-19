@@ -7,11 +7,11 @@
 
 using namespace flchk;
 
-void FuncBodyFilter::defVar(misc::position const& pos
-                          , std::string const& name
-                          , util::sptr<Expression const> init)
+void FuncBodyFilter::defName(misc::position const& pos
+                           , std::string const& name
+                           , util::sptr<Expression const> init)
 {
-    _accumulator.defVar(pos, name, init->fold());
+    _accumulator.defName(pos, name, init->fold());
 }
 
 void FuncBodyFilter::defFunc(misc::position const& pos
@@ -20,7 +20,7 @@ void FuncBodyFilter::defFunc(misc::position const& pos
                            , util::sptr<Filter> body)
 {
     _accumulator.defFunc(pos, name, param_names, std::move(body));
-    _symbols.defVar(pos, name);
+    _symbols.defName(pos, name);
 }
 
 util::sref<SymbolTable> FuncBodyFilter::getSymbols()

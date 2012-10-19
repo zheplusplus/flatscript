@@ -149,6 +149,18 @@ void Accumulator::addArith(misc::position const& pos, util::sptr<Expression cons
     _block.addStmt(util::mkptr(new Arithmetics(pos, std::move(expr))));
 }
 
+void Accumulator::addImport(misc::position const& pos, std::vector<std::string> const& names)
+{
+    _block.addStmt(util::mkptr(new Import(pos, names)));
+}
+
+void Accumulator::addAttrSet(misc::position const& pos
+                           , util::sptr<Expression const> set_point
+                           , util::sptr<Expression const> value)
+{
+    _block.addStmt(util::mkptr(new AttrSet(pos, std::move(set_point), std::move(value))));
+}
+
 void Accumulator::addBranch(misc::position const& pos
                           , util::sptr<Expression const> predicate
                           , Accumulator consequence
@@ -178,11 +190,11 @@ void Accumulator::addBranchAlterOnly(misc::position const& pos
                                                    , std::move(alternative._block))));
 }
 
-void Accumulator::defVar(misc::position const& pos
-                       , std::string const& name
-                       , util::sptr<Expression const> init)
+void Accumulator::defName(misc::position const& pos
+                        , std::string const& name
+                        , util::sptr<Expression const> init)
 {
-    _block.addStmt(util::mkptr(new VarDef(pos, name, std::move(init))));
+    _block.addStmt(util::mkptr(new NameDef(pos, name, std::move(init))));
 }
 
 util::sref<Function const> Accumulator::defFunc(misc::position const& pos
@@ -212,6 +224,18 @@ void Filter::addReturnNothing(misc::position const& pos)
 void Filter::addArith(misc::position const& pos, util::sptr<Expression const> expr)
 {
     _accumulator.addArith(pos, std::move(expr));
+}
+
+void Filter::addImport(misc::position const& pos, std::vector<std::string> const& names)
+{
+    _accumulator.addImport(pos, names);
+}
+
+void Filter::addAttrSet(misc::position const& pos
+                      , util::sptr<Expression const> set_point
+                      , util::sptr<Expression const> value)
+{
+    _accumulator.addAttrSet(pos, std::move(set_point), std::move(value));
 }
 
 void Filter::addBranch(misc::position const& pos
@@ -247,11 +271,11 @@ util::sptr<proto::Statement const> Filter::compile()
     return nulProtoStmt();
 }
 
-void FuncBodyFilter::defVar(misc::position const& pos
-                          , std::string const& name
-                          , util::sptr<Expression const> init)
+void FuncBodyFilter::defName(misc::position const& pos
+                           , std::string const& name
+                           , util::sptr<Expression const> init)
 {
-    _accumulator.defVar(pos, name, std::move(init));
+    _accumulator.defName(pos, name, std::move(init));
 }
 
 void FuncBodyFilter::defFunc(misc::position const& pos
@@ -267,11 +291,11 @@ util::sref<SymbolTable> FuncBodyFilter::getSymbols()
     return nulSymbols();
 }
 
-void SymbolDefFilter::defVar(misc::position const& pos
-                           , std::string const& name
-                           , util::sptr<Expression const> init)
+void SymbolDefFilter::defName(misc::position const& pos
+                            , std::string const& name
+                            , util::sptr<Expression const> init)
 {
-    _accumulator.defVar(pos, name + VAR_DEF_FILTERED, std::move(init));
+    _accumulator.defName(pos, name + NAME_DEF_FILTERED, std::move(init));
 }
 
 void SymbolDefFilter::defFunc(misc::position const& pos
@@ -307,10 +331,30 @@ util::sptr<proto::Statement const> Branch::compile(util::sref<SymbolTable>) cons
     return nulProtoStmt();
 }
 
-util::sptr<proto::Statement const> VarDef::compile(util::sref<SymbolTable>) const
+util::sptr<proto::Statement const> NameDef::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, VAR_DEF, name);
+    DataTree::actualOne()(pos, NAME_DEF, name);
     init->compile(nulSymbols());
+    return nulProtoStmt();
+}
+
+util::sptr<proto::Statement const> Import::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, IMPORT);
+    std::for_each(names.begin()
+                , names.end()
+                , [&](std::string const& name)
+                  {
+                      DataTree::actualOne()(pos, IDENTIFIER, name);
+                  });
+    return nulProtoStmt();
+}
+
+util::sptr<proto::Statement const> AttrSet::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, ATTR_SET);
+    set_point->compile(nulSymbols());
+    value->compile(nulSymbols());
     return nulProtoStmt();
 }
 
@@ -329,37 +373,48 @@ util::sptr<proto::Statement const> ReturnNothing::compile(util::sref<SymbolTable
 
 util::sptr<proto::Expression const> PreUnaryOp::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, PRE_UNARY_OP, op_img);
+    DataTree::actualOne()(pos, PRE_UNARY_OP, op_img)(pos, OPERAND);
+    rhs->compile(nulSymbols());
     return nulProtoExpr();
 }
 
 util::sptr<proto::Expression const> BinaryOp::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, op_img);
+    DataTree::actualOne()(pos, BINARY_OP, op_img)(pos, OPERAND);
+    lhs->compile(nulSymbols());
+    DataTree::actualOne()(pos, OPERAND);
+    rhs->compile(nulSymbols());
     return nulProtoExpr();
 }
 
 util::sptr<proto::Expression const> Conjunction::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "&&");
+    DataTree::actualOne()(pos, BINARY_OP, "&&")(pos, OPERAND);
+    lhs->compile(nulSymbols());
+    DataTree::actualOne()(pos, OPERAND);
+    rhs->compile(nulSymbols());
     return nulProtoExpr();
 }
 
 util::sptr<proto::Expression const> Disjunction::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "||");
+    DataTree::actualOne()(pos, BINARY_OP, "||")(pos, OPERAND);
+    lhs->compile(nulSymbols());
+    DataTree::actualOne()(pos, OPERAND);
+    rhs->compile(nulSymbols());
     return nulProtoExpr();
 }
 
 util::sptr<proto::Expression const> Negation::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, PRE_UNARY_OP, "!");
+    DataTree::actualOne()(pos, PRE_UNARY_OP, "!")(pos, OPERAND);
+    rhs->compile(nulSymbols());
     return nulProtoExpr();
 }
 
 util::sptr<proto::Expression const> Reference::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, REFERENCE, name);
+    DataTree::actualOne()(pos, IDENTIFIER, name);
     return nulProtoExpr();
 }
 
@@ -399,8 +454,9 @@ static void compileList(std::vector<util::sptr<Expression const>> const& values)
 
 util::sptr<proto::Expression const> ListLiteral::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, LIST, value.size());
+    DataTree::actualOne()(pos, LIST_BEGIN);
     compileList(value);
+    DataTree::actualOne()(pos, LIST_END);
     return nulProtoExpr();
 }
 
@@ -418,22 +474,76 @@ util::sptr<proto::Expression const> ListIndex::compile(util::sref<SymbolTable>) 
 
 util::sptr<proto::Expression const> ListAppend::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "++");
+    DataTree::actualOne()(pos, BINARY_OP, "++")(pos, OPERAND);
     lhs->compile(nulSymbols());
+    DataTree::actualOne()(pos, OPERAND);
     rhs->compile(nulSymbols());
     return nulProtoExpr();
 }
 
 util::sptr<proto::Expression const> Call::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, CALL, name, args.size());
+    DataTree::actualOne()(pos, CALL_BEGIN);
+    callee->compile(nulSymbols());
+    DataTree::actualOne()(pos, ARGUMENTS);
     compileList(args);
+    DataTree::actualOne()(pos, CALL_END);
+    return nulProtoExpr();
+}
+
+util::sptr<proto::Expression const> MemberAccess::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, BINARY_OP, ".")(pos, OPERAND);
+    referee->compile(nulSymbols());
+    DataTree::actualOne()(pos, OPERAND);
+    DataTree::actualOne()(pos, IDENTIFIER, member);
+    return nulProtoExpr();
+}
+
+util::sptr<proto::Expression const> Lookup::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, BINARY_OP, "[]")(pos, OPERAND);
+    collection->compile(nulSymbols());
+    DataTree::actualOne()(pos, OPERAND);
+    key->compile(nulSymbols());
+    return nulProtoExpr();
+}
+
+util::sptr<proto::Expression const> ListSlice::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, LIST_SLICE_BEGIN);
+    list->compile(nulSymbols());
+    begin->compile(nulSymbols());
+    end->compile(nulSymbols());
+    step->compile(nulSymbols());
+    DataTree::actualOne()(pos, LIST_SLICE_END);
+    return nulProtoExpr();
+}
+
+util::sptr<proto::Expression const> ListSlice::Default::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, LIST_SLICE_DEFAULT);
+    return nulProtoExpr();
+}
+
+util::sptr<proto::Expression const> Dictionary::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, DICT_BEGIN);
+    std::for_each(items.begin()
+                , items.end()
+                , [&](ItemType const& item)
+                  {
+                      DataTree::actualOne()(pos, DICT_ITEM);
+                      item.first->compile(nulSymbols());
+                      item.second->compile(nulSymbols());
+                  });
+    DataTree::actualOne()(pos, DICT_END);
     return nulProtoExpr();
 }
 
 util::sptr<proto::Expression const> ListPipeline::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, LIST_PIPELINE, pipeline.size());
+    DataTree::actualOne()(pos, LIST_PIPELINE_BEGIN);
     list->compile(nulSymbols());
     std::for_each(pipeline.begin()
                 , pipeline.end()
@@ -441,6 +551,7 @@ util::sptr<proto::Expression const> ListPipeline::compile(util::sref<SymbolTable
                   {
                       pipe->compile(nulSymbols());
                   });
+    DataTree::actualOne()(pos, LIST_PIPELINE_END);
     return nulProtoExpr();
 }
 
@@ -828,6 +939,56 @@ std::string Call::typeName() const
 util::sptr<Expression const> Call::fold() const
 {
     return nulFlchkExpr();
+}
+
+std::string MemberAccess::typeName() const
+{
+    return "";
+}
+
+util::sptr<Expression const> MemberAccess::fold() const
+{
+    return nulFlchkExpr();
+}
+
+std::string Lookup::typeName() const
+{
+    return "";
+}
+
+util::sptr<Expression const> Lookup::fold() const
+{
+    return nulFlchkExpr();
+}
+
+std::string ListSlice::typeName() const
+{
+    return "";
+}
+
+util::sptr<Expression const> ListSlice::fold() const
+{
+    return nulFlchkExpr();
+}
+
+std::string ListSlice::Default::typeName() const
+{
+    return "";
+}
+
+util::sptr<Expression const> ListSlice::Default::fold() const
+{
+    return nulFlchkExpr();
+}
+
+util::sptr<Expression const> Dictionary::fold() const
+{
+    return nulFlchkExpr();
+}
+
+std::string Dictionary::typeName() const
+{
+    return "";
 }
 
 std::string ListPipeline::typeName() const

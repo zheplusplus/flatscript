@@ -1,6 +1,7 @@
 #ifndef __STEKIN_UTILITY_STRING_H__
 #define __STEKIN_UTILITY_STRING_H__
 
+#include <vector>
 #include <string>
 #include <gmpxx.h>
 
@@ -9,6 +10,7 @@ namespace util {
     std::string replace_all(std::string src
                           , std::string const& origin_text
                           , std::string const& replacement);
+    std::string join(std::string const& sep, std::vector<std::string> const& values);
 
     std::string str(int i);
     std::string str(long i);

@@ -13,8 +13,7 @@ namespace proto {
     struct Expression {
         virtual ~Expression() {}
 
-        virtual void write() const = 0;
-        virtual void writeAsPipe() const;
+        virtual std::string stringify(bool in_pipe) const = 0;
 
         misc::position const pos;
     protected:

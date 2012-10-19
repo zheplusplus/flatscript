@@ -1,7 +1,0 @@
-func first()
-    return second()
-
-x: first()
-
-func second()
-    return x

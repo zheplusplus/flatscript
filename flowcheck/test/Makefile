@@ -2,7 +2,7 @@ WORKDIR=flowcheck
 TESTDIR=$(WORKDIR)/test
 
 test:$(TESTDIR)/test-flowcheck.out
-	$(CHEKC_MEMONRY) $(TESTDIR)/test-flowcheck.out
+	$(CHKMEM) $(TESTDIR)/test-flowcheck.out
 
 include $(WORKDIR)/Makefile
 

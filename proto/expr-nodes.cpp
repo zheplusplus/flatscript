@@ -1,233 +1,216 @@
 #include <algorithm>
+#include <map>
 
-#include <output/expr-writer.h>
-#include <output/func-writer.h>
 #include <report/errors.h>
+#include <util/string.h>
+#include <util/str-comprehension.h>
 
 #include "expr-nodes.h"
+#include "name-mangler.h"
 #include "function.h"
 #include "block.h"
 
 using namespace proto;
 
-void BoolLiteral::write() const
+template <typename T>
+static std::string stringifyPrimitive(T const& t)
 {
-    output::writeBool(value);
+    return "(" + util::str(t) + ")";
 }
 
-void IntLiteral::write() const
+std::string BoolLiteral::stringify(bool) const
 {
-    output::writeInt(value);
+    return stringifyPrimitive(value);
 }
 
-void FloatLiteral::write() const
+std::string IntLiteral::stringify(bool) const
 {
-    output::writeFloat(value);
+    return stringifyPrimitive(value);
 }
 
-void StringLiteral::write() const
+std::string FloatLiteral::stringify(bool) const
 {
-    output::writeString(value.c_str(), value.size());
+    return stringifyPrimitive(value);
 }
 
-void ListLiteral::write() const
+std::string StringLiteral::stringify(bool) const
 {
-    if (0 == value.size()) {
-        output::emptyList();
-        return;
-    }
-    output::listBegin();
-    (*value.begin())->write();
-    std::for_each(++value.begin()
-                , value.end()
-                , [&](util::sptr<Expression const> const& member)
+    return util::cstr_repr(value.c_str(), value.size());
+}
+
+static std::vector<std::string> stringifyList(std::vector<util::sptr<Expression const>> const& list
+                                            , bool in_pipe)
+{
+    std::vector<std::string> result;
+    std::for_each(list.begin()
+                , list.end()
+                , [&](util::sptr<Expression const> const& expr)
                   {
-                      output::listNextMember();
-                      member->write();
+                      result.push_back(expr->stringify(in_pipe));
                   });
-    output::listEnd();
+    return std::move(result);
 }
 
-void ListLiteral::writeAsPipe() const
+std::string ListLiteral::stringify(bool in_pipe) const
 {
-    if (0 == value.size()) {
-        write();
-        return;
+    return "[" + util::join(",", stringifyList(value, in_pipe)) + "]";
+}
+
+std::string ListElement::stringify(bool in_pipe) const
+{
+    if (!in_pipe) {
+        error::pipeReferenceNotInListContext(pos);
     }
-    output::listBegin();
-    (*value.begin())->write();
-    std::for_each(++value.begin()
-                , value.end()
-                , [&](util::sptr<Expression const> const& member)
+    return "iterelement";
+}
+
+std::string ListIndex::stringify(bool in_pipe) const
+{
+    if (!in_pipe) {
+        error::pipeReferenceNotInListContext(pos);
+    }
+    return "iterindex";
+}
+
+std::string Reference::stringify(bool) const
+{
+    return formName(name);
+}
+
+std::string Call::stringify(bool in_pipe) const
+{
+    return callee->stringify(in_pipe) + "(" + util::join(",", stringifyList(args, in_pipe)) + ")";
+}
+
+std::string MemberAccess::stringify(bool in_pipe) const
+{
+    return referee->stringify(in_pipe) + "." + member;
+}
+
+std::string Lookup::stringify(bool in_pipe) const
+{
+    return collection->stringify(in_pipe) + "[" + key->stringify(in_pipe) + "]";
+}
+
+static std::string const LIST_SLICE(
+"(function(list, begin, end, step) {\n"
+"    function round(x) {\n"
+"        if (x > list.length) return list.length;\n"
+"        if (x < 0) return x % list.length + list.length;\n"
+"        return x;\n"
+"    }\n"
+"    var r = [];\n"
+"    step = step || 1;\n"
+"    if (step > 0) {\n"
+"        begin = round(begin || 0);\n"
+"        end = (end === null) ? list.length : round(end);\n"
+"        for (; begin < end; begin += step) {\n"
+"            r.push(list[begin]);\n"
+"        }\n"
+"        return r;\n"
+"    }\n"
+"    begin = (begin === null) ? list.length - 1 : round(begin);\n"
+"    end = (end === null) ? -1 : round(end)\n"
+"    for (; begin > end; begin += step) {\n"
+"        r.push(list[begin]);\n"
+"    }\n"
+"    return r;\n"
+"})($LIST, $BEGIN, $END, $STEP)\n"
+);
+
+std::string ListSlice::stringify(bool in_pipe) const
+{
+    return
+        util::replace_all(
+        util::replace_all(
+        util::replace_all(
+        util::replace_all(
+            LIST_SLICE
+                , "$LIST", list->stringify(in_pipe))
+                , "$BEGIN", begin->stringify(in_pipe))
+                , "$END", end->stringify(in_pipe))
+                , "$STEP", step->stringify(in_pipe))
+        ;
+}
+
+std::string ListSlice::Default::stringify(bool) const
+{
+    return "null";
+}
+
+std::string Dictionary::stringify(bool in_pipe) const
+{
+    std::vector<std::string> item_strings;
+    std::for_each(items.begin()
+                , items.end()
+                , [&](ItemType const& item)
                   {
-                      output::listNextMember();
-                      member->writeAsPipe();
+                      item_strings.push_back(
+                          item.first->stringify(in_pipe) + ":" + item.second->stringify(in_pipe));
                   });
-    output::listEnd();
+    return "({" + util::join(",", item_strings) + "})";
 }
 
-void ListElement::write() const
+std::string ListAppend::stringify(bool in_pipe) const
 {
-    error::pipeReferenceNotInListContext(pos);
+    return lhs->stringify(in_pipe) + ".concat(" + rhs->stringify(in_pipe) + ")";
 }
 
-void ListElement::writeAsPipe() const
+static std::map<std::string, std::string> genOpMap()
 {
-    output::pipeElement();
+    std::map<std::string, std::string> m;
+    m.insert(std::make_pair("=", "==="));
+    m.insert(std::make_pair("!=", "!=="));
+    return m;
 }
 
-void ListIndex::write() const
-{
-    error::pipeReferenceNotInListContext(pos);
-}
+static std::map<std::string, std::string> const OP_MAP(genOpMap());
 
-void ListIndex::writeAsPipe() const
+static std::string stringifyOperator(std::string const& op_img)
 {
-    output::pipeIndex();
-}
-
-void Reference::write() const
-{
-    output::reference(name);
-}
-
-void Call::write() const
-{
-    output::reference(name);
-    output::writeArgsBegin();
-    if (!args.empty()) {
-        (*args.begin())->write();
-        std::for_each(++args.begin()
-                    , args.end()
-                    , [&](util::sptr<Expression const> const& arg)
-                      {
-                          output::writeArgSeparator();
-                          arg->write();
-                      });
+    auto r = OP_MAP.find(op_img);
+    if (OP_MAP.end() == r) {
+        return op_img;
     }
-    output::writeArgsEnd();
+    return r->second;
 }
 
-void Call::writeAsPipe() const
+static std::string stringifyBinary(util::sptr<Expression const> const& lhs
+                                 , std::string const& op
+                                 , util::sptr<Expression const> const& rhs
+                                 , bool in_pipe)
 {
-    output::reference(name);
-    output::writeArgsBegin();
-    if (!args.empty()) {
-        (*args.begin())->writeAsPipe();
-        std::for_each(++args.begin()
-                    , args.end()
-                    , [&](util::sptr<Expression const> const& arg)
-                      {
-                          output::writeArgSeparator();
-                          arg->writeAsPipe();
-                      });
-    }
-    output::writeArgsEnd();
+    return "(" + lhs->stringify(in_pipe) + stringifyOperator(op) + rhs->stringify(in_pipe) + ")";
 }
 
-void FuncReference::write() const
+static std::string stringifyPreUnary(std::string const& op
+                                   , util::sptr<Expression const> const& rhs
+                                   , bool in_pipe)
 {
-    output::reference(func->name);
+    return "(" + stringifyOperator(op) + rhs->stringify(in_pipe) + ")";
 }
 
-void ListAppend::write() const
+std::string BinaryOp::stringify(bool in_pipe) const
 {
-    lhs->write(); 
-    output::listAppendBegin();
-    rhs->write();
-    output::listAppendEnd();
+    return stringifyBinary(lhs, op, rhs, in_pipe);
 }
 
-void ListAppend::writeAsPipe() const
+std::string PreUnaryOp::stringify(bool in_pipe) const
 {
-    lhs->writeAsPipe(); 
-    output::listAppendBegin();
-    rhs->writeAsPipe();
-    output::listAppendEnd();
+    return stringifyPreUnary(op, rhs, in_pipe);
 }
 
-void BinaryOp::write() const
+std::string Conjunction::stringify(bool in_pipe) const
 {
-    output::beginExpr();
-    lhs->write();
-    output::writeOperator(op);
-    rhs->write();
-    output::endExpr();
+    return stringifyBinary(lhs, "&&", rhs, in_pipe);
 }
 
-void BinaryOp::writeAsPipe() const
+std::string Disjunction::stringify(bool in_pipe) const
 {
-    output::beginExpr();
-    lhs->writeAsPipe();
-    output::writeOperator(op);
-    rhs->writeAsPipe();
-    output::endExpr();
+    return stringifyBinary(lhs, "||", rhs, in_pipe);
 }
 
-void PreUnaryOp::write() const
+std::string Negation::stringify(bool in_pipe) const
 {
-    output::beginExpr();
-    output::writeOperator(op);
-    rhs->write();
-    output::endExpr();
-}
-
-void PreUnaryOp::writeAsPipe() const
-{
-    output::beginExpr();
-    output::writeOperator(op);
-    rhs->writeAsPipe();
-    output::endExpr();
-}
-
-void Conjunction::write() const
-{
-    output::beginExpr();
-    lhs->write();
-    output::writeOperator("&&");
-    rhs->write();
-    output::endExpr();
-}
-
-void Conjunction::writeAsPipe() const
-{
-    output::beginExpr();
-    lhs->writeAsPipe();
-    output::writeOperator("&&");
-    rhs->writeAsPipe();
-    output::endExpr();
-}
-
-void Disjunction::write() const
-{
-    output::beginExpr();
-    lhs->write();
-    output::writeOperator("||");
-    rhs->write();
-    output::endExpr();
-}
-
-void Disjunction::writeAsPipe() const
-{
-    output::beginExpr();
-    lhs->writeAsPipe();
-    output::writeOperator("||");
-    rhs->writeAsPipe();
-    output::endExpr();
-}
-
-void Negation::write() const
-{
-    output::beginExpr();
-    output::writeOperator("!");
-    rhs->write();
-    output::endExpr();
-}
-
-void Negation::writeAsPipe() const
-{
-    output::beginExpr();
-    output::writeOperator("!");
-    rhs->writeAsPipe();
-    output::endExpr();
+    return stringifyPreUnary("!", rhs, in_pipe);
 }

@@ -21,6 +21,18 @@ void Filter::addArith(misc::position const& pos, util::sptr<Expression const> ex
     _accumulator.addArith(pos, std::move(expr->fold()));
 }
 
+void Filter::addImport(misc::position const& pos, std::vector<std::string> const& names)
+{
+    _accumulator.addImport(pos, names);
+}
+
+void Filter::addAttrSet(misc::position const& pos
+                      , util::sptr<Expression const> set_point
+                      , util::sptr<Expression const> value)
+{
+    _accumulator.addAttrSet(pos, std::move(set_point), std::move(value));
+}
+
 void Filter::addBranch(misc::position const& pos
                      , util::sptr<Expression const> predicate
                      , util::sptr<Filter> consequence

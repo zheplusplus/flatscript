@@ -67,12 +67,21 @@ namespace test {
     extern NodeType const PIPE_MAP;
     extern NodeType const PIPE_FILTER;
 
-    extern NodeType const VAR_DEF;
+    extern NodeType const LIST_SLICE;
+    extern NodeType const LIST_SLICE_DEFAULT;
+
+    extern NodeType const DICT_BEGIN;
+    extern NodeType const DICT_END;
+    extern NodeType const DICT_ITEM;
+
+    extern NodeType const NAME_DEF;
 
     extern NodeType const STATEMENT;
     extern NodeType const ARITHMETICS;
     extern NodeType const RETURN;
     extern NodeType const RETURN_NOTHING;
+    extern NodeType const IMPORT;
+    extern NodeType const ATTR_SET;
 
     extern NodeType const FUNC_DECL;
     extern NodeType const PARAMETER;

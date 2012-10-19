@@ -1,3 +1,5 @@
+import console
+
 func make_pair(x, y)
     func selector(select)
         return select(x, y)
@@ -11,9 +13,9 @@ func second(x, y)
 
 m: 10
 x: make_pair(m, 6)
-write(x(first))
-write(x(second))
+console.log(x(first))
+console.log(x(second))
 
 y: make_pair(false, true)
-write(y(first))
-write(y(second))
+console.log(y(first))
+console.log(y(second))

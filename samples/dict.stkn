@@ -1,0 +1,26 @@
+func first(x, y)
+    return x
+
+func second(x, y)
+    return y
+
+func sum(x, y)
+    return x + y
+
+x: {
+    'first': first,
+    'second': second,
+    'sum': sum
+}
+
+import console
+
+console.log(x['sum'](1, 4))
+console.log(x['first'](1, 4))
+console.log(x['second'](1, 4))
+
+console.log({
+    'first': first,
+    'second': second,
+    'sum': sum
+}['sum']('shinto ', 'shrine'))

@@ -7,6 +7,8 @@ using namespace test;
 static std::list<TabAsIndRec> tab_as_ind_recs;
 static std::list<BadIndentRec> bad_indent_recs;
 static std::list<InvCharRec> inv_char_recs;
+static std::list<ModifyNameRec> modify_name_recs;
+static std::list<SliceStepOmitRec> slice_step_omit_recs;
 
 static std::list<ElseNotMatchRec> else_not_matches_recs;
 static std::list<IfMatchedRec> if_matched_recs;
@@ -14,19 +16,19 @@ static std::list<ExcessIndRec> excess_ind_recs;
 static std::list<FlowTerminatedRec> flow_terminated_recs;
 
 static std::list<FuncForbiddenRec> forbidden_func_recs;
-static std::list<ForbidDefRec> forbid_var_def_recs;
-static std::list<VarRedefRec> local_redefs;
+static std::list<ForbidDefRec> forbid_name_def_recs;
+static std::list<NameRedefRec> local_redefs;
 static std::list<InvalidRefRec> invalid_refs;
 
 static std::list<RetTypeConflictRec> ret_type_conflict_recs;
 static std::list<RetTypeUnresolvableRec> ret_type_unresolvable_recs;
 static std::list<CondNotBoolRec> cond_not_bool_recs;
-static std::list<VarNondefRec> var_nondefs;
+static std::list<NameNondefRec> name_nondefs;
 static std::list<NABinaryOpRec> na_binary_ops;
 static std::list<NAPreUnaryOpRec> na_pre_unary_ops;
 
-static std::list<VariableNotCallableRec> variable_not_callables;
-static std::list<VarCallArgCountWrong> var_call_arg_count_wrong_recs;
+static std::list<NameNotCallableRec> name_not_callables;
+static std::list<NameCallArgCountWrong> name_call_arg_count_wrong_recs;
 static std::list<ListMemberTypesNotSame> list_member_types_not_same_recs;
 static std::list<MemberCallNotFound> member_call_not_found_recs;
 
@@ -42,6 +44,8 @@ void test::clearErr()
     tab_as_ind_recs.clear();
     bad_indent_recs.clear();
     inv_char_recs.clear();
+    modify_name_recs.clear();
+    slice_step_omit_recs.clear();
 
     else_not_matches_recs.clear();
     if_matched_recs.clear();
@@ -49,19 +53,19 @@ void test::clearErr()
     flow_terminated_recs.clear();
 
     forbidden_func_recs.clear();
-    forbid_var_def_recs.clear();
+    forbid_name_def_recs.clear();
     local_redefs.clear();
     invalid_refs.clear();
 
-    var_nondefs.clear();
+    name_nondefs.clear();
     na_binary_ops.clear();
     na_pre_unary_ops.clear();
     ret_type_conflict_recs.clear();
     ret_type_unresolvable_recs.clear();
     cond_not_bool_recs.clear();
 
-    variable_not_callables.clear();
-    var_call_arg_count_wrong_recs.clear();
+    name_not_callables.clear();
+    name_call_arg_count_wrong_recs.clear();
     list_member_types_not_same_recs.clear();
     member_call_not_found_recs.clear();
 
@@ -97,6 +101,18 @@ void error::invalidChar(misc::position const& pos, int character)
     inv_char_recs.push_back(InvCharRec(pos, character));
 }
 
+void error::modifyName(misc::position const& pos, std::string const& name)
+{
+    has_err = true;
+    modify_name_recs.push_back(ModifyNameRec(pos, name));
+}
+
+void error::sliceStepOmitted(misc::position const& pos)
+{
+    has_err = true;
+    slice_step_omit_recs.push_back(SliceStepOmitRec(pos));
+}
+
 void error::elseNotMatchIf(misc::position const& pos)
 {
     has_err = true;
@@ -128,23 +144,23 @@ void error::forbidDefFunc(misc::position const& pos, std::string const& name)
     forbidden_func_recs.push_back(FuncForbiddenRec(pos, name));
 }
 
-void error::forbidDefVar(misc::position const& pos, std::string const& name)
+void error::forbidDefName(misc::position const& pos, std::string const& name)
 {
     has_err = true;
-    forbid_var_def_recs.push_back(ForbidDefRec(pos, name));
+    forbid_name_def_recs.push_back(ForbidDefRec(pos, name));
 }
 
-void error::varAlreadyInLocal(misc::position const& prev_def_pos
-                            , misc::position const& this_def_pos
-                            , std::string const& name)
+void error::nameAlreadyInLocal(misc::position const& prev_def_pos
+                             , misc::position const& this_def_pos
+                             , std::string const& name)
 {
     has_err = true;
-    local_redefs.push_back(VarRedefRec(prev_def_pos, this_def_pos, name));
+    local_redefs.push_back(NameRedefRec(prev_def_pos, this_def_pos, name));
 }
 
-void error::varRefBeforeDef(misc::position const& def_pos
-                          , std::list<misc::position> const& ref_positions
-                          , std::string const& name)
+void error::nameRefBeforeDef(misc::position const& def_pos
+                           , std::list<misc::position> const& ref_positions
+                           , std::string const& name)
 {
     has_err = true;
     invalid_refs.push_back(InvalidRefRec(ref_positions.begin()
@@ -153,10 +169,10 @@ void error::varRefBeforeDef(misc::position const& def_pos
                                        , name));
 }
 
-void error::varNotDef(misc::position const& ref_pos, std::string const& name)
+void error::nameNotDef(misc::position const& ref_pos, std::string const& name)
 {
     has_err = true;
-    var_nondefs.push_back(VarNondefRec(ref_pos, name));
+    name_nondefs.push_back(NameNondefRec(ref_pos, name));
 }
 
 void error::binaryOpNotAvai(misc::position const& pos
@@ -196,16 +212,16 @@ void error::condNotBool(misc::position const& pos, std::string const& actual_typ
     cond_not_bool_recs.push_back(CondNotBoolRec(pos, actual_type));
 }
 
-void error::requestVariableNotCallable(misc::position const& call_pos)
+void error::requestNameNotCallable(misc::position const& call_pos)
 {
     has_err = true;
-    variable_not_callables.push_back(VariableNotCallableRec(call_pos));
+    name_not_callables.push_back(NameNotCallableRec(call_pos));
 }
 
-void error::callVariableArgCountWrong(misc::position const& call_pos, int actual, int wanted)
+void error::callNameArgCountWrong(misc::position const& call_pos, int actual, int wanted)
 {
     has_err = true;
-    var_call_arg_count_wrong_recs.push_back(VarCallArgCountWrong(call_pos, actual, wanted));
+    name_call_arg_count_wrong_recs.push_back(NameCallArgCountWrong(call_pos, actual, wanted));
 }
 
 void error::listMemberTypesNotSame(misc::position const& call_pos)
@@ -249,6 +265,16 @@ std::vector<InvCharRec> test::getInvCharRecs()
     return std::vector<InvCharRec>(inv_char_recs.begin(), inv_char_recs.end());
 }
 
+std::vector<ModifyNameRec> test::getModifyNameRecs()
+{
+    return std::vector<ModifyNameRec>(modify_name_recs.begin(), modify_name_recs.end());
+}
+
+std::vector<SliceStepOmitRec> test::getSliceStepOmits()
+{
+    return std::vector<SliceStepOmitRec>(slice_step_omit_recs.begin(), slice_step_omit_recs.end());
+}
+
 std::vector<ElseNotMatchRec> test::getElseNotMatches()
 {
     return std::vector<ElseNotMatchRec>(else_not_matches_recs.begin(), else_not_matches_recs.end());
@@ -274,14 +300,14 @@ std::vector<FuncForbiddenRec> test::getForbiddenFuncs()
     return std::vector<FuncForbiddenRec>(forbidden_func_recs.begin(), forbidden_func_recs.end());
 }
 
-std::vector<ForbidDefRec> test::getForbidVarDefs()
+std::vector<ForbidDefRec> test::getForbidNameDefs()
 {
-    return std::vector<ForbidDefRec>(forbid_var_def_recs.begin(), forbid_var_def_recs.end());
+    return std::vector<ForbidDefRec>(forbid_name_def_recs.begin(), forbid_name_def_recs.end());
 }
 
-std::vector<VarRedefRec> test::getLocalRedefs()
+std::vector<NameRedefRec> test::getLocalRedefs()
 {
-    return std::vector<VarRedefRec>(local_redefs.begin(), local_redefs.end());
+    return std::vector<NameRedefRec>(local_redefs.begin(), local_redefs.end());
 }
 
 std::vector<InvalidRefRec> test::getInvalidRefs()
@@ -289,9 +315,9 @@ std::vector<InvalidRefRec> test::getInvalidRefs()
     return std::vector<InvalidRefRec>(invalid_refs.begin(), invalid_refs.end());
 }
 
-std::vector<VarNondefRec> test::getNondefs()
+std::vector<NameNondefRec> test::getNondefs()
 {
-    return std::vector<VarNondefRec>(var_nondefs.begin(), var_nondefs.end());
+    return std::vector<NameNondefRec>(name_nondefs.begin(), name_nondefs.end());
 }
 
 std::vector<NABinaryOpRec> test::getNABinaryOps()
@@ -321,16 +347,15 @@ std::vector<CondNotBoolRec> test::getCondNotBools()
     return std::vector<CondNotBoolRec>(cond_not_bool_recs.begin(), cond_not_bool_recs.end());
 }
 
-std::vector<VariableNotCallableRec> test::getVariableNotCallables()
+std::vector<NameNotCallableRec> test::getNameNotCallables()
 {
-    return std::vector<VariableNotCallableRec>(variable_not_callables.begin()
-                                             , variable_not_callables.end());
+    return std::vector<NameNotCallableRec>(name_not_callables.begin(), name_not_callables.end());
 }
 
-std::vector<VarCallArgCountWrong> test::getVarCallArgCountWrong()
+std::vector<NameCallArgCountWrong> test::getNameCallArgCountWrong()
 {
-    return std::vector<VarCallArgCountWrong>(var_call_arg_count_wrong_recs.begin()
-                                           , var_call_arg_count_wrong_recs.end());
+    return std::vector<NameCallArgCountWrong>(name_call_arg_count_wrong_recs.begin()
+                                            , name_call_arg_count_wrong_recs.end());
 }
 
 std::vector<ListMemberTypesNotSame> test::getListMemberTypesNotSame()

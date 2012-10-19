@@ -2,7 +2,4 @@
 
 using namespace flchk;
 
-GlobalFilter::GlobalFilter()
-{
-    getSymbols()->defVar(misc::position(), "write");
-}
+GlobalFilter::GlobalFilter() {}

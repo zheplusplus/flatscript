@@ -1,8 +1,6 @@
 #ifndef __STEKIN_GRAMMAR_BLOCK_H__
 #define __STEKIN_GRAMMAR_BLOCK_H__
 
-#include <list>
-
 #include <flowcheck/fwd-decl.h>
 #include <util/pointer.h>
 
@@ -13,7 +11,7 @@ namespace grammar {
     struct Block {
         util::sptr<flchk::Filter> compile(util::sptr<flchk::Filter> filter) const;
 
-        void addStmt(util::sptr<Statement const> stmt);
+        void addStmt(util::sptr<Statement> stmt);
         void addFunc(util::sptr<Function const> func);
 
         Block() = default;
@@ -25,8 +23,8 @@ namespace grammar {
             , _funcs(std::move(rhs._funcs))
         {}
     private:
-        std::list<util::sptr<Statement const>> _stmts;
-        std::list<util::sptr<Function const>> _funcs;
+        std::vector<util::sptr<Statement>> _stmts;
+        std::vector<util::sptr<Function const>> _funcs;
     };
 
 }

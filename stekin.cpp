@@ -1,19 +1,9 @@
-#include <map>
-#include <list>
-#include <algorithm>
-#include <vector>
+#include <iostream>
 
-#include <parser/yy-misc.h>
-#include <grammar/clause-builder.h>
+#include <grammar/yy-misc.h>
 #include <flowcheck/filter.h>
-#include <flowcheck/node-base.h>
-#include <flowcheck/function.h>
 #include <proto/node-base.h>
-#include <proto/function.h>
-#include <output/func-writer.h>
-#include <util/pointer.h>
 #include <report/errors.h>
-#include <inspect/trace.h>
 
 namespace {
 
@@ -28,7 +18,7 @@ static util::sptr<flchk::Filter> frontEnd()
         throw CompileFailure();
     }
 
-    util::sptr<flchk::Filter> global_flow(std::move(parser::builder.buildAndClear()));
+    util::sptr<flchk::Filter> global_flow(grammar::builder.buildAndClear());
     if (error::hasError()) {
         throw CompileFailure();
     }
@@ -41,14 +31,13 @@ static void semantic(util::sptr<flchk::Filter> global_flow)
     if (error::hasError()) {
         throw CompileFailure();
     }
-    output::writeMainBegin();
+    std::cout << "(function() {" << std::endl;
     proto_global_block->write();
-    output::writeMainEnd();
+    std::cout << "})();" << std::endl;
 }
 
 int main()
 {
-    inspect::prepare_for_trace();
     try {
         semantic(frontEnd());
         return 0;

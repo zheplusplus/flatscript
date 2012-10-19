@@ -1,0 +1,8 @@
+import console
+
+func echo(x)
+    console.log(x)
+
+set console.echo_x echo
+set console.a_x 42
+console.echo_x(console.a_x)

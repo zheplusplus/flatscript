@@ -730,30 +730,107 @@ util::sptr<Expression const> ListAppend::fold() const
 
 util::sptr<proto::Expression const> Call::compile(util::sref<SymbolTable> st) const
 {
-    return st->compileCall(pos, name, args);
+    return util::mkptr(new proto::Call(pos, callee->compile(st), compileList(args, st)));
 }
 
 std::string Call::typeName() const
 {
-    if (args.empty()) {
-        return "(call(" + name + "))";
-    }
-    std::string args_names;
-    std::for_each(args.begin()
-                , args.end()
-                , [&](util::sptr<Expression const> const& arg)
-                  {
-                      args_names += (arg->typeName() + ", ");
-                  });
-    return "(call(" + name + ")(" + args_names.substr(0, args_names.length() - 2) + "))";
+    return "call";
 }
 
 util::sptr<Expression const> Call::fold() const
 {
-    return foldCall();
+    return util::mkptr(new Call(pos, callee->fold(), foldList(args)));
 }
 
-util::sptr<Call const> Call::foldCall() const
+util::sptr<proto::Expression const> MemberAccess::compile(util::sref<SymbolTable> st) const
 {
-    return util::mkptr(new Call(pos, name, foldList(args)));
+    return util::mkptr(new proto::MemberAccess(pos, referee->compile(st), member));
+}
+
+std::string MemberAccess::typeName() const
+{
+    return "member access";
+}
+
+util::sptr<Expression const> MemberAccess::fold() const
+{
+    return util::mkptr(new MemberAccess(pos, referee->fold(), member));
+}
+
+util::sptr<proto::Expression const> Lookup::compile(util::sref<SymbolTable> st) const
+{
+    return util::mkptr(new proto::Lookup(pos, collection->compile(st), key->compile(st)));
+}
+
+std::string Lookup::typeName() const
+{
+    return "lookup";
+}
+
+util::sptr<Expression const> Lookup::fold() const
+{
+    return util::mkptr(new Lookup(pos, collection->fold(), key->fold()));
+}
+
+util::sptr<proto::Expression const> ListSlice::compile(util::sref<SymbolTable> st) const
+{
+    return util::mkptr(new proto::ListSlice(
+                pos, list->compile(st), begin->compile(st), end->compile(st), step->compile(st)));
+}
+
+std::string ListSlice::typeName() const
+{
+    return "list slice";
+}
+
+util::sptr<Expression const> ListSlice::fold() const
+{
+    return util::mkptr(new ListSlice(pos, list->fold(), begin->fold(), end->fold(), step->fold()));
+}
+
+util::sptr<proto::Expression const> ListSlice::Default::compile(util::sref<SymbolTable>) const
+{
+    return util::mkptr(new proto::ListSlice::Default(pos));
+}
+
+std::string ListSlice::Default::typeName() const
+{
+    return "default";
+}
+
+util::sptr<Expression const> ListSlice::Default::fold() const
+{
+    return util::mkptr(new ListSlice::Default(pos));
+}
+
+util::sptr<proto::Expression const> Dictionary::compile(util::sref<SymbolTable> st) const
+{
+    std::vector<proto::Dictionary::ItemType> compiled_items;
+    std::for_each(items.begin()
+                , items.end()
+                , [&](ItemType const& item)
+                  {
+                      compiled_items.push_back(std::make_pair(item.first->compile(st)
+                                                            , item.second->compile(st)));
+                  });
+    return util::mkptr(new proto::Dictionary(pos, std::move(compiled_items)));
+}
+
+std::string Dictionary::typeName() const
+{
+    return "dictionary";
+}
+
+util::sptr<Expression const> Dictionary::fold() const
+{
+    std::vector<ItemType> folded_items;
+    std::for_each(items.begin()
+                , items.end()
+                , [&](ItemType const& item)
+                  {
+                      folded_items.push_back(std::make_pair(item.first->fold()
+                                                          , item.second->fold()));
+                  });
+    return util::mkptr(new Dictionary(pos, std::move(folded_items)));
 }

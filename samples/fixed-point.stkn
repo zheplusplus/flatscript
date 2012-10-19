@@ -1,3 +1,5 @@
+import console
+
 PRECISION: .0001
 
 func abs(x)
@@ -23,5 +25,5 @@ func sqrt(x)
         return average(y, x / y)
     return fixed_point(f, 1.0)
 
-write(sqrt(2.0))
-write(sqrt(3.0))
+console.log(sqrt(2.0))
+console.log(sqrt(3.0))

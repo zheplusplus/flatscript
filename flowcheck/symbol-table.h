@@ -23,15 +23,12 @@ namespace flchk {
             : ext_symbols(nullptr)
         {}
 
-        void refVars(misc::position const& pos, std::vector<std::string> const& vars);
-        void defVar(misc::position const& pos, std::string const& name);
+        void reference(misc::position const& pos, std::string const& name);
+        void refNames(misc::position const& pos, std::vector<std::string> const& names);
+        void defName(misc::position const& pos, std::string const& name);
 
         util::sptr<proto::Expression const> compileRef(misc::position const& pos
                                                      , std::string const& name);
-        util::sptr<proto::Expression const> compileCall(
-                        misc::position const& pos
-                      , std::string const& name
-                      , std::vector<util::sptr<Expression const>> const& args);
     public:
         util::sref<SymbolTable const> const ext_symbols;
     private:
@@ -40,11 +37,9 @@ namespace flchk {
         std::vector<util::sptr<proto::Expression const>> _mkArgs(
                         std::vector<util::sptr<Expression const>> const& args);
     private:
-        std::map<std::string, std::list<misc::position>> _external_var_refs;
-        std::map<std::string, misc::position> _var_defs;
+        std::map<std::string, std::list<misc::position>> _external_name_refs;
+        std::map<std::string, misc::position> _name_defs;
         std::vector<std::string> const _parameters;
-    private:
-        static Function _fake_function;
     };
 
 }

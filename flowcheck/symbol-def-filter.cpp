@@ -7,11 +7,11 @@
 
 using namespace flchk;
 
-void SymbolDefFilter::defVar(misc::position const& pos
-                           , std::string const& name
-                           , util::sptr<Expression const>)
+void SymbolDefFilter::defName(misc::position const& pos
+                            , std::string const& name
+                            , util::sptr<Expression const>)
 {
-    error::forbidDefVar(pos, name);
+    error::forbidDefName(pos, name);
 }
 
 void SymbolDefFilter::defFunc(misc::position const& pos

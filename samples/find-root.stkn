@@ -1,3 +1,6 @@
+import console
+write: console.log
+
 PRECISION: .00001
 
 func average(x, y)

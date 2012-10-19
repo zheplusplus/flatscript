@@ -4,7 +4,7 @@ TESTDIR=$(WORKDIR)/test
 include misc/mf-template.mk
 
 test:$(TESTDIR)/test-utilities.out
-	$(CHEKC_MEMONRY) $(TESTDIR)/test-utilities.out
+	$(CHKMEM) $(TESTDIR)/test-utilities.out
 
 include $(WORKDIR)/Makefile
 

@@ -1,3 +1,5 @@
+import console
+
 func xor(a, b)
     if a
         return !b
@@ -15,12 +17,12 @@ func leap(y)
     m400: mod400()
     return xor(m4, xor(m100, m400))
 
-write(leap(4))
-write(leap(10))
-write(leap(20))
-write(leap(100))
-write(leap(200))
-write(leap(400))
+console.log(leap(4))
+console.log(leap(10))
+console.log(leap(20))
+console.log(leap(100))
+console.log(leap(200))
+console.log(leap(400))
 
 func deepNest(x)
     z: 5
@@ -30,4 +32,4 @@ func deepNest(x)
         return inner2Level()
     return inner1Level(z)
 
-write(deepNest(2))
+console.log(deepNest(2))

@@ -56,7 +56,7 @@ void Function::write() const
 void Return::write() const
 {
     DataTree::actualOne()(RETURN);
-    ret_val->write();
+    ret_val->stringify(false);
 }
 
 void ReturnNothing::write() const
@@ -64,16 +64,34 @@ void ReturnNothing::write() const
     DataTree::actualOne()(RETURN_NOTHING);
 }
 
-void VarDef::write() const
+void Import::write() const
 {
-    DataTree::actualOne()(VAR_DEF, name);
-    init->write();
+    DataTree::actualOne()(IMPORT);
+    std::for_each(names.begin()
+                , names.end()
+                , [&](std::string const& name)
+                  {
+                      DataTree::actualOne()(PARAMETER, name);
+                  });
+}
+
+void AttrSet::write() const
+{
+    DataTree::actualOne()(ATTR_SET);
+    set_point->stringify(false);
+    value->stringify(false);
+}
+
+void NameDef::write() const
+{
+    DataTree::actualOne()(NAME_DEF, name);
+    init->stringify(false);
 }
 
 void Branch::write() const
 {
     DataTree::actualOne()(BRANCH);
-    predicate->write();
+    predicate->stringify(false);
     consequence->write();
     alternative->write();
 }
@@ -81,27 +99,31 @@ void Branch::write() const
 void Arithmetics::write() const
 {
     DataTree::actualOne()(ARITHMETICS);
-    expr->write();
+    expr->stringify(false);
 }
 
-void BoolLiteral::write() const
+std::string BoolLiteral::stringify(bool) const
 {
     DataTree::actualOne()(pos, BOOLEAN, util::str(value));
+    return "";
 }
 
-void IntLiteral::write() const
+std::string IntLiteral::stringify(bool) const
 {
     DataTree::actualOne()(pos, INTEGER, util::str(value));
+    return "";
 }
 
-void FloatLiteral::write() const
+std::string FloatLiteral::stringify(bool) const
 {
     DataTree::actualOne()(pos, FLOATING, util::str(value));
+    return "";
 }
 
-void StringLiteral::write() const
+std::string StringLiteral::stringify(bool) const
 {
     DataTree::actualOne()(pos, STRING, value);
+    return "";
 }
 
 static void writeList(std::vector<util::sptr<Expression const>> const& list)
@@ -110,114 +132,159 @@ static void writeList(std::vector<util::sptr<Expression const>> const& list)
                 , list.end()
                 , [&](util::sptr<Expression const> const& member)
                   {
-                      member->write();
+                      member->stringify(false);
                   });
 }
 
-void ListLiteral::write() const
+std::string ListLiteral::stringify(bool) const
 {
     DataTree::actualOne()(pos, LIST, value.size());
     writeList(value);
+    return "";
 }
 
-void ListElement::write() const
+std::string ListElement::stringify(bool) const
 {
     DataTree::actualOne()(pos, LIST_ELEMENT);
+    return "";
 }
 
-void ListIndex::write() const
+std::string ListIndex::stringify(bool) const
 {
     DataTree::actualOne()(pos, LIST_INDEX);
+    return "";
 }
 
-void ListAppend::write() const
+std::string ListAppend::stringify(bool) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "++");
-    lhs->write();
-    rhs->write();
+    lhs->stringify(false);
+    rhs->stringify(false);
+    return "";
 }
 
-void Reference::write() const
+std::string Reference::stringify(bool) const
 {
     DataTree::actualOne()(pos, REFERENCE, name);
+    return "";
 }
 
-void Call::write() const
+std::string Call::stringify(bool) const
 {
-    DataTree::actualOne()(pos, CALL, name, args.size());
+    DataTree::actualOne()(pos, CALL, args.size());
+    callee->stringify(false);
     writeList(args);
+    return "";
 }
 
-void BinaryOp::write() const
+std::string MemberAccess::stringify(bool) const
+{
+    DataTree::actualOne()(pos, BINARY_OP, ".");
+    referee->stringify(false);
+    DataTree::actualOne()(pos, REFERENCE, member);
+    return "";
+}
+
+std::string Lookup::stringify(bool) const
+{
+    DataTree::actualOne()(pos, BINARY_OP, "[]");
+    collection->stringify(false);
+    key->stringify(false);
+    return "";
+}
+
+std::string ListSlice::stringify(bool) const
+{
+    DataTree::actualOne()(pos, LIST_SLICE);
+    list->stringify(false);
+    begin->stringify(false);
+    end->stringify(false);
+    step->stringify(false);
+    return "";
+}
+
+std::string ListSlice::Default::stringify(bool) const
+{
+    DataTree::actualOne()(pos, LIST_SLICE_DEFAULT);
+    return "";
+}
+
+std::string Dictionary::stringify(bool) const
+{
+    DataTree::actualOne()(pos, DICT_BEGIN);
+    std::for_each(items.begin()
+                , items.end()
+                , [&](ItemType const& item)
+                  {
+                      DataTree::actualOne()(pos, DICT_ITEM);
+                      item.first->stringify(false);
+                      item.second->stringify(false);
+                  });
+    DataTree::actualOne()(pos, DICT_END);
+    return "";
+}
+
+std::string BinaryOp::stringify(bool) const
 {
     DataTree::actualOne()(pos, BINARY_OP, op);
-    lhs->write();
-    rhs->write();
+    lhs->stringify(false);
+    rhs->stringify(false);
+    return "";
 }
 
-void PreUnaryOp::write() const
+std::string PreUnaryOp::stringify(bool) const
 {
     DataTree::actualOne()(pos, PRE_UNARY_OP, op);
-    rhs->write();
+    rhs->stringify(false);
+    return "";
 }
 
-void Conjunction::write() const
+std::string Conjunction::stringify(bool) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "&&");
-    lhs->write();
-    rhs->write();
+    lhs->stringify(false);
+    rhs->stringify(false);
+    return "";
 }
 
-void Disjunction::write() const
+std::string Disjunction::stringify(bool) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "||");
-    lhs->write();
-    rhs->write();
+    lhs->stringify(false);
+    rhs->stringify(false);
+    return "";
 }
 
-void Negation::write() const
+std::string Negation::stringify(bool) const
 {
     DataTree::actualOne()(pos, PRE_UNARY_OP, "!");
-    rhs->write();
+    rhs->stringify(false);
+    return "";
 }
 
-void ListPipeline::write() const
+std::string ListPipeline::stringify(bool) const
 {
     DataTree::actualOne()(pos, LIST_PIPELINE, pipeline.size());
-    list->write();
+    list->stringify(false);
     std::for_each(pipeline.begin()
                 , pipeline.end()
                 , [&](util::sptr<PipeBase const> const& pipe)
                   {
-                      pipe->writeBegin();
+                      pipe->stringify("");
                   });
+    return "";
 }
 
-void PipeMap::writeBegin() const
+std::string PipeMap::stringify(std::string const&) const
 {
     DataTree::actualOne()(PIPE_MAP);
-    expr->write();
+    expr->stringify(false);
+    return "";
 }
 
-void PipeMap::writeEnd() const {}
-
-void PipeFilter::writeBegin() const
+std::string PipeFilter::stringify(std::string const&) const
 {
     DataTree::actualOne()(PIPE_FILTER);
-    expr->write();
+    expr->stringify(false);
+    return "";
 }
-
-void PipeFilter::writeEnd() const {}
-
-void Expression::writeAsPipe() const {}
-void ListLiteral::writeAsPipe() const {}
-void ListElement::writeAsPipe() const {}
-void ListIndex::writeAsPipe() const {}
-void Call::writeAsPipe() const {}
-void ListAppend::writeAsPipe() const {}
-void BinaryOp::writeAsPipe() const {}
-void PreUnaryOp::writeAsPipe() const {}
-void Conjunction::writeAsPipe() const {}
-void Disjunction::writeAsPipe() const {}
-void Negation::writeAsPipe() const {}
-void ListPipeline::writeAsPipe() const {}

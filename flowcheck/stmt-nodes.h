@@ -2,7 +2,6 @@
 #define __STEKIN_FLOWCHECK_STATEMENT_NODES_H__
 
 #include <string>
-#include <list>
 
 #include "node-base.h"
 #include "block.h"
@@ -11,7 +10,7 @@
 namespace flchk {
 
     struct Arithmetics
-        : public Statement
+        : Statement
     {
         Arithmetics(misc::position const& pos, util::sptr<Expression const> e)
             : Statement(pos)
@@ -24,7 +23,7 @@ namespace flchk {
     };
 
     struct Branch
-        : public Statement
+        : Statement
     {
         Branch(misc::position const& pos, util::sptr<Expression const> p, Block c, Block a)
             : Statement(pos)
@@ -41,7 +40,7 @@ namespace flchk {
     };
 
     struct Return
-        : public Statement
+        : Statement
     {
         Return(misc::position const& pos, util::sptr<Expression const> retval)
             : Statement(pos)
@@ -54,7 +53,7 @@ namespace flchk {
     };
 
     struct ReturnNothing
-        : public Statement
+        : Statement
     {
         explicit ReturnNothing(misc::position const& pos)
             : Statement(pos)
@@ -63,19 +62,49 @@ namespace flchk {
         util::sptr<proto::Statement const> compile(util::sref<SymbolTable> st) const;
     };
 
-    struct VarDef
-        : public Statement
+    struct NameDef
+        : Statement
     {
-        VarDef(misc::position const& pos, std::string const& n, util::sptr<Expression const> i)
-                : Statement(pos)
-                , name(n)
-                , init(std::move(i))
+        NameDef(misc::position const& pos, std::string const& n, util::sptr<Expression const> i)
+            : Statement(pos)
+            , name(n)
+            , init(std::move(i))
         {}
 
         util::sptr<proto::Statement const> compile(util::sref<SymbolTable> st) const;
 
         std::string const name;
         util::sptr<Expression const> const init;
+    };
+
+    struct Import
+        : Statement
+    {
+        Import(misc::position const& pos, std::vector<std::string> const& n)
+            : Statement(pos)
+            , names(n)
+        {}
+
+        util::sptr<proto::Statement const> compile(util::sref<SymbolTable> st) const;
+
+        std::vector<std::string> const names;
+    };
+
+    struct AttrSet
+        : Statement
+    {
+        AttrSet(misc::position const& pos
+              , util::sptr<Expression const> s
+              , util::sptr<Expression const> v)
+            : Statement(pos)
+            , set_point(std::move(s))
+            , value(std::move(v))
+        {}
+
+        util::sptr<proto::Statement const> compile(util::sref<SymbolTable> st) const;
+
+        util::sptr<Expression const> const set_point;
+        util::sptr<Expression const> const value;
     };
 
 }

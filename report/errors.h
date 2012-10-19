@@ -14,6 +14,8 @@ namespace error {
     void badIndent(misc::position const& pos);
     void invalidChar(misc::position const& pos, int character);
 
+    void modifyName(misc::position const& pos, std::string const& name);
+    void sliceStepOmitted(misc::position const& pos);
     void elseNotMatchIf(misc::position const& else_pos);
     void ifAlreadyMatchElse(misc::position const& prev_else_pos
                           , misc::position const& this_else_pos);
@@ -22,16 +24,16 @@ namespace error {
     void flowTerminated(misc::position const& this_pos, misc::position const& prev_pos);
 
     void forbidDefFunc(misc::position const& pos, std::string const& name);
-    void forbidDefVar(misc::position const& pos, std::string const& name);
+    void forbidDefName(misc::position const& pos, std::string const& name);
 
-    void varAlreadyInLocal(misc::position const& prev_def_pos
-                         , misc::position const& this_def_pos
-                         , std::string const& var_name);
-    void varRefBeforeDef(misc::position const& def_pos
-                       , std::list<misc::position> const& ref_positions
-                       , std::string const& name);
+    void nameAlreadyInLocal(misc::position const& prev_def_pos
+                          , misc::position const& this_def_pos
+                          , std::string const& name);
+    void nameRefBeforeDef(misc::position const& def_pos
+                        , std::list<misc::position> const& ref_positions
+                        , std::string const& name);
 
-    void varNotDef(misc::position const& ref_pos, std::string const& name);
+    void nameNotDef(misc::position const& ref_pos, std::string const& name);
 
     void binaryOpNotAvai(misc::position const& pos
                        , std::string const& op_img
@@ -49,8 +51,8 @@ namespace error {
 
     void condNotBool(misc::position const& pos, std::string const& actual_type);
 
-    void requestVariableNotCallable(misc::position const& call_pos);
-    void callVariableArgCountWrong(misc::position const& call_pos, int actual, int wanted);
+    void requestNameNotCallable(misc::position const& call_pos);
+    void callNameArgCountWrong(misc::position const& call_pos, int actual, int wanted);
     void listMemberTypesNotSame(misc::position const& pos);
     void memberCallNotFound(misc::position const& pos
                           , std::string const& type_name

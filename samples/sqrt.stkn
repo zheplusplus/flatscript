@@ -1,3 +1,5 @@
+import console
+
 func abs(x)
     if x < 0
         return -x
@@ -21,6 +23,6 @@ func sqrt(x)
         return sqrt_iter(improve_guess(guess))
     return sqrt_iter(1.0)
 
-write(sqrt(10.24))
-write(sqrt(10.2))
-write(sqrt(10.0))
+console.log(sqrt(10.24))
+console.log(sqrt(10.2))
+console.log(sqrt(10.0))

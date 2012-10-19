@@ -10,7 +10,7 @@
 
 using namespace grammar;
 
-void Block::addStmt(util::sptr<Statement const> stmt)
+void Block::addStmt(util::sptr<Statement> stmt)
 {
     _stmts.push_back(std::move(stmt));
 }
@@ -31,7 +31,7 @@ util::sptr<flchk::Filter> Block::compile(util::sptr<flchk::Filter> filter) const
 
     std::for_each(_stmts.begin()
                 , _stmts.end()
-                , [&](util::sptr<Statement const> const& stmt)
+                , [&](util::sptr<Statement> const& stmt)
                   {
                       stmt->compile(*filter);
                   });

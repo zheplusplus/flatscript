@@ -1,48 +1,50 @@
 #include <algorithm>
-
-#include <output/stmt-writer.h>
-#include <output/expr-writer.h>
-#include <util/vector-append.h>
+#include <iostream>
 
 #include "stmt-nodes.h"
+#include "name-mangler.h"
 
 using namespace proto;
 
 void Branch::write() const
 {
-    output::branchIf();
-    output::beginExpr();
-    predicate->write();
-    output::endExpr();
+    std::cout << "if (" << predicate->stringify(false) << ")" << std::endl;
     consequence->write();
-    output::branchElse();
+    std::cout << "else" << std::endl;
     alternative->write();
 }
 
 void Arithmetics::write() const
 {
-    expr->write();
-    output::endOfStatement();
+    std::cout << expr->stringify(false) << ";" << std::endl;
 }
 
-void VarDef::write() const
+void NameDef::write() const
 {
-    output::kwDeclare(name);
-    output::beginExpr();
-    init->write();
-    output::endExpr();
-    output::endOfStatement();
+    std::cout << "const " << formName(name) << "=" << init->stringify(false) << ";" << std::endl;
 }
 
 void Return::write() const
 {
-    output::kwReturn();
-    ret_val->write();
-    output::endOfStatement();
+    std::cout << "return " << ret_val->stringify(false) << ";" << std::endl;
 }
 
 void ReturnNothing::write() const
 {
-    output::kwReturn();
-    output::endOfStatement();
+    std::cout << "return;" << std::endl;
+}
+
+void Import::write() const
+{
+    std::for_each(names.begin()
+                , names.end()
+                , [&](std::string const& name)
+                  {
+                      std::cout << "const " << formName(name) << "=" << name << ";" << std::endl;
+                  });
+}
+
+void AttrSet::write() const
+{
+    std::cout << set_point->stringify(false) << "=" << value->stringify(false) << ";" << std::endl;
 }

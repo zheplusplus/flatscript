@@ -1,3 +1,6 @@
+import console
+write: console.log
+
 x: 1000000000000 * 2 % 31
 write(x)
 write(1000000000000 * 2 % 37)

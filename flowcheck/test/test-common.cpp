@@ -64,7 +64,7 @@ NodeType const test::LIST("list");
 NodeType const test::BINARY_OP("binary operation");
 NodeType const test::PRE_UNARY_OP("prefix unary operation");
 NodeType const test::CALL("call");
-NodeType const test::REFERENCE("var reference");
+NodeType const test::REFERENCE("reference");
 NodeType const test::LIST_ELEMENT("list element");
 NodeType const test::LIST_INDEX("list index");
 
@@ -72,12 +72,21 @@ NodeType const test::LIST_PIPELINE("list pipeline");
 NodeType const test::PIPE_MAP("pipe map");
 NodeType const test::PIPE_FILTER("pipe filter");
 
-NodeType const test::VAR_DEF("var definition");
+NodeType const test::LIST_SLICE("list slice");
+NodeType const test::LIST_SLICE_DEFAULT("list slice default");
+
+NodeType const test::DICT_BEGIN("dictionary begin");
+NodeType const test::DICT_END("dictionary end");
+NodeType const test::DICT_ITEM("dictionary item");
+
+NodeType const test::NAME_DEF("name definition");
 
 NodeType const test::STATEMENT("statement");
 NodeType const test::ARITHMETICS("arithmetics");
 NodeType const test::RETURN("return");
 NodeType const test::RETURN_NOTHING("return nothing");
+NodeType const test::IMPORT("import");
+NodeType const test::ATTR_SET("attribute set");
 
 NodeType const test::FUNC_DECL("func decl");
 NodeType const test::PARAMETER("parameter");

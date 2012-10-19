@@ -1,14 +1,6 @@
-func conjunction_check(x)
-    condition: x && true
+import console
 
-conjunction_check(0)
-
-func condition_check(x)
-    if x
-        return
-    write(false)
-
-condition_check(write(0))
-
-if condition_check
-    return
+if 0
+    console.log(false)
+if 'abc'
+    console.log(false)

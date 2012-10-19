@@ -2,8 +2,6 @@
 #define __STEKIN_PROTO_FUNCTION_H__
 
 #include <vector>
-#include <list>
-#include <map>
 
 #include <misc/pos-type.h>
 

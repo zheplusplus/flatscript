@@ -1,8 +1,10 @@
+import console
+
 func first()
     return second()
 
 x: 10
-write(first())
+console.log(first())
 
 func second()
     return x

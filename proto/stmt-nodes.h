@@ -6,7 +6,7 @@
 namespace proto {
 
     struct Branch
-        : public Statement
+        : Statement
     {
         Branch(util::sptr<Expression const> p
              , util::sptr<Statement const> consequence_stmt
@@ -24,7 +24,7 @@ namespace proto {
     };
 
     struct Arithmetics
-        : public Statement
+        : Statement
     {
         explicit Arithmetics(util::sptr<Expression const> e)
             : expr(std::move(e))
@@ -35,10 +35,10 @@ namespace proto {
         void write() const;
     };
 
-    struct VarDef
-        : public Statement
+    struct NameDef
+        : Statement
     {
-        VarDef(std::string const& n, util::sptr<Expression const> i)
+        NameDef(std::string const& n, util::sptr<Expression const> i)
             : name(n)
             , init(std::move(i))
         {}
@@ -50,7 +50,7 @@ namespace proto {
     };
 
     struct Return
-        : public Statement
+        : Statement
     {
         explicit Return(util::sptr<Expression const> r)
             : ret_val(std::move(r))
@@ -62,11 +62,37 @@ namespace proto {
     };
 
     struct ReturnNothing
-        : public Statement
+        : Statement
     {
         ReturnNothing() = default;
 
         void write() const;
+    };
+
+    struct Import
+        : Statement
+    {
+        explicit Import(std::vector<std::string> const& n)
+            : names(n)
+        {}
+
+        void write() const;
+
+        std::vector<std::string> const names;
+    };
+
+    struct AttrSet
+        : Statement
+    {
+        AttrSet(util::sptr<Expression const> s, util::sptr<Expression const> v)
+            : set_point(std::move(s))
+            , value(std::move(v))
+        {}
+
+        void write() const;
+
+        util::sptr<Expression const> const set_point;
+        util::sptr<Expression const> const value;
     };
 
 }

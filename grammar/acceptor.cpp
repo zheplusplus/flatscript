@@ -17,7 +17,7 @@ void IfAcceptor::acceptFunc(util::sptr<Function const> func)
     _current_branch->addFunc(std::move(func));
 }
 
-void IfAcceptor::acceptStmt(util::sptr<Statement const> stmt)
+void IfAcceptor::acceptStmt(util::sptr<Statement> stmt)
 {
     _current_branch->addStmt(std::move(stmt));
 }
@@ -30,9 +30,8 @@ void IfAcceptor::deliverTo(util::sref<Acceptor> acc)
                                              , std::move(_consequence)
                                              , std::move(_alternative))));
     } else {
-        acc->acceptStmt(util::mkptr(new BranchConsqOnly(pos
-                                                      , std::move(_predicate)
-                                                      , std::move(_consequence))));
+        acc->acceptStmt(util::mkptr(
+                    new BranchConsqOnly(pos, std::move(_predicate), std::move(_consequence))));
     }
 }
 
@@ -56,16 +55,15 @@ void IfnotAcceptor::acceptFunc(util::sptr<Function const> func)
     _alternative.addFunc(std::move(func));
 }
 
-void IfnotAcceptor::acceptStmt(util::sptr<Statement const> stmt)
+void IfnotAcceptor::acceptStmt(util::sptr<Statement> stmt)
 {
     _alternative.addStmt(std::move(stmt));
 }
 
 void IfnotAcceptor::deliverTo(util::sref<Acceptor> acc)
 {
-    acc->acceptStmt(util::mkptr(new BranchAlterOnly(pos
-                                                  , std::move(_predicate)
-                                                  , std::move(_alternative))));
+    acc->acceptStmt(util::mkptr(
+                new BranchAlterOnly(pos, std::move(_predicate), std::move(_alternative))));
 }
 
 void FunctionAcceptor::acceptFunc(util::sptr<Function const> func)
@@ -73,7 +71,7 @@ void FunctionAcceptor::acceptFunc(util::sptr<Function const> func)
     _body.addFunc(std::move(func));
 }
 
-void FunctionAcceptor::acceptStmt(util::sptr<Statement const> stmt)
+void FunctionAcceptor::acceptStmt(util::sptr<Statement> stmt)
 {
     _body.addStmt(std::move(stmt));
 }

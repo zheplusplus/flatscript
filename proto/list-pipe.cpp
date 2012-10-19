@@ -1,66 +1,65 @@
 #include <algorithm>
 
-#include <output/func-writer.h>
-#include <report/errors.h>
+#include <util/string.h>
 
 #include "list-pipe.h"
 
 using namespace proto;
 
-void PipeMap::writeBegin() const
+static std::string const PIPE_MAP(
+"(function (iterlist) {"
+"    var r = [];\n"
+"    for (var iterindex = 0; iterindex < iterlist.length; ++iterindex) {\n"
+"        var iterelement = iterlist[iterindex];\n"
+"        r.push($VALUE);\n"
+"    }\n"
+"    return r;\n"
+"})($LIST)"
+);
+
+std::string PipeMap::stringify(std::string const& list_repr) const
 {
-    output::pipeMapBegin();
+    return std::move(
+        util::replace_all(
+        util::replace_all(
+            PIPE_MAP
+                , "$VALUE", expr->stringify(true))
+                , "$LIST", list_repr)
+        );
 }
 
-void PipeMap::writeEnd() const
+static std::string const PIPE_FILTER(
+"(function (iterlist) {"
+"    var r = [];\n"
+"    for (var iterindex = 0; iterindex < iterlist.length; ++iterindex) {\n"
+"        var iterelement = iterlist[iterindex];\n"
+"        if ($PREDICATE) {\n"
+"            r.push(iterelement);\n"
+"        }\n"
+"    }\n"
+"    return r;\n"
+"})($LIST)"
+);
+
+std::string PipeFilter::stringify(std::string const& list_repr) const
 {
-    output::pipeMapEnd();
+    return std::move(
+        util::replace_all(
+        util::replace_all(
+            PIPE_FILTER
+                , "$PREDICATE", expr->stringify(true))
+                , "$LIST", list_repr)
+        );
 }
 
-void PipeFilter::writeBegin() const
+std::string ListPipeline::stringify(bool in_pipe) const
 {
-    output::pipeFilterBegin();
-}
-
-void PipeFilter::writeEnd() const
-{
-    output::pipeFilterEnd();
-}
-
-void ListPipeline::write() const
-{
-    std::for_each(pipeline.rbegin()
-                , pipeline.rend()
-                , [&](util::sptr<PipeBase const> const& p)
-                  {
-                      p->writeBegin();
-                      p->expr->writeAsPipe();
-                      p->writeEnd();
-                  });
-    list->write();
+    std::string result(list->stringify(in_pipe));
     std::for_each(pipeline.begin()
                 , pipeline.end()
-                , [&](util::sptr<PipeBase const> const&)
-                  {
-                      output::pipeFinished();
-                  });
-}
-
-void ListPipeline::writeAsPipe() const
-{
-    std::for_each(pipeline.rbegin()
-                , pipeline.rend()
                 , [&](util::sptr<PipeBase const> const& p)
                   {
-                      p->writeBegin();
-                      p->expr->writeAsPipe();
-                      p->writeEnd();
+                      result = std::move(p->stringify(result));
                   });
-    list->writeAsPipe();
-    std::for_each(pipeline.begin()
-                , pipeline.end()
-                , [&](util::sptr<PipeBase const> const&)
-                  {
-                      output::pipeFinished();
-                  });
+    return std::move(result);
 }

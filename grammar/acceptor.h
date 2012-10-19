@@ -1,6 +1,7 @@
 #ifndef __STEKIN_GRAMMAR_ACCEPTOR_H__
 #define __STEKIN_GRAMMAR_ACCEPTOR_H__
 
+#include <flowcheck/fwd-decl.h>
 #include <util/pointer.h>
 #include <misc/pos-type.h>
 
@@ -11,7 +12,7 @@ namespace grammar {
 
     struct Acceptor {
         virtual void acceptFunc(util::sptr<Function const> func) = 0;
-        virtual void acceptStmt(util::sptr<Statement const> stmt) = 0;
+        virtual void acceptStmt(util::sptr<Statement> stmt) = 0;
         virtual void deliverTo(util::sref<Acceptor> acc) = 0;
 
         virtual void acceptElse(misc::position const& else_pos);
@@ -31,11 +32,11 @@ namespace grammar {
         : public Acceptor
     {
         void acceptFunc(util::sptr<Function const> func);
-        void acceptStmt(util::sptr<Statement const> stmt);
+        void acceptStmt(util::sptr<Statement> stmt);
         void deliverTo(util::sref<Acceptor> acc);
         void acceptElse(misc::position const& else_pos);
 
-        IfAcceptor(misc::position const& pos, util::sptr<Expression const> predicate)
+        IfAcceptor(misc::position const& pos, util::sptr<flchk::Expression const> predicate)
             : Acceptor(pos)
             , _predicate(std::move(predicate))
             , _last_else_pos_or_nul_if_not_matched(nullptr)
@@ -44,7 +45,7 @@ namespace grammar {
     private:
         bool _elseMatched() const;
     private:
-        util::sptr<Expression const> _predicate;
+        util::sptr<flchk::Expression const> _predicate;
 
         util::sptr<misc::position> _last_else_pos_or_nul_if_not_matched;
         Block* _current_branch;
@@ -57,15 +58,15 @@ namespace grammar {
         : public Acceptor
     {
         void acceptFunc(util::sptr<Function const> func);
-        void acceptStmt(util::sptr<Statement const> stmt);
+        void acceptStmt(util::sptr<Statement> stmt);
         void deliverTo(util::sref<Acceptor> acc);
 
-        IfnotAcceptor(misc::position const& pos, util::sptr<Expression const> predicate)
+        IfnotAcceptor(misc::position const& pos, util::sptr<flchk::Expression const> predicate)
             : Acceptor(pos)
             , _predicate(std::move(predicate))
         {}
     private:
-        util::sptr<Expression const> _predicate;
+        util::sptr<flchk::Expression const> _predicate;
 
         Block _alternative;
     };
@@ -74,7 +75,7 @@ namespace grammar {
         : public Acceptor
     {
         void acceptFunc(util::sptr<Function const> func);
-        void acceptStmt(util::sptr<Statement const> stmt);
+        void acceptStmt(util::sptr<Statement> stmt);
         void deliverTo(util::sref<Acceptor> acc);
 
         FunctionAcceptor(misc::position const& pos

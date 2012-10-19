@@ -4,9 +4,6 @@
 namespace grammar {
 
     struct Statement;
-    struct Expression;
-    struct Call;
-    struct PipeBase;
     struct ClauseBuilder;
     struct Function;
 

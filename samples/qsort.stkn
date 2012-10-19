@@ -1,0 +1,14 @@
+import console
+
+func sort(list)
+    if list.length = 0
+        return []
+    first: list[0]
+    tail: list[1:]
+    return sort(tail | if $element <= first) ++ [first] ++ sort(tail | if $element > first)
+
+console.log(sort([]))
+console.log(sort([2, 4, 3]))
+console.log(sort([
+25, 1, 36, 49, 4,
+    81, 16, 9, 64, 0 ]))
