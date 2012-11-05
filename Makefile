@@ -1,19 +1,26 @@
 WORKDIR=.
 
+ifndef PYTHON
+	PYTHON=python2
+endif
+
 include misc/mf-template.mk
 
-all:stekin.d lib
+all:code-gen stekin.d env.d lib
 	make -f report/Makefile MODE=$(MODE)
 	make -f grammar/Makefile MODE=$(MODE)
-	make -f flowcheck/Makefile MODE=$(MODE)
-	make -f proto/Makefile MODE=$(MODE)
-	$(LINK) stekin.o \
+	make -f semantic/Makefile MODE=$(MODE)
+	make -f output/Makefile MODE=$(MODE)
+	$(LINK) *.o \
 	        report/*.o \
 	        grammar/*.o \
-	        flowcheck/*.o \
-	        proto/*.o \
+	        semantic/*.o \
+	        output/*.o \
 	        $(LIBS) \
 	     -o stekin
+
+code-gen:
+	make -f codegen/Makefile PYTHON=$(PYTHON)
 
 lib:
 	mkdir -p libs
@@ -23,7 +30,7 @@ lib:
 runtest:all test-lib
 	make -f util/test/Makefile MODE=$(MODE)
 	make -f grammar/test/Makefile MODE=$(MODE)
-	make -f flowcheck/test/Makefile MODE=$(MODE)
+	make -f semantic/test/Makefile MODE=$(MODE)
 	bash test/sample-test.sh -cm
 
 test-lib:
@@ -35,8 +42,9 @@ clean:
 	make -f misc/Makefile clean
 	make -f report/Makefile clean
 	make -f grammar/Makefile clean
-	make -f flowcheck/Makefile clean
-	make -f proto/Makefile clean
+	make -f semantic/Makefile clean
+	make -f output/Makefile clean
+	make -f codegen/Makefile clean
 	rm -f tmp.*
 	rm -f *.o
 	rm -f *.out
@@ -47,4 +55,4 @@ cleant:clean
 	make -f test/Makefile clean
 	make -f util/test/Makefile cleant
 	make -f grammar/test/Makefile cleant
-	make -f flowcheck/test/Makefile cleant
+	make -f semantic/test/Makefile cleant

@@ -4,10 +4,6 @@
 #include <string>
 #include <vector>
 
-#include <flowcheck/fwd-decl.h>
-#include <util/pointer.h>
-#include <misc/pos-type.h>
-
 #include "block.h"
 
 namespace grammar {
@@ -23,7 +19,7 @@ namespace grammar {
             , body(std::move(b))
         {}
 
-        void compile(util::sref<flchk::Filter> filter) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         misc::position const pos;
         std::string const name;

@@ -1,169 +1,102 @@
 #include <gtest/gtest.h>
 
-#include <flowcheck/expr-nodes.h>
-#include <flowcheck/function.h>
-#include <test/common.h>
 #include <test/phony-errors.h>
 
 #include "test-common.h"
 #include "../clause-builder.h"
 #include "../function.h"
 #include "../stmt-nodes.h"
+#include "../expr-nodes.h"
+#include "../expr-tokens.h"
+#include "../syntax-types.h"
 
 using namespace test;
 
 typedef GrammarTest ClauseBuilderTest;
 
-TEST_F(ClauseBuilderTest, AcceptorStackNext)
+TEST_F(ClauseBuilderTest, Empty)
 {
-    misc::position item_pos(1);
-    misc::position acc_pos(100);
+    misc::position pos(1);
 
-    grammar::AcceptorStack stack0;
-    stack0.nextStmt(0, util::mkptr(new grammar::NameDef(item_pos, "ruby", util::mkptr(
-                                            new flchk::Reference(item_pos, "emerald")))));
-    stack0.nextStmt(0, util::mkptr(new grammar::NameDef(item_pos, "topiz", util::mkptr(
-                                            new flchk::Reference(item_pos, "ruby")))));
-    stack0.nextFunc(0, util::mkptr(new grammar::Function(item_pos
-                                                       , "skull"
-                                                       , std::vector<std::string>({ "chipped" })
-                                                       , grammar::Block())));
+    grammar::ClauseBuilder builder;
+    builder.buildAndClear()->compile(nulSymbols());
     ASSERT_FALSE(error::hasError());
-    grammar::Block block0(stack0.packAll());
-    block0.compile(mkfilter())->compile();
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
-        (item_pos, FUNC_DEF, "skull")
-            (item_pos, PARAMETER, "chipped")
-            (BLOCK_BEGIN)
-            (BLOCK_END)
-
-        (item_pos, NAME_DEF, "ruby")
-            (item_pos, IDENTIFIER, "emerald")
-        (item_pos, NAME_DEF, "topiz")
-            (item_pos, IDENTIFIER, "ruby")
         (BLOCK_END)
     ;
-
-    misc::position err_pos0(101);
-    misc::position err_pos1(102);
-    ASSERT_FALSE(error::hasError());
-    stack0.nextStmt(1, util::mkptr(new grammar::Arithmetics(err_pos0, util::mkptr(
-                                            new flchk::IntLiteral(item_pos, "20110119")))));
-    stack0.nextStmt(1, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                            new flchk::FloatLiteral(item_pos, "19.55")))));
-    stack0.nextFunc(4, util::mkptr(new grammar::Function(err_pos1
-                                                       , "ith"
-                                                       , std::vector<std::string>({ "el", "eth" })
-                                                       , grammar::Block())));
-    ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(2, getExcessInds().size());
-    ASSERT_EQ(err_pos0, getExcessInds()[0].pos);
-    ASSERT_EQ(err_pos1, getExcessInds()[1].pos);
 }
 
-TEST_F(ClauseBuilderTest, AcceptorStackAdd)
+TEST_F(ClauseBuilderTest, IfBranch)
 {
-    misc::position item_pos(2);
-    misc::position acc_pos(100);
+    misc::position pos(2);
 
-    grammar::AcceptorStack stack0;
-    stack0.nextStmt(0, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                            new flchk::Reference(item_pos, "eaglehorn")))));
-    stack0.add(0, util::mkptr(new grammar::FunctionAcceptor(acc_pos
-                                                          , "witherstring"
-                                                          , std::vector<std::string>())));
-    stack0.nextStmt(1, util::mkptr(new grammar::NameDef(item_pos, "cedar_bow", util::mkptr(
-                                            new flchk::Reference(item_pos, "kuko_shakaku")))));
-    stack0.nextStmt(1, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                          new flchk::Reference(item_pos, "buriza_do_kyanon")))));
+    grammar::ClauseBuilder builder;
+    builder.addIf(0, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "kaeri")), "kaeri")))
+        ->add(new grammar::OpToken(pos, "+"))
+        ->deliver());
+    builder.addArith(2, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "miti")), "miti")))
+                                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "mayoi")), "mayoi")))
+                                  ->deliver());
+
+    builder.buildAndClear()->compile(nulSymbols());
     ASSERT_FALSE(error::hasError());
-    grammar::Block block0(stack0.packAll());
-    block0.compile(mkfilter())->compile();
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
-        (acc_pos, FUNC_DEF, "witherstring")
-            (BLOCK_BEGIN)
-            (item_pos, NAME_DEF, "cedar_bow")
-                (item_pos, IDENTIFIER, "kuko_shakaku")
-            (item_pos, ARITHMETICS)
-                (item_pos, IDENTIFIER, "buriza_do_kyanon")
-            (BLOCK_END)
-
-        (item_pos, ARITHMETICS)
-            (item_pos, IDENTIFIER, "eaglehorn")
-        (BLOCK_END)
-    ;
-
-    grammar::AcceptorStack stack1;
-    stack1.add(0, util::mkptr(new grammar::FunctionAcceptor(acc_pos
-                                                          , "witherstring"
-                                                          , std::vector<std::string>())));
-    stack1.nextStmt(1, util::mkptr(new grammar::NameDef(item_pos, "cedar_bow", util::mkptr(
-                                            new flchk::Reference(item_pos, "kuko_shakaku")))));
-    stack1.nextStmt(0, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                            new flchk::Reference(item_pos, "eaglehorn")))));
-    stack1.nextStmt(1, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                            new flchk::Reference(item_pos, "buriza_do_kyanon")))));
-    ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(1, getExcessInds().size());
-    ASSERT_EQ(item_pos, getExcessInds()[0].pos);
-}
-
-TEST_F(ClauseBuilderTest, AcceptorStackMatchElse)
-{
-    misc::position item_pos(3);
-    misc::position acc_pos(210);
-    misc::position else_pos(211);
-
-    grammar::AcceptorStack stack0;
-    stack0.nextStmt(0, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                        new flchk::Reference(item_pos, "roguesbow")))));
-    stack0.add(0, util::mkptr(new grammar::IfAcceptor(acc_pos, util::mkptr(
-                                        new flchk::Reference(item_pos, "stormstrike")))));
-    stack0.nextStmt(1, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                        new flchk::Reference(item_pos, "witchwild_string")))));
-    stack0.matchElse(0, else_pos);
-    stack0.nextStmt(1, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                        new flchk::Reference(item_pos, "magewrath")))));
-    ASSERT_FALSE(error::hasError());
-    grammar::Block block0(stack0.packAll());
-    block0.compile(mkfilter())->compile();
-
-    DataTree::expectOne()
-        (BLOCK_BEGIN)
-        (item_pos, ARITHMETICS)
-            (item_pos, IDENTIFIER, "roguesbow")
-        (acc_pos, BRANCH)
-        (item_pos, IDENTIFIER, "stormstrike")
+        (pos, BRANCH_CONSQ_ONLY)
+            (pos, BINARY_OP, "+")
+            (pos, OPERAND)
+                (pos, IDENTIFIER, "kaeri")
+            (pos, OPERAND)
+                (pos, IDENTIFIER, "miti")
         (CONSEQUENCE)
             (BLOCK_BEGIN)
-            (item_pos, ARITHMETICS)
-                (item_pos, IDENTIFIER, "witchwild_string")
-            (BLOCK_END)
-        (ALTERNATIVE)
-            (BLOCK_BEGIN)
-            (item_pos, ARITHMETICS)
-                (item_pos, IDENTIFIER, "magewrath")
+            (pos, ARITHMETICS)
+                (pos, IDENTIFIER, "mayoi")
             (BLOCK_END)
         (BLOCK_END)
     ;
+}
 
-    grammar::AcceptorStack stack1;
-    stack1.nextStmt(0, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                            new flchk::Reference(item_pos, "roguesbow")))));
-    stack1.add(0, util::mkptr(new grammar::IfAcceptor(acc_pos, util::mkptr(
-                                            new flchk::Reference(item_pos, "stormstrike")))));
-    stack1.nextStmt(1, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                            new flchk::Reference(item_pos, "witchwild_string")))));
-    stack1.matchElse(2, else_pos);
-    stack1.nextStmt(1, util::mkptr(new grammar::Arithmetics(item_pos, util::mkptr(
-                                            new flchk::Reference(item_pos, "magewrath")))));
+TEST_F(ClauseBuilderTest, IfBranchErrorElseAlreadyMatched)
+{
+    misc::position pos(3);
+    misc::position else_pos_a(300);
+    misc::position else_pos_b(301);
+
+    grammar::ClauseBuilder builder;
+    builder.addIf(0, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "yes")), "yes")))
+                                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "i")), "i")))
+                                  ->deliver());
+    builder.addElse(0, else_pos_a);
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "will")), "will")))
+                                  ->deliver());
+    builder.addElse(0, else_pos_b);
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "nadia")), "nadia")))
+                                  ->deliver());
+
     ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(1, getElseNotMatches().size());
-    ASSERT_EQ(else_pos, getElseNotMatches()[0].pos);
+    ASSERT_EQ(1, getIfAlreadyMatchElseRecs().size());
+    ASSERT_EQ(else_pos_a, getIfAlreadyMatchElseRecs()[0].prev_else_pos);
+    ASSERT_EQ(else_pos_b, getIfAlreadyMatchElseRecs()[0].this_else_pos);
 }
 
 TEST_F(ClauseBuilderTest, ClauseBuilder)
@@ -173,22 +106,45 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
     misc::position item_pos2(6);
 
     grammar::ClauseBuilder builder0;
-    builder0.addIf(0, util::mkptr(new flchk::BoolLiteral(item_pos0, true)));
-        builder0.addNameDef(1, "wind_force", util::mkptr(
-                                    new flchk::IntLiteral(item_pos1, "13571")));
-        builder0.addIfnot(1, util::mkptr(new flchk::Reference(item_pos2, "raven_claw")));
-            builder0.addReturn(2, util::mkptr(new flchk::FloatLiteral(item_pos0, "0.000123")));
-        builder0.addReturnNothing(1, item_pos1);
+    builder0.addIf(0, item_pos0, (new grammar::TokenSequence(
+            new grammar::FactorToken(
+                      item_pos0, util::mkptr(new grammar::BoolLiteral(item_pos0, true)), "true")))
+                                      ->deliver());
+        builder0.addArith(1, item_pos1, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos1, util::mkptr(
+                                new grammar::Identifier(item_pos1, "wind_force")), "wind_force")))
+          ->add(new grammar::ColonToken(item_pos1))
+          ->add(new grammar::FactorToken(
+                      item_pos1, util::mkptr(new grammar::IntLiteral(item_pos1, "13571")), "13571"))
+          ->deliver());
+        builder0.addIfnot(1, item_pos2, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos2, util::mkptr(
+                                new grammar::Identifier(item_pos2, "raven_claw")), "raven_claw")))
+                                          ->deliver());
+            builder0.addReturn(2, item_pos0, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos0, util::mkptr(
+                                new grammar::FloatLiteral(item_pos0, "0.000123")), "0.000123")))
+                                                    ->deliver());
+        builder0.addReturn(1, item_pos1, std::vector<util::sptr<grammar::Token>>());
     builder0.addElse(0, item_pos2);
-        builder0.addIfnot(1, util::mkptr(new flchk::Reference(item_pos2, "cliffkiller")));
-            builder0.addIfnot(2, util::mkptr(new flchk::Reference(item_pos0, "skystrike")));
+        builder0.addIfnot(1, item_pos2, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos2, util::mkptr(
+                                new grammar::Identifier(item_pos2, "cliffkiller")), "cliffkiller")))
+                                          ->deliver());
+            builder0.addIfnot(2, item_pos0, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos0, util::mkptr(
+                                new grammar::Identifier(item_pos0, "skystrike")), "skystrike")))
+                                              ->deliver());
     builder0.addFunction(0
                        , item_pos1
                        , "goldenstrike_arch"
                        , std::vector<std::string>({ "amn", "tir" }));
-        builder0.addArith(1, util::mkptr(new flchk::Reference(item_pos1, "widowmaker")));
+        builder0.addArith(1, item_pos1, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos1, util::mkptr(
+                                new grammar::Identifier(item_pos1, "widowmaker")), "widowmaker")))
+                              ->deliver());
 
-    builder0.buildAndClear()->compile();
+    builder0.buildAndClear()->compile(nulSymbols());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -233,12 +189,132 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
             (BLOCK_END)
         (BLOCK_END)
     ;
+}
+
+TEST_F(ClauseBuilderTest, PushExprSequence)
+{
+    misc::position pos(5);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+                new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "sunako")), "sunako")))
+          ->add(new grammar::OpToken(pos, "+"))
+          ->add(new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "kirisiki")), "kirisiki"))
+          ->deliver());
+
+    builder.buildAndClear()->compile(nulSymbols());
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+            (pos, ARITHMETICS)
+                (pos, BINARY_OP, "+")
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "sunako")
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "kirisiki")
+        (BLOCK_END)
+    ;
+}
+
+TEST_F(ClauseBuilderTest, IfnotBranchErrorMatchElse)
+{
+    misc::position pos(6);
+    misc::position else_pos(600);
+
+    grammar::ClauseBuilder builder;
+    builder.addIfnot(0, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "morikawa")), "morikawa")))
+                                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "miho")), "miho")))
+                                  ->deliver());
+    builder.addElse(0, else_pos);
+
+    ASSERT_TRUE(error::hasError());
+    ASSERT_EQ(1, getElseNotMatchIfRecs().size());
+    ASSERT_EQ(else_pos, getElseNotMatchIfRecs()[0].else_pos);
+}
+
+TEST_F(ClauseBuilderTest, ErrorElseNotMatched)
+{
+    misc::position pos(7);
+    misc::position else_pos(700);
+
+    grammar::ClauseBuilder builder;
+    builder.addIf(0, pos, (new grammar::TokenSequence(
+                new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "asabina")), "mikuru")))
+                                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+                new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "mikuru")), "mikuru")))
+                                  ->deliver());
+    builder.addElse(1, else_pos);
+
+    ASSERT_TRUE(error::hasError());
+    ASSERT_EQ(1, getElseNotMatchIfRecs().size());
+    ASSERT_EQ(else_pos, getElseNotMatchIfRecs()[0].else_pos);
+}
+
+TEST_F(ClauseBuilderTest, UnterminatedExprInGlobalScope)
+{
+    misc::position pos(8);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                          pos, util::mkptr(new grammar::IntLiteral(pos, "20121111")), "20121111")))
+        ->add(new grammar::OpToken(pos, "+"))
+        ->deliver());
+
+    builder.buildAndClear();
+    ASSERT_TRUE(error::hasError());
+    ASSERT_EQ(1, getUnexpectedEofRecs().size());
+}
+
+TEST_F(ClauseBuilderTest, UnterminatedExprInBranch)
+{
+    misc::position pos(9);
+
+    grammar::ClauseBuilder builder;
+    builder.addIf(0, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::BoolLiteral(pos, false)), "false")))
+                                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+                                        new grammar::OpenParenToken(pos)))
+                                  ->deliver());
+
+    builder.buildAndClear();
+    ASSERT_TRUE(error::hasError());
+    ASSERT_EQ(1, getUnexpectedEofRecs().size());
+}
+
+TEST_F(ClauseBuilderTest, IfReducedElseNotMatched)
+{
+    misc::position item_pos0(10);
+    misc::position item_pos1(1000);
+    misc::position item_pos2(1001);
 
     grammar::ClauseBuilder builder1;
-    builder1.addIf(0, util::mkptr(new flchk::BoolLiteral(item_pos0, true)));
-    builder1.addNameDef(0, "wind_force", util::mkptr(new flchk::IntLiteral(item_pos1, "13571")));
+    builder1.addIf(0, item_pos0, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos0, util::mkptr(
+                                new grammar::BoolLiteral(item_pos0, true)), "true")))
+                                      ->deliver());
+    builder1.addArith(0, item_pos1, (new grammar::TokenSequence(
+                new grammar::FactorToken(item_pos1, util::mkptr(
+                                new grammar::Identifier(item_pos1, "wind_force")), "wind_force")))
+          ->add(new grammar::ColonToken(item_pos1))
+          ->add(new grammar::FactorToken(item_pos1, util::mkptr(
+                                new grammar::Identifier(item_pos1, "13571")), "13571"))
+          ->deliver());
     builder1.addElse(0, item_pos2);
     ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(1, getElseNotMatches().size());
-    ASSERT_EQ(item_pos2, getElseNotMatches()[0].pos);
+    ASSERT_EQ(1, getElseNotMatchIfRecs().size());
+    ASSERT_EQ(item_pos2, getElseNotMatchIfRecs()[0].else_pos);
 }

@@ -46,3 +46,5 @@ verify list-slice
 verify qsort
 verify set-attribute
 verify dict
+verify lambda
+verify set-timeout

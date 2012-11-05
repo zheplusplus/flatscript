@@ -1,7 +1,5 @@
-import console
-
 func ret_string()
-    return "ste" 'kin'
+    return "ste" + 'kin'
 stekin: ret_string()
 console.log(stekin)
 

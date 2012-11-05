@@ -1,5 +1,3 @@
-import console
-
 if 0
     console.log(false)
 if 'abc'

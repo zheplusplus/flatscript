@@ -12,17 +12,18 @@ x: a * b =
     c * d
 x: [
     y]
-x: [y,
+ifnot [y,
     z]
-x(
-)
+    x(
+    )
 x(
     y)
 x(y,
     z)
 
-x: a * b =
-    c *
-    d
-console.
-    log(x)
+if a * b =
+        c *
+        d
+    console.
+        log(x)
+over

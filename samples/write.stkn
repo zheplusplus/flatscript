@@ -1,4 +1,3 @@
-import console
 write: console.log
 write(0)
 write(1)

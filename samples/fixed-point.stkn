@@ -1,5 +1,3 @@
-import console
-
 PRECISION: .0001
 
 func abs(x)

@@ -32,16 +32,16 @@ xx().first()
 ([] ++ []).push_back(0)
 x.xx().first()
 
-[] | if $index = 0 | return $element * $element
+[] |? $i = 0 |: $ * $
 
 s: 'sizukani tiriyuku' + "the quick brown fox jumps over a lazy dog."
 sk: "a quote\" and something \\else in\t the\n string"
-st: 'nomico"misato' "nomico'misato"
+st: 'nomico"misato' + "nomico'misato"
 
 import emirin
 import kagami, hiiragi
 
-set emirin.katou kagami.hiiragi
+emirin.katou: kagami.hiiragi
 
 x: {
     1: 2,

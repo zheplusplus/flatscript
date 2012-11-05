@@ -1,6 +1,6 @@
-#include <flowcheck/global-filter.h>
-#include <flowcheck/node-base.h>
-#include <flowcheck/function.h>
+#include <semantic/global-filter.h>
+#include <semantic/node-base.h>
+#include <semantic/function.h>
 #include <test/common.h>
 #include <test/phony-errors.h>
 
@@ -8,14 +8,14 @@
 
 using namespace test;
 
-util::sptr<flchk::Filter> test::mkfilter()
+util::sptr<semantic::Filter> test::mkfilter()
 {
-    return std::move(util::mkptr(new flchk::GlobalFilter));
+    return std::move(util::mkptr(new semantic::GlobalFilter));
 }
 
-util::sref<flchk::SymbolTable> test::nulSymbols()
+util::sref<semantic::SymbolTable> test::nulSymbols()
 {
-    return util::sref<flchk::SymbolTable>(nullptr);
+    return util::sref<semantic::SymbolTable>(nullptr);
 }
 
 DataTree& DataTree::operator()(misc::position const& pos
@@ -96,6 +96,8 @@ NodeType const test::ARITHMETICS("arithmetics");
 NodeType const test::RETURN("return");
 NodeType const test::RETURN_NOTHING("return nothing");
 NodeType const test::IMPORT("import");
+NodeType const test::EXPORT("export");
+NodeType const test::EXPORT_VALUE("exported value");
 NodeType const test::ATTR_SET("attribute set");
 
 NodeType const test::FUNC_DEF("func def");

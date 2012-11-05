@@ -1,5 +1,3 @@
-import console
-
 func rlist(x, y, z)
     return [z, y] ++ [x]
 

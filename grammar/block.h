@@ -1,7 +1,7 @@
 #ifndef __STEKIN_GRAMMAR_BLOCK_H__
 #define __STEKIN_GRAMMAR_BLOCK_H__
 
-#include <flowcheck/fwd-decl.h>
+#include <semantic/fwd-decl.h>
 #include <util/pointer.h>
 
 #include "fwd-decl.h"
@@ -9,7 +9,7 @@
 namespace grammar {
 
     struct Block {
-        util::sptr<flchk::Filter> compile(util::sptr<flchk::Filter> filter) const;
+        util::sptr<semantic::Filter> compile(util::sptr<semantic::Filter> filter) const;
 
         void addStmt(util::sptr<Statement> stmt);
         void addFunc(util::sptr<Function const> func);

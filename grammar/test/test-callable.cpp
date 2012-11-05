@@ -10,7 +10,7 @@ using namespace test;
 TEST(Syntax, Callable)
 {
     yyparse();
-    grammar::builder.buildAndClear()->compile();
+    grammar::builder.buildAndClear()->compile(nulSymbols());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

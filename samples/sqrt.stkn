@@ -1,5 +1,3 @@
-import console
-
 func abs(x)
     if x < 0
         return -x

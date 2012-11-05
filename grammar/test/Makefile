@@ -1,26 +1,33 @@
 WORKDIR=grammar
 TESTDIR=$(WORKDIR)/test
 
-test:parsing-tests $(TESTDIR)/test-grammar.out
-	$(CHKMEM) $(TESTDIR)/test-grammar.out
+test:sample-tests unittest
 
-parsing-tests:test-ok-empty test-err-tab-as-ind test-err-inv-chars test-err-bad-indent \
-              test-err-slice test-err-modify-name \
-              test-ok-mix test-ok-callable test-ok-slice test-ok-break
+sample-tests:unittest \
+             test-ok-empty test-err-tab-as-ind test-err-inv-chars test-err-bad-indent \
+             test-err-slice \
+             test-ok-mix test-ok-callable test-ok-slice test-ok-break test-ok-multi-level-lambdas
+
+unittest:$(TESTDIR)/test-grammar.out
+	$(CHKMEM) $(TESTDIR)/test-grammar.out
 
 include $(WORKDIR)/Makefile
 
-TEST_DEP=grammar phony-flowcheck.dt test-common.dt
-TEST_OBJ=$(WORKDIR)/*.o $(TESTDIR)/phony-flowcheck.o $(TESTDIR)/test-common.o
+TEST_DEP=grammar phony-semantic.dt test-common.dt
+TEST_OBJ=$(WORKDIR)/*.o $(TESTDIR)/phony-semantic.o $(TESTDIR)/test-common.o
 
 $(TESTDIR)/test-grammar.out:$(TEST_DEP) \
                             test-stmt-nodes.dt \
-                            test-acceptor.dt \
-                            test-clause-builder.dt
+                            test-clause.dt \
+                            test-expr-automations.dt \
+                            test-clause-builder.dt \
+                            test-anony-funcs.dt
 	$(LINK) $(TEST_OBJ) \
 	        $(TESTDIR)/test-stmt-nodes.o \
-	        $(TESTDIR)/test-acceptor.o \
+	        $(TESTDIR)/test-clause.o \
+	        $(TESTDIR)/test-expr-automations.o \
 	        $(TESTDIR)/test-clause-builder.o \
+	        $(TESTDIR)/test-anony-funcs.o \
 	        $(TEST_LIBS) \
 	     -o $(TESTDIR)/test-grammar.out
 

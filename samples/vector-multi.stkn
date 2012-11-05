@@ -1,5 +1,3 @@
-import console
-
 func vector(x, y, z)
     func multi(x0, y0, z0)
         return x * x0 + y * y0 + z * z0

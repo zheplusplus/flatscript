@@ -1,5 +1,3 @@
-import console
-
 func make_pair(x, y)
     func selector(select)
         return select(x, y)

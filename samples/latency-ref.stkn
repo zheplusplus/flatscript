@@ -1,5 +1,3 @@
-import console
-
 func first()
     return second()
 

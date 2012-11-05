@@ -1,8 +1,9 @@
 #include <algorithm>
 
-#include <flowcheck/list-pipe.h>
+#include <semantic/list-pipe.h>
 
 #include "syntax-types.h"
+#include "node-base.h"
 
 using namespace grammar;
 
@@ -13,24 +14,11 @@ std::string OpImage::deliver()
     return std::move(img);
 }
 
-std::string Identifier::deliver()
+std::string Ident::deliver()
 {
     std::string id(std::move(_id));
     delete this;
     return std::move(id);
-}
-
-Strings* Strings::append(std::string const& value)
-{
-    _value += value;
-    return this;
-}
-
-std::string Strings::deliver()
-{
-    std::string value(std::move(_value));
-    delete this;
-    return std::move(value);
 }
 
 NameList* NameList::add(std::string const& name)
@@ -46,57 +34,20 @@ std::vector<std::string> NameList::deliver()
     return std::move(names);
 }
 
-ArgList* ArgList::add(flchk::Expression const* expr)
+TokenSequence::TokenSequence(Token* token)
 {
-    _args.push_back(util::mkptr(expr));
+    _list.push_back(util::mkptr(token));
+}
+
+TokenSequence* TokenSequence::add(Token* token)
+{
+    _list.push_back(util::mkptr(token));
     return this;
 }
 
-std::vector<util::sptr<flchk::Expression const>> ArgList::deliver()
+std::vector<util::sptr<Token>> TokenSequence::deliver()
 {
-    std::vector<util::sptr<flchk::Expression const>> args(std::move(_args));
+    std::vector<util::sptr<Token>> list(std::move(_list));
     delete this;
-    return std::move(args);
-}
-
-DictContent* DictContent::add(flchk::Expression const* key, flchk::Expression const* value)
-{
-    _items.push_back(std::make_pair(util::mkptr(key), util::mkptr(value)));
-    return this;
-}
-
-std::vector<DictContent::ItemType> DictContent::deliver()
-{
-    std::vector<ItemType> items(std::move(_items));
-    delete this;
-    return std::move(items);
-}
-
-util::sptr<flchk::PipeBase const> Pipeline::PipeMap::deliverCompile()
-{
-    return util::mkptr(new flchk::PipeMap(std::move(_expr)));
-}
-
-util::sptr<flchk::PipeBase const> Pipeline::PipeFilter::deliverCompile()
-{
-    return util::mkptr(new flchk::PipeFilter(std::move(_expr)));
-}
-
-Pipeline* Pipeline::add(util::sptr<PipeBase> pipe)
-{
-    _pipeline.push_back(std::move(pipe));
-    return this;
-}
-
-std::vector<util::sptr<flchk::PipeBase const>> Pipeline::deliverCompile() const
-{
-    std::vector<util::sptr<flchk::PipeBase const>> pipeline;
-    std::for_each(_pipeline.begin()
-                , _pipeline.end()
-                , [&](util::sptr<PipeBase> const& pipe)
-                  {
-                      pipeline.push_back(pipe->deliverCompile());
-                  });
-    delete this;
-    return std::move(pipeline);
+    return std::move(list);
 }

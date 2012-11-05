@@ -1,47 +1,32 @@
 #include <iostream>
 
 #include <grammar/yy-misc.h>
-#include <flowcheck/filter.h>
-#include <proto/node-base.h>
+#include <semantic/filter.h>
+#include <semantic/symbol-table.h>
+#include <output/node-base.h>
 #include <report/errors.h>
 
-namespace {
+#include "env.h"
 
-    struct CompileFailure {};
-
-}
-
-static util::sptr<flchk::Filter> frontEnd()
+int main(int argc, char* argv[])
 {
+    stekin::initEnv(argc, argv);
     yyparse();
     if (error::hasError()) {
-        throw CompileFailure();
-    }
-
-    util::sptr<flchk::Filter> global_flow(grammar::builder.buildAndClear());
-    if (error::hasError()) {
-        throw CompileFailure();
-    }
-    return std::move(global_flow);
-}
-
-static void semantic(util::sptr<flchk::Filter> global_flow)
-{
-    util::sptr<proto::Statement const> proto_global_block(global_flow->compile());
-    if (error::hasError()) {
-        throw CompileFailure();
-    }
-    std::cout << "(function() {" << std::endl;
-    proto_global_block->write();
-    std::cout << "})();" << std::endl;
-}
-
-int main()
-{
-    try {
-        semantic(frontEnd());
-        return 0;
-    } catch (CompileFailure) {
         return 1;
     }
+    util::sptr<semantic::Filter> global_flow(grammar::builder.buildAndClear());
+    if (error::hasError()) {
+        return 1;
+    }
+    semantic::SymbolTable st;
+    util::sptr<output::Statement const> global_scope(global_flow->compile(util::mkref(st)));
+    if (error::hasError()) {
+        return 1;
+    }
+    std::ostream& os = std::cout;
+    os << "(function() {" << std::endl;
+    global_scope->write(os);
+    os << "})();" << std::endl;
+    return 0;
 }

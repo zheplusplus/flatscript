@@ -1,0 +1,9 @@
+f: (x):
+    setTimeout(():
+        console.log(1)
+        console.log(0)
+        console.log(x)
+    , 10)
+    console.log('start')
+
+f(42)

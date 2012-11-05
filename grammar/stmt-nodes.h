@@ -2,9 +2,7 @@
 #define __STEKIN_GRAMMAR_STATEMENT_NODES_H__
 
 #include <string>
-#include <list>
 
-#include <flowcheck/fwd-decl.h>
 #include <util/pointer.h>
 
 #include "node-base.h"
@@ -15,29 +13,29 @@ namespace grammar {
     struct Arithmetics
         : Statement
     {
-        Arithmetics(misc::position const& pos, util::sptr<flchk::Expression const> e)
+        Arithmetics(misc::position const& pos, util::sptr<Expression const> e)
             : Statement(pos)
             , expr(std::move(e))
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
-        util::sptr<flchk::Expression const> expr;
+        util::sptr<Expression const> const expr;
     };
 
     struct Branch
         : Statement
     {
-        Branch(misc::position const& pos, util::sptr<flchk::Expression const> p, Block c, Block a)
+        Branch(misc::position const& pos, util::sptr<Expression const> p, Block c, Block a)
             : Statement(pos)
             , predicate(std::move(p))
             , consequence(std::move(c))
             , alternative(std::move(a))
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
-        util::sptr<flchk::Expression const> predicate;
+        util::sptr<Expression const> const predicate;
         Block const consequence;
         Block const alternative;
     };
@@ -45,44 +43,44 @@ namespace grammar {
     struct BranchConsqOnly
         : Statement
     {
-        BranchConsqOnly(misc::position const& pos, util::sptr<flchk::Expression const> p, Block c)
+        BranchConsqOnly(misc::position const& pos, util::sptr<Expression const> p, Block c)
             : Statement(pos)
             , predicate(std::move(p))
             , consequence(std::move(c))
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
-        util::sptr<flchk::Expression const> predicate;
+        util::sptr<Expression const> const predicate;
         Block const consequence;
     };
 
     struct BranchAlterOnly
         : Statement
     {
-        BranchAlterOnly(misc::position const& pos, util::sptr<flchk::Expression const> p, Block a)
+        BranchAlterOnly(misc::position const& pos, util::sptr<Expression const> p, Block a)
             : Statement(pos)
             , predicate(std::move(p))
             , alternative(std::move(a))
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
-        util::sptr<flchk::Expression const> predicate;
+        util::sptr<Expression const> const predicate;
         Block const alternative;
     };
 
     struct Return
         : Statement
     {
-        Return(misc::position const& pos, util::sptr<flchk::Expression const> r)
+        Return(misc::position const& pos, util::sptr<Expression const> r)
             : Statement(pos)
             , ret_val(std::move(r))
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
-        util::sptr<flchk::Expression const> ret_val;
+        util::sptr<Expression const> const ret_val;
     };
 
     struct ReturnNothing
@@ -92,7 +90,7 @@ namespace grammar {
             : Statement(pos)
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
     };
 
     struct NameDef
@@ -100,16 +98,16 @@ namespace grammar {
     {
         NameDef(misc::position const& pos
               , std::string const& n
-              , util::sptr<flchk::Expression const> i)
+              , util::sptr<Expression const> i)
             : Statement(pos)
             , name(n)
             , init(std::move(i))
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
         std::string const name;
-        util::sptr<flchk::Expression const> init;
+        util::sptr<Expression const> const init;
     };
 
     struct Import
@@ -120,26 +118,43 @@ namespace grammar {
             , names(n)
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
         std::vector<std::string> const names;
+    };
+
+    struct Export
+        : Statement
+    {
+        Export(misc::position const& pos
+             , std::vector<std::string> const e
+             , util::sptr<Expression const> v)
+                : Statement(pos)
+                , export_point(std::move(e))
+                , value(std::move(v))
+        {}
+
+        void compile(util::sref<semantic::Filter> filter) const;
+
+        std::vector<std::string> const export_point;
+        util::sptr<Expression const> const value;
     };
 
     struct AttrSet
         : Statement
     {
         AttrSet(misc::position const& pos
-              , util::sptr<flchk::Expression const> s
-              , util::sptr<flchk::Expression const> v)
+              , util::sptr<Expression const> s
+              , util::sptr<Expression const> v)
             : Statement(pos)
             , set_point(std::move(s))
             , value(std::move(v))
         {}
 
-        void compile(util::sref<flchk::Filter> filter);
+        void compile(util::sref<semantic::Filter> filter) const;
 
-        util::sptr<flchk::Expression const> set_point;
-        util::sptr<flchk::Expression const> value;
+        util::sptr<Expression const> const set_point;
+        util::sptr<Expression const> const value;
     };
 
 }

@@ -1,13 +1,15 @@
-#ifndef __STEKIN_PARSER_SYNTAX_TYPE_H__
-#define __STEKIN_PARSER_SYNTAX_TYPE_H__
+#ifndef __STEKIN_GRAMMAR_SYNTAX_TYPE_H__
+#define __STEKIN_GRAMMAR_SYNTAX_TYPE_H__
 
 #include <string>
 #include <vector>
 
-#include <flowcheck/fwd-decl.h>
+#include <semantic/fwd-decl.h>
 #include <report/errors.h>
 #include <util/pointer.h>
 #include <misc/pos-type.h>
+
+#include "expr-tokens.h"
 
 namespace grammar {
 
@@ -21,10 +23,10 @@ namespace grammar {
         std::string const _img;
     };
 
-    struct Identifier {
+    struct Ident {
         misc::position const pos;
 
-        Identifier(misc::position const& ps, char const* id_text)
+        Ident(misc::position const& ps, char const* id_text)
             : pos(ps)
             , _id(id_text)
         {}
@@ -34,17 +36,6 @@ namespace grammar {
         std::string _id;
     };
 
-    struct Strings {
-        explicit Strings(std::string const& init_val)
-            : _value(init_val)
-        {}
-
-        Strings* append(std::string const& value);
-        std::string deliver();
-    private:
-        std::string _value;
-    };
-
     struct NameList {
         NameList* add(std::string const& name);
         std::vector<std::string> deliver();
@@ -52,61 +43,14 @@ namespace grammar {
         std::vector<std::string> _names;
     };
 
-    struct ArgList {
-        ArgList* add(flchk::Expression const* expr);
-        std::vector<util::sptr<flchk::Expression const>> deliver();
+    struct TokenSequence {
+        explicit TokenSequence(Token* token);
+        TokenSequence* add(Token* token);
+        std::vector<util::sptr<Token>> deliver();
     private:
-        std::vector<util::sptr<flchk::Expression const>> _args;
-    };
-
-    struct DictContent {
-        typedef std::pair<util::sptr<flchk::Expression const>
-                        , util::sptr<flchk::Expression const>> ItemType;
-
-        DictContent* add(flchk::Expression const* key, flchk::Expression const* value);
-        std::vector<ItemType> deliver();
-    private:
-        std::vector<ItemType> _items;
-    };
-
-    struct Pipeline {
-        struct PipeBase {
-            virtual ~PipeBase() {}
-            virtual util::sptr<flchk::PipeBase const> deliverCompile() = 0;
-
-            explicit PipeBase(util::sptr<flchk::Expression const> e)
-                : _expr(std::move(e))
-            {}
-        protected:
-            util::sptr<flchk::Expression const> _expr;
-        };
-
-        struct PipeMap
-            : PipeBase
-        {
-            explicit PipeMap(util::sptr<flchk::Expression const> expr)
-                : PipeBase(std::move(expr))
-            {}
-
-            util::sptr<flchk::PipeBase const> deliverCompile();
-        };
-
-        struct PipeFilter
-            : PipeBase
-        {
-            explicit PipeFilter(util::sptr<flchk::Expression const> expr)
-                : PipeBase(std::move(expr))
-            {}
-
-            util::sptr<flchk::PipeBase const> deliverCompile();
-        };
-
-        Pipeline* add(util::sptr<PipeBase> pipe);
-        std::vector<util::sptr<flchk::PipeBase const>> deliverCompile() const;
-    private:
-        std::vector<util::sptr<PipeBase>> _pipeline;
+        std::vector<util::sptr<Token>> _list;
     };
 
 }
 
-#endif /* __STEKIN_PARSER_SYNTAX_TYPE_H__ */
+#endif /* __STEKIN_GRAMMAR_SYNTAX_TYPE_H__ */

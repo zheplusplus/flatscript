@@ -1,0 +1,17 @@
+console.log(((): 42)())
+console.log(((a): a)(42))
+
+make_pair: (x, y):
+    return (s):
+        return s(x, y)
+
+first: (x, y): x
+
+m: 10
+x: make_pair(m, 6)
+console.log(x(first))
+console.log(x((x, y): y))
+
+y: make_pair(false, true)
+console.log(y(first))
+console.log(y((x, y): y))

@@ -1,61 +1,66 @@
-#include <flowcheck/node-base.h>
-#include <flowcheck/symbol-def-filter.h>
+#include <semantic/node-base.h>
+#include <semantic/symbol-def-filter.h>
 
 #include "stmt-nodes.h"
 #include "function.h"
 
 using namespace grammar;
 
-static util::sptr<flchk::Filter> mkSymDefFilter(util::sref<flchk::Filter> ext_filter)
+static util::sptr<semantic::Filter> mkSymDefFilter()
 {
-    return util::mkptr(new flchk::SymbolDefFilter(ext_filter->getSymbols()));
+    return util::mkptr(new semantic::SymbolDefFilter);
 }
 
-void Arithmetics::compile(util::sref<flchk::Filter> filter)
+void Arithmetics::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addArith(pos, std::move(expr));
+    filter->addArith(pos, expr->reduceAsExpr());
 }
 
-void Branch::compile(util::sref<flchk::Filter> filter)
+void Branch::compile(util::sref<semantic::Filter> filter) const
 {
     filter->addBranch(pos
-                    , std::move(predicate)
-                    , consequence.compile(mkSymDefFilter(filter))
-                    , alternative.compile(mkSymDefFilter(filter)));
+                    , predicate->reduceAsExpr()
+                    , consequence.compile(mkSymDefFilter())
+                    , alternative.compile(mkSymDefFilter()));
 }
 
-void BranchConsqOnly::compile(util::sref<flchk::Filter> filter)
+void BranchConsqOnly::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addBranch(pos, std::move(predicate), consequence.compile(mkSymDefFilter(filter)));
+    filter->addBranch(pos, predicate->reduceAsExpr(), consequence.compile(mkSymDefFilter()));
 }
 
-void BranchAlterOnly::compile(util::sref<flchk::Filter> filter)
+void BranchAlterOnly::compile(util::sref<semantic::Filter> filter) const
 {
     filter->addBranchAlterOnly(
-            pos, std::move(predicate), alternative.compile(mkSymDefFilter(filter)));
+            pos, predicate->reduceAsExpr(), alternative.compile(mkSymDefFilter()));
 }
 
-void Return::compile(util::sref<flchk::Filter> filter)
+void Return::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addReturn(pos, std::move(ret_val));
+    filter->addReturn(pos, ret_val->reduceAsExpr());
 }
 
-void ReturnNothing::compile(util::sref<flchk::Filter> filter)
+void ReturnNothing::compile(util::sref<semantic::Filter> filter) const
 {
     filter->addReturnNothing(pos);
 }
 
-void NameDef::compile(util::sref<flchk::Filter> filter)
+void NameDef::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->defName(pos, name, std::move(init));
+    filter->defName(pos, name, init->reduceAsExpr());
 }
 
-void Import::compile(util::sref<flchk::Filter> filter)
+void Import::compile(util::sref<semantic::Filter> filter) const
 {
     filter->addImport(pos, names);
 }
 
-void AttrSet::compile(util::sref<flchk::Filter> filter)
+void Export::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addAttrSet(pos, std::move(set_point), std::move(value));
+    filter->addExport(pos, export_point, value->reduceAsExpr());
+}
+
+void AttrSet::compile(util::sref<semantic::Filter> filter) const
+{
+    filter->addAttrSet(pos, set_point->reduceAsLeftValue(), value->reduceAsExpr());
 }

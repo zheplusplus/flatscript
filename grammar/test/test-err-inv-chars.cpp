@@ -11,7 +11,7 @@ TEST(Syntax, InvalidCharacters)
 {
     yyparse();
     ASSERT_TRUE(error::hasError());
-    std::vector<InvCharRec> recs = getInvCharRecs();
+    std::vector<InvalidCharRec> recs = getInvalidCharRecs();
     ASSERT_EQ(3, recs.size());
 
     EXPECT_EQ(misc::position(1), recs[0].pos);

@@ -1,5 +1,3 @@
-import console
-
 func xor(a, b)
     if a
         return !b

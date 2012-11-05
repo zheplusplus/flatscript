@@ -13,8 +13,6 @@ x: {
     'sum': sum
 }
 
-import console
-
 console.log(x['sum'](1, 4))
 console.log(x['first'](1, 4))
 console.log(x['second'](1, 4))

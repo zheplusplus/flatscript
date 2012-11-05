@@ -1,20 +1,18 @@
-import console
-
 ls: [5, 1, 6, 7, 2, 9, 4, 3, 8, 0]
 
-console.log(ls | return $element * $element)
-console.log(ls | return $element % 2 = 0)
-console.log(ls | if $element % 2 = 0)
+console.log(ls |: $ * $)
+console.log(ls |: $ % 2 = 0)
+console.log(ls |? $ % 2 = 0)
 
 func head(list, n)
-    return list | if $index < n
+    return list |? $i < n
 
 func after(list, n)
-    return list | if $index >= n
+    return list |? $i >= n
 
 console.log(head(ls, 4))
 console.log(after(ls, 4))
-console.log(ls | return $element * $element % 7 | if $element < 4)
+console.log(ls |: $ * $ % 7 |? $ < 4)
 
 console.log('--- x ---')
-console.log(ls | return (['sd', 'a', 'ab', 'abc'] | if $element.length % 2 = 0) ++ [$element])
+console.log(ls |: (['sd', 'a', 'ab', 'abc'] |? $.length % 2 = 0) ++ [$])

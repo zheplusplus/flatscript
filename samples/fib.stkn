@@ -1,5 +1,3 @@
-import console
-
 func fib_0(x)
     func fib_add()
         return fib_0(x - 1) + fib_0(x - 2)

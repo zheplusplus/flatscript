@@ -6,6 +6,12 @@ else
 	DYN_LINK=
 endif
 
+ifndef PYTHON
+	PYTHON=python2
+endif
+
+CODEGEN=codegen
+
 CC=g++ -c -std=c++0x
 INCLUDE=-I.
 RESOLVE_DEP=g++ -MM $(INCLUDE)

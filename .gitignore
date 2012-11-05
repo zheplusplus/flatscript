@@ -4,6 +4,9 @@ grammar/syn.cpp
 grammar/syn.hpp
 *.o
 *.out
+*.pyc
 tmp.*
 libs
-backtracpp
+report/errors.*
+test/phony-errors.*
+semantic/const-fold.*

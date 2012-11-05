@@ -6,23 +6,18 @@
 %option always-interactive
 
 %%
-\r\n {
-    return EOL;
+^[ |\t]*\n {
+    ++yylineno;
 }
 
-\r {
-    return EOL;
-}
+\r {}
 
 \n {
     return EOL;
 }
 
 ^[ ]+ {
-    if (0 != yyleng % grammar::SPACES_PER_INDENT) {
-        error::badIndent(grammar::here());
-    }
-    grammar::last_indent = yyleng / grammar::SPACES_PER_INDENT;
+    grammar::last_indent = yyleng;
     return INDENT;
 }
 
@@ -36,10 +31,6 @@
 
 func {
     return KW_FUNC;
-}
-
-set {
-    return KW_SET;
 }
 
 ifnot {
@@ -118,11 +109,19 @@ false {
     return OR;
 }
 
-[$]element {
+[\|]: {
+    return PIPE_MAP;
+}
+
+[\|][?] {
+    return PIPE_FILTER;
+}
+
+[$] {
     return LIST_ELEMENT;
 }
 
-[$]index {
+[$]i {
     return LIST_INDEX;
 }
 

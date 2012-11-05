@@ -1,11 +1,9 @@
-import console
-
 func sort(list)
     if list.length = 0
         return []
     first: list[0]
-    tail: list[1:]
-    return sort(tail | if $element <= first) ++ [first] ++ sort(tail | if $element > first)
+    tail: list[1,]
+    return sort(tail |? $ <= first) ++ [first] ++ sort(tail |? $ > first)
 
 console.log(sort([]))
 console.log(sort([2, 4, 3]))

@@ -1,4 +1,3 @@
-import console
 write: console.log
 
 PRECISION: .00001

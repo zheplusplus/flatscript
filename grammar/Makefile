@@ -3,8 +3,9 @@ AWK=awk
 
 include misc/mf-template.mk
 
-grammar:yy-misc.d syntax-types.d lexical syntactically stmt-nodes.d function.d \
-        block.d clause-builder.d acceptor.d
+grammar:yy-misc.d syntax-types.d lexical syntactically node-base.d stmt-nodes.d expr-nodes.d \
+        automation-base.d expr-automations.d expr-tokens.d function.d block.d clause-builder.d \
+        clauses.d
 
 syntactically:
 	$(RESOLVE_DEP) $(WORKDIR)/syn-include.h | $(AWK) -f $(WORKDIR)/syn-script > $(MKTMP)
