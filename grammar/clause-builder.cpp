@@ -12,19 +12,36 @@
 
 using namespace grammar;
 
-void ClauseBuilder::ClauseOfPack::acceptStmt(util::sptr<Statement> stmt)
-{
-    _pack.addStmt(std::move(stmt));
+namespace {
+
+    struct GlobalClause
+        : ClauseBase
+    {
+        GlobalClause(Block& global)
+            : ClauseBase(-1)
+            , _global(global)
+        {}
+
+        void acceptStmt(util::sptr<Statement> stmt)
+        {
+            _global.addStmt(std::move(stmt));
+        }
+
+        void acceptFunc(util::sptr<Function const> func)
+        {
+            _global.addFunc(std::move(func));
+        }
+
+        void deliver() {}
+    private:
+        Block& _global;
+    };
+
 }
 
-void ClauseBuilder::ClauseOfPack::acceptFunc(util::sptr<Function const> func)
+ClauseBuilder::ClauseBuilder()
 {
-    _pack.addFunc(std::move(func));
-}
-
-Block ClauseBuilder::ClauseOfPack::pack()
-{
-    return std::move(_pack);
+    _clauses.push_back(util::mkptr(new GlobalClause(_global)));
 }
 
 void ClauseBuilder::addArith(int indent_len
@@ -79,7 +96,8 @@ void ClauseBuilder::addFunction(int indent_len
     if (!_prepareLevel(indent_len, pos, "func")) {
         return;
     }
-    _clauses.push_back(util::mkptr(new FunctionClause(indent_len, pos, name, params)));
+    _clauses.push_back(util::mkptr(
+                new FunctionClause(indent_len, pos, name, params, *_clauses.back())));
 }
 
 void ClauseBuilder::addIf(int indent_len
@@ -89,7 +107,7 @@ void ClauseBuilder::addIf(int indent_len
     if (!_prepareLevel(indent_len, pos, "if")) {
         return;
     }
-    _clauses.push_back(util::mkptr(new IfClause(indent_len, pos)));
+    _clauses.push_back(util::mkptr(new IfClause(indent_len, pos, *_clauses.back())));
     _pushSequence(pos, sequence);
 }
 
@@ -100,7 +118,7 @@ void ClauseBuilder::addIfnot(int indent_len
     if (!_prepareLevel(indent_len, pos, "ifnot")) {
         return;
     }
-    _clauses.push_back(util::mkptr(new IfnotClause(indent_len, pos)));
+    _clauses.push_back(util::mkptr(new IfnotClause(indent_len, pos, *_clauses.back())));
     _pushSequence(pos, sequence);
 }
 
@@ -119,29 +137,20 @@ util::sptr<semantic::Filter> ClauseBuilder::buildAndClear()
     if (!_shrinkTo(0, misc::position())) {
         error::unexpectedEof();
     }
-    _packer->tryEol(misc::position(), _clauses);
-    return _packer->pack().compile(util::mkptr(new semantic::GlobalFilter));
-}
-
-util::sref<ClauseBuilder::ClauseOfPack> ClauseBuilder::_prepare1stClause()
-{
-    util::sptr<ClauseOfPack> packer(new ClauseOfPack);
-    util::sref<ClauseOfPack> ref = *packer;
-    _clauses.push_back(std::move(packer));
-    return ref;
+    _clauses[0]->tryFinish(misc::position(), _clauses);
+    return _global.compile(util::mkptr(new semantic::GlobalFilter));
 }
 
 bool ClauseBuilder::_shrinkTo(int level, misc::position const& pos)
 {
-    while (level <= _clauses.back()->indent) {
-        if (!_clauses.back()->tryEol(pos, _clauses)) {
+    while (_clauses.back()->shrinkOn(level)) {
+        if (!_clauses.back()->tryFinish(pos, _clauses)) {
             return false;
         }
-        util::sptr<ClauseBase> deliverer(std::move(_clauses.back()));
+        _clauses.back()->deliver();
         _clauses.pop_back();
-        deliverer->deliverTo(*_clauses.back());
     }
-    return _clauses.back()->tryEol(pos, _clauses);
+    return _clauses.back()->tryFinish(pos, _clauses);
 }
 
 bool ClauseBuilder::_prepareLevel(int level, misc::position const& pos, std::string const& token)
@@ -163,5 +172,5 @@ void ClauseBuilder::_pushSequence(misc::position const& pos
                   {
                       _clauses.back()->nextToken(token);
                   });
-    _clauses.back()->eol(pos, _clauses);
+    _clauses.back()->tryFinish(pos, _clauses);
 }

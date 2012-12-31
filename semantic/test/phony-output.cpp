@@ -64,7 +64,7 @@ void Function::write(std::ostream&) const
 void Return::write(std::ostream&) const
 {
     DataTree::actualOne()(RETURN);
-    ret_val->str(false);
+    ret_val->str();
 }
 
 void ReturnNothing::write(std::ostream&) const
@@ -82,26 +82,26 @@ void Export::write(std::ostream&) const
                       DataTree::actualOne()(PARAMETER, name);
                   });
     DataTree::actualOne()(EXPORT_VALUE);
-    value->str(false);
+    value->str();
 }
 
 void AttrSet::write(std::ostream&) const
 {
     DataTree::actualOne()(ATTR_SET);
-    set_point->str(false);
-    value->str(false);
+    set_point->str();
+    value->str();
 }
 
 void NameDef::write(std::ostream&) const
 {
     DataTree::actualOne()(NAME_DEF, name);
-    init->str(false);
+    init->str();
 }
 
 void Branch::write(std::ostream&) const
 {
     DataTree::actualOne()(BRANCH);
-    predicate->str(false);
+    predicate->str();
     consequence->write(dummyos());
     alternative->write(dummyos());
 }
@@ -109,28 +109,38 @@ void Branch::write(std::ostream&) const
 void Arithmetics::write(std::ostream&) const
 {
     DataTree::actualOne()(ARITHMETICS);
-    expr->str(false);
+    expr->str();
 }
 
-std::string BoolLiteral::str(bool) const
+std::string Expression::strAsProp() const
+{
+    return str();
+}
+
+std::string PropertyNameExpr::strAsProp() const
+{
+    return str();
+}
+
+std::string BoolLiteral::str() const
 {
     DataTree::actualOne()(pos, BOOLEAN, util::str(value));
     return "";
 }
 
-std::string IntLiteral::str(bool) const
+std::string IntLiteral::str() const
 {
     DataTree::actualOne()(pos, INTEGER, util::str(value));
     return "";
 }
 
-std::string FloatLiteral::str(bool) const
+std::string FloatLiteral::str() const
 {
     DataTree::actualOne()(pos, FLOATING, util::str(value));
     return "";
 }
 
-std::string StringLiteral::str(bool) const
+std::string StringLiteral::str() const
 {
     DataTree::actualOne()(pos, STRING, value);
     return "";
@@ -142,90 +152,96 @@ static void writeList(std::vector<util::sptr<Expression const>> const& list)
                 , list.end()
                 , [&](util::sptr<Expression const> const& member)
                   {
-                      member->str(false);
+                      member->str();
                   });
 }
 
-std::string ListLiteral::str(bool) const
+std::string ListLiteral::str() const
 {
     DataTree::actualOne()(pos, LIST, value.size());
     writeList(value);
     return "";
 }
 
-std::string ListElement::str(bool) const
+std::string PipeElement::str() const
 {
-    DataTree::actualOne()(pos, LIST_ELEMENT);
+    DataTree::actualOne()(pos, PIPE_ELEMENT);
     return "";
 }
 
-std::string ListIndex::str(bool) const
+std::string PipeIndex::str() const
 {
-    DataTree::actualOne()(pos, LIST_INDEX);
+    DataTree::actualOne()(pos, PIPE_INDEX);
     return "";
 }
 
-std::string ListAppend::str(bool) const
+std::string PipeKey::str() const
+{
+    DataTree::actualOne()(pos, PIPE_KEY);
+    return "";
+}
+
+std::string ListAppend::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, "++");
-    lhs->str(false);
-    rhs->str(false);
+    lhs->str();
+    rhs->str();
     return "";
 }
 
-std::string Reference::str(bool) const
+std::string Reference::str() const
 {
     DataTree::actualOne()(pos, REFERENCE, name);
     return "";
 }
 
-std::string ImportedName::str(bool) const
+std::string ImportedName::str() const
 {
     DataTree::actualOne()(pos, IMPORTED_NAME, name);
     return "";
 }
 
-std::string Call::str(bool) const
+std::string Call::str() const
 {
     DataTree::actualOne()(pos, CALL, args.size());
-    callee->str(false);
+    callee->str();
     writeList(args);
     return "";
 }
 
-std::string MemberAccess::str(bool) const
+std::string MemberAccess::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, ".");
-    referee->str(false);
+    referee->str();
     DataTree::actualOne()(pos, REFERENCE, member);
     return "";
 }
 
-std::string Lookup::str(bool) const
+std::string Lookup::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[]");
-    collection->str(false);
-    key->str(false);
+    collection->str();
+    key->str();
     return "";
 }
 
-std::string ListSlice::str(bool) const
+std::string ListSlice::str() const
 {
     DataTree::actualOne()(pos, LIST_SLICE);
-    list->str(false);
-    begin->str(false);
-    end->str(false);
-    step->str(false);
+    list->str();
+    begin->str();
+    end->str();
+    step->str();
     return "";
 }
 
-std::string ListSlice::Default::str(bool) const
+std::string ListSlice::Default::str() const
 {
     DataTree::actualOne()(pos, LIST_SLICE_DEFAULT);
     return "";
 }
 
-std::string Dictionary::str(bool) const
+std::string Dictionary::str() const
 {
     DataTree::actualOne()(pos, DICT_BEGIN);
     std::for_each(items.begin()
@@ -233,29 +249,29 @@ std::string Dictionary::str(bool) const
                 , [&](ItemType const& item)
                   {
                       DataTree::actualOne()(pos, DICT_ITEM);
-                      item.first->str(false);
-                      item.second->str(false);
+                      item.first->str();
+                      item.second->str();
                   });
     DataTree::actualOne()(pos, DICT_END);
     return "";
 }
 
-std::string BinaryOp::str(bool) const
+std::string BinaryOp::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, op);
-    lhs->str(false);
-    rhs->str(false);
+    lhs->str();
+    rhs->str();
     return "";
 }
 
-std::string PreUnaryOp::str(bool) const
+std::string PreUnaryOp::str() const
 {
     DataTree::actualOne()(pos, PRE_UNARY_OP, op);
-    rhs->str(false);
+    rhs->str();
     return "";
 }
 
-std::string Lambda::str(bool) const
+std::string Lambda::str() const
 {
     DataTree::actualOne()(pos, FUNC_DECL, param_names.size());
     std::for_each(param_names.begin()
@@ -268,18 +284,18 @@ std::string Lambda::str(bool) const
     return "";
 }
 
-std::string ListPipeMapper::str(bool) const
+std::string ListPipeMapper::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, "|:");
-    list->str(false);
-    mapper->str(false);
+    list->str();
+    mapper->str();
     return "";
 }
 
-std::string ListPipeFilter::str(bool) const
+std::string ListPipeFilter::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, "|?");
-    list->str(false);
-    filter->str(false);
+    list->str();
+    filter->str();
     return "";
 }

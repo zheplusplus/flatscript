@@ -12,12 +12,11 @@ using namespace grammar;
 namespace {
 
     enum {
-        UNARY_ADD, ADD, MUL, COMP, OR, AND, NOT, PIPE, MEMBER, CALL,
-        PLACEHOLDER, COUNT
+        UNARY_ADD, ADD, MUL, COMP, OR, AND, NOT, PIPE, MEMBER, CALL, PLACEHOLDER
     };
 
     bool reducable(int stack_top, int encounter) {
-        static bool const REDUCABLE[][COUNT] = {
+        static bool const REDUCABLE[][PLACEHOLDER + 1] = {
            // UNARY_ADD ADD    MUL   COMP     OR   AND     NOT   PIPE MEMBER   CALL HOLDER <TOP vENC
             { false,  true,  true,  true,  true,  true, false, false,  true,  true, false }, //+-(u)
             {  true,  true,  true, false, false, false, false, false,  true,  true, false }, //+-(b)
@@ -38,6 +37,8 @@ namespace {
         std::map<std::string, int> map;
         map["-"] = UNARY_ADD;
         map["+"] = UNARY_ADD;
+        map["*"] = UNARY_ADD;
+        map["typeof"] = UNARY_ADD;
         map["!"] = NOT;
         return map;
     }
@@ -305,6 +306,13 @@ void ArithAutomation::pushColon(AutomationStack& stack, misc::position const& po
     }
 }
 
+void ArithAutomation::pushPropertySeparator(AutomationStack& stack, misc::position const& pos)
+{
+    if (_reduceIfPossible(stack, pos, "::")) {
+        stack.top()->pushPropertySeparator(stack, pos);
+    }
+}
+
 void ArithAutomation::pushComma(AutomationStack& stack, misc::position const& pos)
 {
     if (_reduceIfPossible(stack, pos, ",")) {
@@ -337,15 +345,15 @@ void ArithAutomation::accepted(AutomationStack&, std::vector<util::sptr<Expressi
     }
 }
 
-bool ArithAutomation::eolAsBreak(bool) const
+bool ArithAutomation::finishOnBreak(bool) const
 {
     if (_need_factor && !_empty()) {
         return false;
     }
-    return _previous->eolAsBreak(_empty());
+    return _previous->finishOnBreak(_empty());
 }
 
-void ArithAutomation::eol(
+void ArithAutomation::finish(
             ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos)
 {
     if (_empty()) {
@@ -353,54 +361,12 @@ void ArithAutomation::eol(
     } else {
         stack.reduced(reduce(_op_stack, _factor_stack));
     }
-    stack.top()->eol(wrapper, stack, pos);
+    stack.top()->finish(wrapper, stack, pos);
 }
 
 bool ArithAutomation::_empty() const
 {
     return _op_stack.size() == 1 && _factor_stack.empty();
-}
-
-void ExprStmtAutomation::activated(AutomationStack& stack)
-{
-    stack.push(util::mkptr(new ArithAutomation));
-}
-
-void ExprStmtAutomation::pushColon(AutomationStack& stack, misc::position const& pos)
-{
-    if (_exprs.size() < 2) {
-        stack.push(util::mkptr(new ArithAutomation));
-        return;
-    }
-    error::unexpectedToken(pos, ":");
-}
-
-void ExprStmtAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
-{
-    _exprs.push_back(std::move(expr));
-}
-
-bool ExprStmtAutomation::eolAsBreak(bool) const
-{
-    return true;
-}
-
-void ExprStmtAutomation::eol(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
-{
-    _clause->acceptStmt(_reduceAsStmt());
-    stack.pop();
-}
-
-util::sptr<Statement> ExprStmtAutomation::_reduceAsStmt()
-{
-    misc::position pos(_exprs[0]->pos);
-    if (_exprs.size() == 1) {
-        return util::mkptr(new Arithmetics(pos, std::move(_exprs[0])));
-    }
-    if (_exprs[0]->isName()) {
-        return util::mkptr(new NameDef(pos, _exprs[0]->reduceAsName(), std::move(_exprs[1])));
-    }
-    return util::mkptr(new AttrSet(pos, std::move(_exprs[0]), std::move(_exprs[1])));
 }
 
 void ExprListAutomation::activated(AutomationStack& stack)
@@ -439,12 +405,10 @@ void ExprListAutomation::accepted(AutomationStack&, util::sptr<Expression const>
     _list.push_back(std::move(expr));
 }
 
-bool ExprListAutomation::eolAsBreak(bool) const
+bool ExprListAutomation::finishOnBreak(bool) const
 {
     return false;
 }
-
-void ExprListAutomation::eol(ClauseStackWrapper&, AutomationStack&, misc::position const&) {}
 
 void ListLiteralAutomation::matchClosing(AutomationStack& stack, Token const& closer)
 {
@@ -575,7 +539,7 @@ void NestedOrParamsAutomation::accepted(
     _reduceAsLambda(stack, pos, std::move(body));
 }
 
-bool NestedOrParamsAutomation::eolAsBreak(bool sub_empty) const
+bool NestedOrParamsAutomation::finishOnBreak(bool sub_empty) const
 {
     if (_afterColon() && sub_empty) {
         return true;
@@ -583,10 +547,10 @@ bool NestedOrParamsAutomation::eolAsBreak(bool sub_empty) const
     if (_wait_for_closing) {
         return false;
     }
-    return _previous->eolAsBreak(false);
+    return _previous->finishOnBreak(false);
 }
 
-void NestedOrParamsAutomation::eol(
+void NestedOrParamsAutomation::finish(
                 ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos)
 {
     if (_afterColon()) {
@@ -594,12 +558,12 @@ void NestedOrParamsAutomation::eol(
             wrapper.pushBlockReceiver(util::mkref(*this));
         } else {
             _reduceAsLambda(stack);
-            stack.top()->eol(wrapper, stack, pos);
+            stack.top()->finish(wrapper, stack, pos);
         }
         return;
     }
     _reduceAsNested(stack, pos);
-    stack.top()->eol(wrapper, stack, pos);
+    stack.top()->finish(wrapper, stack, pos);
 }
 
 bool NestedOrParamsAutomation::_afterColon() const
@@ -661,14 +625,29 @@ void DictAutomation::pushComma(AutomationStack& stack, misc::position const& pos
     stack.push(util::mkptr(new ArithAutomation));
 }
 
-void DictAutomation::pushColon(AutomationStack& stack, misc::position const& pos)
+bool DictAutomation::_pushSeparator(AutomationStack& stack
+                                  , misc::position const& pos
+                                  , std::string const& sep)
 {
     if (!_wait_for_colon) {
-        error::unexpectedToken(pos, ":");
-        return;
+        error::unexpectedToken(pos, sep);
+        return false;
     }
     _wait_for_colon = false;
     stack.push(util::mkptr(new ArithAutomation));
+    return true;
+}
+
+void DictAutomation::pushColon(AutomationStack& stack, misc::position const& pos)
+{
+    if (_pushSeparator(stack, pos, ":")) {
+        _key_cache.reset(new StringLiteral(_key_cache->pos, _key_cache->reduceAsName()));
+    }
+}
+
+void DictAutomation::pushPropertySeparator(AutomationStack& stack, misc::position const& pos)
+{
+    _pushSeparator(stack, pos, "::");
 }
 
 void DictAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
@@ -689,52 +668,7 @@ void DictAutomation::accepted(AutomationStack&, util::sptr<Expression const> exp
     _wait_for_key = !_wait_for_key;
 }
 
-bool DictAutomation::eolAsBreak(bool) const
+bool DictAutomation::finishOnBreak(bool) const
 {
     return false;
-}
-
-void DictAutomation::eol(ClauseStackWrapper&, AutomationStack&, misc::position const&) {}
-
-void ExprReceiver::activated(AutomationStack& stack)
-{
-    stack.push(util::mkptr(new ArithAutomation));
-}
-
-void ExprReceiver::accepted(AutomationStack&, util::sptr<Expression const> expr)
-{
-    _expr = std::move(expr);
-}
-
-bool ExprReceiver::eolAsBreak(bool) const
-{
-    return true;
-}
-
-void ExprReceiver::eol(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
-{
-    if (_expr->empty()) {
-        error::invalidEmptyExpr(_expr->pos);
-    }
-    _clause->acceptExpr(std::move(_expr));
-    stack.pop();
-}
-
-void ReturnAutomation::eol(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
-{
-    if (_expr->empty()) {
-        _clause->acceptStmt(util::mkptr(new ReturnNothing(_expr->pos)));
-    } else {
-        _clause->acceptStmt(util::mkptr(new Return(_expr->pos, std::move(_expr))));
-    }
-    stack.pop();
-}
-
-void ExportStmtAutomation::eol(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
-{
-    if (_expr->empty()) {
-        error::invalidEmptyExpr(_expr->pos);
-    }
-    _clause->acceptStmt(util::mkptr(new Export(_expr->pos, export_point, std::move(_expr))));
-    stack.pop();
 }

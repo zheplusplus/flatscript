@@ -56,9 +56,9 @@ TEST_F(SymbolTableTest, RefLocalName)
     symbols->defName(pos, "seele");
     symbols->defName(pos, "lilith");
 
-    symbols->compileRef(pos, "nerv")->str(false);
-    symbols->compileRef(pos, "seele")->str(false);
-    symbols->compileRef(pos, "lilith")->str(false);
+    symbols->compileRef(pos, "nerv")->str();
+    symbols->compileRef(pos, "seele")->str();
+    symbols->compileRef(pos, "lilith")->str();
     ASSERT_FALSE(error::hasError());
 
     semantic::SymbolTable inner_symbols(pos, refSym(), std::vector<std::string>());
@@ -67,10 +67,10 @@ TEST_F(SymbolTableTest, RefLocalName)
     inner_symbols.defName(pos, "adam");
     inner_symbols.defName(pos, "eve");
 
-    inner_symbols.compileRef(pos, "nerv")->str(false);
-    inner_symbols.compileRef(pos, "seele")->str(false);
-    inner_symbols.compileRef(pos, "adam")->str(false);
-    inner_symbols.compileRef(pos, "eve")->str(false);
+    inner_symbols.compileRef(pos, "nerv")->str();
+    inner_symbols.compileRef(pos, "seele")->str();
+    inner_symbols.compileRef(pos, "adam")->str();
+    inner_symbols.compileRef(pos, "eve")->str();
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -208,9 +208,9 @@ TEST_F(SymbolTableTest, CompileRef)
     symbols->defConst(pos, "kaname", *i);
     symbols->defName(pos, "miki");
 
-    symbols->compileRef(ref_pos, "akemi")->str(false);
-    symbols->compileRef(ref_pos, "kaname")->str(false);
-    symbols->compileRef(ref_pos, "miki")->str(false);
+    symbols->compileRef(ref_pos, "akemi")->str();
+    symbols->compileRef(ref_pos, "kaname")->str();
+    symbols->compileRef(ref_pos, "miki")->str();
 
     ASSERT_FALSE(error::hasError());
 

@@ -16,3 +16,13 @@ console.log(ls |: $ * $ % 7 |? $ < 4)
 
 console.log('--- x ---')
 console.log(ls |: (['sd', 'a', 'ab', 'abc'] |? $.length % 2 = 0) ++ [$])
+
+func getIndex(i)
+    return (): i
+ils: ls |: getIndex($i)
+console.log(ils |: $())
+
+func getKey(k)
+    return (): k
+kls: ls |: getKey($k)
+console.log(kls |: $())

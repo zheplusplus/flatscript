@@ -3,7 +3,7 @@
 #include <report/errors.h>
 
 #include "node-base.h"
-#include "expr-automations.h"
+#include "stmt-automations.h"
 #include "function.h"
 
 using namespace grammar;
@@ -86,6 +86,11 @@ void AutomationBase::pushColon(AutomationStack&, misc::position const& pos)
     error::unexpectedToken(pos, ":");
 }
 
+void AutomationBase::pushPropertySeparator(AutomationStack&, misc::position const& pos)
+{
+    error::unexpectedToken(pos, "::");
+}
+
 void AutomationBase::pushComma(AutomationStack&, misc::position const& pos)
 {
     error::unexpectedToken(pos, ",");
@@ -101,32 +106,24 @@ void ClauseBase::acceptElse(misc::position const& else_pos)
     error::elseNotMatchIf(else_pos);
 }
 
+bool ClauseBase::shrinkOn(int level) const
+{
+    return level <= indent;
+}
+
 void ClauseBase::nextToken(util::sptr<Token> const& token)
 {
     token->act(_stack);
 }
 
-void ClauseBase::eol(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses)
+bool ClauseBase::tryFinish(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses)
 {
-    if (_stack.top()->eolAsBreak(true)) {
+    if ((!_stack.empty()) && _stack.top()->finishOnBreak(true)) {
         ClauseStackWrapper wrapper(_member_indent, _stack, pos, clauses);
-        _stack.top()->eol(wrapper, _stack, pos);
-    }
-}
-
-bool ClauseBase::tryEol(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses)
-{
-    if (continueArith() && _stack.top()->eolAsBreak(true)) {
-        ClauseStackWrapper wrapper(_member_indent, _stack, pos, clauses);
-        _stack.top()->eol(wrapper, _stack, pos);
+        _stack.top()->finish(wrapper, _stack, pos);
         return true;
     }
     return _stack.empty();
-}
-
-bool ClauseBase::continueArith() const
-{
-    return !_stack.empty();
 }
 
 void ClauseBase::prepareArith()
@@ -180,9 +177,17 @@ namespace {
             _block.addStmt(std::move(stmt));
         }
 
-        void deliverTo(util::sref<ClauseBase>)
+        void deliver()
         {
             _blockRecr->accepted(_stack, _pos, std::move(_block));
+        }
+
+        bool shrinkOn(int level) const
+        {
+            if (_member_indent == -1) {
+                return ClauseBase::shrinkOn(level);
+            }
+            return level < _member_indent;
         }
     private:
         AutomationStack& _stack;

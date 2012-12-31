@@ -21,3 +21,5 @@ y: add_str('abc
     ')
 console.log(y(10))
 console.log(y(false))
+
+console.log('abcabc'.replace(*RegExp('b', 'g'), 'mm'))

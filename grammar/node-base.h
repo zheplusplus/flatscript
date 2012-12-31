@@ -29,8 +29,8 @@ namespace grammar {
         virtual bool empty() const;
         virtual bool isName() const;
         virtual std::string reduceAsName() const;
-        virtual util::sptr<semantic::Expression const> reduceAsExpr() const = 0;
-        virtual util::sptr<semantic::Expression const> reduceAsLeftValue() const;
+        virtual util::sptr<semantic::Expression const> reduceAsExpr(bool in_pipe) const = 0;
+        virtual util::sptr<semantic::Expression const> reduceAsLeftValue(bool in_pipe) const;
 
         explicit Expression(misc::position const& ps)
             : pos(ps)

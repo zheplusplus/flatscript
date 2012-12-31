@@ -103,6 +103,35 @@ std::string BinaryOp::stringValue(util::sref<SymbolTable const> st) const
     return foldBinaryStringValue(pos, op_img, lhs, rhs, st);
 }
 
+util::sptr<output::Expression const> TypeOf::compile(util::sref<SymbolTable> st) const
+{
+    if (isLiteral(st)) {
+        return util::mkptr(new output::StringLiteral(pos, stringValue(st)));
+    }
+    return util::mkptr(new output::PreUnaryOp(pos, "typeof ", expr->compile(st)));
+}
+
+bool TypeOf::isLiteral(util::sref<SymbolTable const> st) const
+{
+    return expr->isLiteral(st);
+}
+
+std::string TypeOf::literalType(util::sref<SymbolTable const>) const
+{
+    return "string";
+}
+
+std::string TypeOf::stringValue(util::sref<SymbolTable const> st) const
+{
+    static std::map<std::string, std::string> map{
+        { "int", "number" },
+        { "float", "number" },
+        { "string", "string" },
+        { "bool", "boolean" },
+    };
+    return map[expr->literalType(st)];
+}
+
 util::sptr<output::Expression const> Reference::compile(util::sref<SymbolTable> st) const
 {
     return st->compileRef(pos, name);
@@ -213,6 +242,11 @@ std::string StringLiteral::literalType(util::sref<SymbolTable const>) const
     return "string";
 }
 
+bool StringLiteral::boolValue(util::sref<SymbolTable const>) const
+{
+    return !value.empty();
+}
+
 std::string StringLiteral::stringValue(util::sref<SymbolTable const>) const
 {
     return value;
@@ -223,14 +257,19 @@ util::sptr<output::Expression const> ListLiteral::compile(util::sref<SymbolTable
     return util::mkptr(new output::ListLiteral(pos, compileList(value, st)));
 }
 
-util::sptr<output::Expression const> ListElement::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> PipeElement::compile(util::sref<SymbolTable>) const
 {
-    return util::mkptr(new output::ListElement(pos));
+    return util::mkptr(new output::PipeElement(pos));
 }
 
-util::sptr<output::Expression const> ListIndex::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> PipeIndex::compile(util::sref<SymbolTable>) const
 {
-    return util::mkptr(new output::ListIndex(pos));
+    return util::mkptr(new output::PipeIndex(pos));
+}
+
+util::sptr<output::Expression const> PipeKey::compile(util::sref<SymbolTable>) const
+{
+    return util::mkptr(new output::PipeKey(pos));
 }
 
 util::sptr<output::Expression const> ListAppend::compile(util::sref<SymbolTable> st) const

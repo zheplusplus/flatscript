@@ -1,7 +1,11 @@
 #ifndef __STEKIN_GRAMMAR_SYN_INCLUDE_H__
 #define __STEKIN_GRAMMAR_SYN_INCLUDE_H__
 
+#include <algorithm>
+#include <cstring>
+
 #include <util/pointer.h>
+#include <util/string.h>
 #include <util/str-comprehension.h>
 #include <report/errors.h>
 

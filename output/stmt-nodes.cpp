@@ -9,7 +9,7 @@ using namespace output;
 
 void Branch::write(std::ostream& os) const
 {
-    os << "if (" << predicate->str(false) << ")" << std::endl;
+    os << "if (" << predicate->str() << ")" << std::endl;
     consequence->write(os);
     os << "else" << std::endl;
     alternative->write(os);
@@ -17,17 +17,17 @@ void Branch::write(std::ostream& os) const
 
 void Arithmetics::write(std::ostream& os) const
 {
-    os << expr->str(false) << ";" << std::endl;
+    os << expr->str() << ";" << std::endl;
 }
 
 void NameDef::write(std::ostream& os) const
 {
-    os << "const " << formName(name) << "=" << init->str(false) << ";" << std::endl;
+    os << "const " << formName(name) << "=" << init->str() << ";" << std::endl;
 }
 
 void Return::write(std::ostream& os) const
 {
-    os << "return " << ret_val->str(false) << ";" << std::endl;
+    os << "return " << ret_val->str() << ";" << std::endl;
 }
 
 void ReturnNothing::write(std::ostream& os) const
@@ -43,10 +43,10 @@ void Export::write(std::ostream& os) const
                                                                  , export_point.begin() + i)));
         os << point << "=" << point << " || {};" << std::endl;
     }
-    os << util::join(".", export_point) << "=" << value->str(false) << ";}" << std::endl;
+    os << util::join(".", export_point) << "=" << value->str() << ";}" << std::endl;
 }
 
 void AttrSet::write(std::ostream& os) const
 {
-    os << set_point->str(false) << "=" << value->str(false) << ";" << std::endl;
+    os << set_point->str() << "=" << value->str() << ";" << std::endl;
 }

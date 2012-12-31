@@ -105,6 +105,14 @@ std::cerr << "    invalid character " << char(character)
 , Param(POS_TYPE, 'pos'), Param(INT_TYPE, 'character')),
 
 ReportFunc(
+'reservedWord',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    use reserved word: " << token << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'token')),
+
+ReportFunc(
 'exportToIdent',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
@@ -116,7 +124,7 @@ ReportFunc(
 'unexpectedToken',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    unexpected " << image << "." << std::endl;
+std::cerr << "    unexpected " << image << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'image')),
 
@@ -314,6 +322,15 @@ std::cerr << "    pipeline reference not in list context." << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 
+ReportFunc(
+'invalidPropertyName',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    invalid property name: " << expr << std::endl;
+std::cerr << "    the expression could not be folded." << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'expr')),
+
 ]
 
 def write_errors_header():
@@ -345,7 +362,7 @@ def write_errors_impl():
 
             static bool has_error = false;
 
-            extern int yylineno;
+            namespace grammar { extern int lineno; }
 
             bool error::hasError()
             {
@@ -355,7 +372,7 @@ def write_errors_impl():
             void yyerror(std::string const& msg)
             {
                 has_error = true;
-                std::cerr << "Line " << yylineno << ":" << std::endl;
+                std::cerr << "Line " << grammar::lineno << ":" << std::endl;
                 std::cerr << "    " <<  msg << std::endl;
             }''' +
             '\n'.join([ r.build_impl() for r in ERROR_REPORTS ]))

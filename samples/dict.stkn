@@ -8,9 +8,9 @@ func sum(x, y)
     return x + y
 
 x: {
-    'first': first,
-    'second': second,
-    'sum': sum
+    'first':: first,
+    'second':: second,
+    'sum':: sum
 }
 
 console.log(x['sum'](1, 4))
@@ -18,7 +18,15 @@ console.log(x['first'](1, 4))
 console.log(x['second'](1, 4))
 
 console.log({
-    'first': first,
-    'second': second,
-    'sum': sum
+    first: first,
+    second: second,
+    sum: sum
 }['sum']('shinto ', 'shrine'))
+
+y: {
+    summer: 'xia',
+    fall: 'qiu',
+    winter: 'dong',
+}
+
+y |: console.log($k + ':' + $)

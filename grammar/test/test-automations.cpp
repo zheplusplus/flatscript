@@ -5,6 +5,7 @@
 
 #include "test-common.h"
 #include "../expr-automations.h"
+#include "../stmt-automations.h"
 
 using namespace test;
 
@@ -38,16 +39,16 @@ struct ExprAutomationTest
         stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::Identifier(pos, image)), image);
     }
 
-    void pushListElement(misc::position const& pos)
+    void pushPipeElement(misc::position const& pos)
     {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::ListElement(pos)), "$");
+        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::PipeElement(pos)), "$");
     }
 
-    void eol(misc::position const& pos)
+    void finish(misc::position const& pos)
     {
         std::vector<util::sptr<grammar::ClauseBase>> clauses;
         grammar::ClauseStackWrapper wrapper(0, *stkptr, pos, clauses);
-        stack->top()->eol(wrapper, stackref(), pos);
+        stack->top()->finish(wrapper, stackref(), pos);
     }
 
     grammar::AutomationStack& stackref()
@@ -85,8 +86,8 @@ TEST_F(ExprAutomationTest, ReduceArithExpression)
     pushIdent(pos, "seikaino");
     stack->top()->pushOp(stackref(), TestToken(pos, "-"));
     pushIdent(pos, "uede");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
 
     clause.compile();
     clause.filter->compile(nulSymbols());
@@ -135,8 +136,8 @@ TEST_F(ExprAutomationTest, ReduceLogicExpression)
     pushIdent(pos, "eternal");
     stack->top()->pushOp(stackref(), TestToken(pos, "||"));
     pushIdent(pos, "rite");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
 
     clause.compile();
     clause.filter->compile(nulSymbols());
@@ -183,11 +184,11 @@ TEST_F(ExprAutomationTest, ReducePipeExpression)
     stack->top()->pushOp(stackref(), TestToken(pos, "<"));
     pushIdent(pos, "uta");
     stack->top()->pushOp(stackref(), TestToken(pos, "|:"));
-    pushListElement(pos);
+    pushPipeElement(pos);
     stack->top()->pushOp(stackref(), TestToken(pos, "*"));
-    pushListElement(pos);
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    pushPipeElement(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
 
     clause.compile();
     clause.filter->compile(nulSymbols());
@@ -197,11 +198,11 @@ TEST_F(ExprAutomationTest, ReducePipeExpression)
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, ARITHMETICS)
-            (pos, BINARY_OP, "|:")
+            (pos, BINARY_OP, "[ |: ]")
             (pos, OPERAND)
-                (pos, BINARY_OP, "|?")
+                (pos, BINARY_OP, "[ |? ]")
                 (pos, OPERAND)
-                    (pos, BINARY_OP, "++")
+                    (pos, BINARY_OP, "[ ++ ]")
                     (pos, OPERAND)
                         (pos, IDENTIFIER, "kenji")
                     (pos, OPERAND)
@@ -215,9 +216,9 @@ TEST_F(ExprAutomationTest, ReducePipeExpression)
             (pos, OPERAND)
                 (pos, BINARY_OP, "*")
                 (pos, OPERAND)
-                    (pos, LIST_ELEMENT)
+                    (pos, PIPE_ELEMENT)
                 (pos, OPERAND)
-                    (pos, LIST_ELEMENT)
+                    (pos, PIPE_ELEMENT)
         (BLOCK_END)
     ;
 }
@@ -238,8 +239,8 @@ TEST_F(ExprAutomationTest, ReduceNameDef)
     pushIdent(pos, "nano");
     stack->top()->pushOp(stackref(), TestToken(pos, "+"));
     pushIdent(pos, "mio");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
 
     clause.compile();
     clause.filter->compile(nulSymbols());
@@ -286,8 +287,8 @@ TEST_F(ExprAutomationTest, ReduceCallExpression)
     stack->top()->pushOp(stackref(), TestToken(pos, "&&"));
     pushIdent(pos, "chance");
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
 
     clause.compile();
     clause.filter->compile(nulSymbols());
@@ -302,7 +303,7 @@ TEST_F(ExprAutomationTest, ReduceCallExpression)
                 (pos, IDENTIFIER, "masayosi")
             (pos, OPERAND)
                 (pos, CALL_BEGIN)
-                    (pos, BINARY_OP, ".")
+                    (pos, BINARY_OP, "[ . ]")
                     (pos, OPERAND)
                         (pos, IDENTIFIER, "yamazaki")
                     (pos, OPERAND)
@@ -336,8 +337,8 @@ TEST_F(ExprAutomationTest, ReduceSubExpression)
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
     stack->top()->pushOp(stackref(), TestToken(pos, "."));
     pushIdent(pos, "sakamoto");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
 
     clause.compile();
     clause.filter->compile(nulSymbols());
@@ -351,7 +352,7 @@ TEST_F(ExprAutomationTest, ReduceSubExpression)
             (pos, OPERAND)
                 (pos, IDENTIFIER, "sasahara")
             (pos, OPERAND)
-                (pos, BINARY_OP, ".")
+                (pos, BINARY_OP, "[ . ]")
                 (pos, OPERAND)
                     (pos, CALL_BEGIN)
                         (pos, BINARY_OP, "+")
@@ -388,8 +389,8 @@ TEST_F(ExprAutomationTest, ReduceAnonyFunc)
     pushInteger(pos, "20121106");
     stack->top()->pushComma(stackref(), pos);
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -430,8 +431,8 @@ TEST_F(ExprAutomationTest, ReduceDefineAnonyFunc)
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
     stack->top()->pushColon(stackref(), pos);
     pushIdent(pos, "sakurai");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -468,8 +469,8 @@ TEST_F(ExprAutomationTest, ReduceLookupSlice)
     stack->top()->pushOpenBracket(stackref(), pos);
     pushIdent(pos, "naganohara");
     stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -509,8 +510,8 @@ TEST_F(ExprAutomationTest, ReduceAnonyFuncAsArg)
     stack->top()->pushColon(stackref(), pos);
     pushIdent(pos, "fechan");
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -548,15 +549,15 @@ TEST_F(ExprAutomationTest, ReduceListLiteral)
     stack->top()->pushComma(stackref(), pos);
     stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
     stack->top()->pushOp(stackref(), TestToken(pos, "++"));
-    ASSERT_FALSE(stack->top()->eolAsBreak(true));
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
     stack->top()->pushOpenBracket(stackref(), pos);
     pushIdent(pos, "ogi");
     stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
     stack->top()->pushOpenBracket(stackref(), pos);
     pushIdent(pos, "sakurai");
     stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -566,7 +567,7 @@ TEST_F(ExprAutomationTest, ReduceListLiteral)
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, ARITHMETICS)
-            (pos, BINARY_OP, "++")
+            (pos, BINARY_OP, "[ ++ ]")
             (pos, OPERAND)
                 (pos, LIST_BEGIN)
                     (pos, IDENTIFIER, "daiku")
@@ -592,16 +593,16 @@ TEST_F(ExprAutomationTest, ReduceDictionary)
 
     pushIdent(pos, "hikari");
     stack->top()->pushOpenParen(stackref(), pos);
-    ASSERT_FALSE(stack->top()->eolAsBreak(true));
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
     stack->top()->pushOpenBrace(stackref(), pos);
     stack->top()->matchClosing(stackref(), TestToken(pos, "}"));
     stack->top()->pushComma(stackref(), pos);
-    ASSERT_FALSE(stack->top()->eolAsBreak(true));
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
     stack->top()->pushOpenBrace(stackref(), pos);
     pushIdent(pos, "no");
-    stack->top()->pushColon(stackref(), pos);
+    stack->top()->pushPropertySeparator(stackref(), pos);
     stack->top()->pushOpenParen(stackref(), pos);
     pushIdent(pos, "miyako");
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
@@ -609,7 +610,7 @@ TEST_F(ExprAutomationTest, ReduceDictionary)
     pushIdent(pos, "miyako");
     stack->top()->matchClosing(stackref(), TestToken(pos, "}"));
     stack->top()->pushComma(stackref(), pos);
-    ASSERT_FALSE(stack->top()->eolAsBreak(true));
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
     stack->top()->pushOpenBrace(stackref(), pos);
     pushIdent(pos, "stella");
@@ -617,11 +618,11 @@ TEST_F(ExprAutomationTest, ReduceDictionary)
     pushIdent(pos, "musica");
     stack->top()->pushComma(stackref(), pos);
     stack->top()->matchClosing(stackref(), TestToken(pos, "}"));
-    ASSERT_FALSE(stack->top()->eolAsBreak(true));
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -648,7 +649,7 @@ TEST_F(ExprAutomationTest, ReduceDictionary)
                 (pos, DICT_END)
                 (pos, DICT_BEGIN)
                 (pos, DICT_ITEM)
-                    (pos, IDENTIFIER, "stella")
+                    (pos, STRING, "stella")
                     (pos, IDENTIFIER, "musica")
                 (pos, DICT_END)
             (pos, CALL_END)
@@ -669,8 +670,8 @@ TEST_F(ExprAutomationTest, ReduceInvalidNameDef)
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
     stack->top()->pushOp(stackref(), TestToken(pos, "+"));
     pushIdent(pos, "ohayou");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -690,8 +691,8 @@ TEST_F(ExprAutomationTest, ReduceInvalidLeftValue)
     pushInteger(pos, "20121110");
     stack->top()->pushColon(stackref(), pos);
     pushIdent(pos, "no_uta");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -713,8 +714,8 @@ TEST_F(ExprAutomationTest, ReduceInvalidLambdaParams)
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
     stack->top()->pushColon(stackref(), pos);
     pushIdent(pos, "no_uta");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -733,8 +734,8 @@ TEST_F(ExprAutomationTest, UnexpectedBinaryOp)
 
     stack->top()->pushOp(stackref(), TestToken(pos, "."));
     pushInteger(pos, "1300");
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -754,8 +755,8 @@ TEST_F(ExprAutomationTest, UnexpectedPreUnaryOp)
 
     pushInteger(pos, "1300");
     stack->top()->pushOp(stackref(), TestToken(pos, "!"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -787,8 +788,8 @@ TEST_F(ExprAutomationTest, UnexpectedDictionaryFinished)
     stack->top()->matchClosing(stackref(), TestToken(pos_c, "}"));
     stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
 
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -819,8 +820,8 @@ TEST_F(ExprAutomationTest, UnexpectedSliceSeperator)
     pushInteger(pos_b, "1300");
     stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
 
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -850,8 +851,8 @@ TEST_F(ExprAutomationTest, BracketNestedExpressions)
     pushInteger(pos, "20121113");
     stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
 
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -861,7 +862,7 @@ TEST_F(ExprAutomationTest, BracketNestedExpressions)
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, ARITHMETICS)
-            (pos, BINARY_OP, "++")
+            (pos, BINARY_OP, "[ ++ ]")
             (pos, OPERAND)
                 (pos, IDENTIFIER, "am0942")
             (pos, OPERAND)
@@ -884,8 +885,8 @@ TEST_F(ExprAutomationTest, ParenNestedExpressions)
     pushInteger(pos, "20121113");
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
 
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -936,8 +937,8 @@ TEST_F(ExprAutomationTest, ReduceAnonyFuncAsOneOfArgs)
     pushIdent(pos, "matoi");
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
@@ -984,8 +985,8 @@ TEST_F(ExprAutomationTest, EmptyNested)
 
     stack->top()->pushOpenParen(stackref(), pos);
     stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    ASSERT_TRUE(stack->top()->eolAsBreak(true));
-    eol(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();

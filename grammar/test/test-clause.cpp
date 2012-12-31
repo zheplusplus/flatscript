@@ -16,13 +16,13 @@ TEST_F(ClauseTest, FuncClause)
     TestClause receiver;
 
     grammar::FunctionClause func_acc0(
-                      0, pos, "func1", std::vector<std::string>({ "Duke", "Duran" }));
+            0, pos, "func1", std::vector<std::string>({ "Duke", "Duran" }), util::mkref(receiver));
     func_acc0.acceptStmt(util::mkptr(new grammar::Arithmetics(
                       pos, util::mkptr(new grammar::FloatLiteral(pos, "21.37")))));
     func_acc0.acceptStmt(util::mkptr(new grammar::NameDef(
                       pos, "SonOfKorhal", util::mkptr(new grammar::IntLiteral(pos, "20110116")))));
 
-    func_acc0.deliverTo(util::mkref(receiver));
+    func_acc0.deliver();
     ASSERT_TRUE(receiver.stmt_or_nul_if_not_set.nul());
     ASSERT_TRUE(receiver.func_or_nul_if_not_set.not_nul());
     receiver.compile();
@@ -44,7 +44,9 @@ TEST_F(ClauseTest, FuncClause)
     ASSERT_FALSE(error::hasError());
 
     misc::position pos_else(10);
-    grammar::FunctionClause func_acc1(0, pos, "func2", std::vector<std::string>({ "Mengsk" }));
+    TestClause test_receiver;
+    grammar::FunctionClause func_acc1(
+            0, pos, "func2", std::vector<std::string>({ "Mengsk" }), util::mkref(test_receiver));
     func_acc1.acceptElse(pos_else);
     ASSERT_TRUE(error::hasError());
     ASSERT_EQ(1, getElseNotMatchIfRecs().size());
@@ -57,18 +59,19 @@ TEST_F(ClauseTest, FuncAccNested)
     TestClause receiver;
 
     grammar::FunctionClause func_acc0(
-                        0, pos , "funca", std::vector<std::string>({ "firebat", "ghost" }));
+        0, pos , "funca", std::vector<std::string>({ "firebat", "ghost" }), util::mkref(receiver));
     func_acc0.acceptStmt(util::mkptr(new grammar::Arithmetics(pos, util::mkptr(
                                                 new grammar::FloatLiteral(pos, "22.15")))));
     func_acc0.acceptStmt(util::mkptr(new grammar::NameDef(pos, "medic", util::mkptr(
                                                 new grammar::Identifier(pos, "wraith")))));
 
-    grammar::FunctionClause func_acc1(0, pos, "funca", std::vector<std::string>({ "vulture" }));
+    grammar::FunctionClause func_acc1(
+            0, pos, "funca", std::vector<std::string>({ "vulture" }), util::mkref(func_acc0));
     func_acc1.acceptStmt(util::mkptr(new grammar::Arithmetics(pos, util::mkptr(
                                                 new grammar::Identifier(pos, "goliath")))));
 
-    func_acc1.deliverTo(util::mkref(func_acc0));
-    func_acc0.deliverTo(util::mkref(receiver));
+    func_acc1.deliver();
+    func_acc0.deliver();
     ASSERT_TRUE(receiver.stmt_or_nul_if_not_set.nul());
     ASSERT_TRUE(receiver.func_or_nul_if_not_set.not_nul());
     receiver.compile();

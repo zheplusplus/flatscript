@@ -14,9 +14,7 @@
 namespace grammar {
 
     struct ClauseBuilder {
-        ClauseBuilder()
-            : _packer(_prepare1stClause())
-        {}
+        ClauseBuilder();
 
         ClauseBuilder(ClauseBuilder const&) = delete;
 
@@ -53,26 +51,8 @@ namespace grammar {
         void _pushSequence(misc::position const& pos
                          , std::vector<util::sptr<Token>> const& sequence);
 
-        struct ClauseOfPack
-            : ClauseBase
-        {
-            ClauseOfPack()
-                : ClauseBase(-1)
-            {}
-
-            void acceptStmt(util::sptr<Statement> stmt);
-            void acceptFunc(util::sptr<Function const> func);
-            void deliverTo(util::sref<ClauseBase>) {}
-
-            Block pack();
-        private:
-            Block _pack;
-        };
-
+        Block _global;
         std::vector<util::sptr<ClauseBase>> _clauses;
-        util::sref<ClauseOfPack> const _packer;
-
-        util::sref<ClauseOfPack> _prepare1stClause();
     };
 
 }

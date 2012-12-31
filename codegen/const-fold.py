@@ -14,7 +14,7 @@ def type_mapping(t):
     }
     return mapper[t] if t in mapper else t
 
-PRE_UNARY_OPS = ['+', '-', '!']
+PRE_UNARY_OPS = ['+', '-', '!', '*']
 
 def pre_unary_op_map(op):
     mapper = {

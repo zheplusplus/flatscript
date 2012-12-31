@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <sstream>
 #include <map>
+#include <set>
 
-#include <report/errors.h>
 #include <util/string.h>
 #include <util/str-comprehension.h>
 
@@ -13,89 +13,100 @@
 
 using namespace output;
 
+std::string PropertyNameExpr::strAsProp() const
+{
+    return str();
+}
+
 template <typename T>
 static std::string strPrimitive(T const& t)
 {
-    return "(" + util::str(t) + ")";
+    return util::str(t);
 }
 
-std::string BoolLiteral::str(bool) const
+std::string BoolLiteral::str() const
 {
     return strPrimitive(value);
 }
 
-std::string IntLiteral::str(bool) const
+std::string IntLiteral::str() const
 {
     return strPrimitive(value);
 }
 
-std::string FloatLiteral::str(bool) const
+std::string FloatLiteral::str() const
 {
     return strPrimitive(value);
 }
 
-std::string StringLiteral::str(bool) const
+std::string StringLiteral::str() const
 {
     return util::cstr_repr(value.c_str(), value.size());
 }
 
-static std::vector<std::string> strList(
-                    std::vector<util::sptr<Expression const>> const& list, bool in_pipe)
+static std::vector<std::string> strList(std::vector<util::sptr<Expression const>> const& list)
 {
     std::vector<std::string> result;
     std::for_each(list.begin()
                 , list.end()
                 , [&](util::sptr<Expression const> const& expr)
                   {
-                      result.push_back(expr->str(in_pipe));
+                      result.push_back(expr->str());
                   });
     return std::move(result);
 }
 
-std::string ListLiteral::str(bool in_pipe) const
+std::string ListLiteral::str() const
 {
-    return "[" + util::join(",", strList(value, in_pipe)) + "]";
+    return "[" + util::join(",", strList(value)) + "]";
 }
 
-std::string ListElement::str(bool in_pipe) const
+std::string PipeElement::str() const
 {
-    if (!in_pipe) {
-        error::pipeReferenceNotInListContext(pos);
-    }
-    return "iterelement";
+    return "$element";
 }
 
-std::string ListIndex::str(bool in_pipe) const
+std::string PipeIndex::str() const
 {
-    if (!in_pipe) {
-        error::pipeReferenceNotInListContext(pos);
-    }
-    return "iterindex";
+    return "$index";
 }
 
-std::string Reference::str(bool) const
+std::string PipeKey::str() const
+{
+    return "$key";
+}
+
+std::string Reference::str() const
 {
     return formName(name);
 }
 
-std::string ImportedName::str(bool) const
+std::string ImportedName::str() const
 {
     return name;
 }
 
-std::string Call::str(bool in_pipe) const
+std::string Call::str() const
 {
-    return callee->str(in_pipe) + "(" + util::join(",", strList(args, in_pipe)) + ")";
+    return callee->str() + "(" + util::join(",", strList(args)) + ")";
 }
 
-std::string MemberAccess::str(bool in_pipe) const
+std::string MemberAccess::str() const
 {
-    return referee->str(in_pipe) + "." + member;
+    static std::set<std::string> const RESERVED_WORDS({
+        "break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else",
+        "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this",
+        "throw", "try", "typeof", "var", "void", "while", "with",
+    });
+    if (RESERVED_WORDS.find(member) == RESERVED_WORDS.end()) {
+        return referee->str() + "." + member;
+    }
+    return referee->str() + "[\"" + member + "\"]";
 }
 
-std::string Lookup::str(bool in_pipe) const
+std::string Lookup::str() const
 {
-    return collection->str(in_pipe) + "[" + key->str(in_pipe) + "]";
+    return collection->str() + "[" + key->str() + "]";
 }
 
 static std::string const LIST_SLICE(
@@ -124,7 +135,7 @@ static std::string const LIST_SLICE(
 "})($LIST, $BEGIN, $END, $STEP)\n"
 );
 
-std::string ListSlice::str(bool in_pipe) const
+std::string ListSlice::str() const
 {
     return
         util::replace_all(
@@ -132,19 +143,19 @@ std::string ListSlice::str(bool in_pipe) const
         util::replace_all(
         util::replace_all(
             LIST_SLICE
-                , "$LIST", list->str(in_pipe))
-                , "$BEGIN", begin->str(in_pipe))
-                , "$END", end->str(in_pipe))
-                , "$STEP", step->str(in_pipe))
+                , "$LIST", list->str())
+                , "$BEGIN", begin->str())
+                , "$END", end->str())
+                , "$STEP", step->str())
         ;
 }
 
-std::string ListSlice::Default::str(bool) const
+std::string ListSlice::Default::str() const
 {
     return "null";
 }
 
-std::string Dictionary::str(bool in_pipe) const
+std::string Dictionary::str() const
 {
     std::vector<std::string> item_strings;
     std::for_each(items.begin()
@@ -152,68 +163,59 @@ std::string Dictionary::str(bool in_pipe) const
                 , [&](ItemType const& item)
                   {
                       item_strings.push_back(
-                          item.first->str(in_pipe) + ":" + item.second->str(in_pipe));
+                          item.first->strAsProp() + ":" + item.second->str());
                   });
     return "({" + util::join(",", item_strings) + "})";
 }
 
-std::string ListAppend::str(bool in_pipe) const
+std::string ListAppend::str() const
 {
-    return lhs->str(in_pipe) + ".concat(" + rhs->str(in_pipe) + ")";
+    return lhs->str() + ".concat(" + rhs->str() + ")";
 }
 
-static std::map<std::string, std::string> genOpMap()
+static std::string strBinaryOperator(std::string const& op_img)
 {
-    std::map<std::string, std::string> m;
-    m.insert(std::make_pair("=", "==="));
-    m.insert(std::make_pair("!=", "!=="));
-    return m;
-}
-
-static std::map<std::string, std::string> const OP_MAP(genOpMap());
-
-static std::string strOperator(std::string const& op_img)
-{
-    auto r = OP_MAP.find(op_img);
-    if (OP_MAP.end() == r) {
+    static std::map<std::string, std::string> const map{
+        { "=", "===" },
+        { "!=", "!==" },
+    };
+    auto r = map.find(op_img);
+    if (map.end() == r) {
         return op_img;
     }
     return r->second;
 }
 
-static std::string strBinary(util::sptr<Expression const> const& lhs
-                           , std::string const& op
-                           , util::sptr<Expression const> const& rhs
-                           , bool in_pipe)
+std::string BinaryOp::str() const
 {
-    return "(" + lhs->str(in_pipe) + strOperator(op) + rhs->str(in_pipe) + ")";
+    return "(" + lhs->str() + strBinaryOperator(op) + rhs->str() + ")";
 }
 
-static std::string strPreUnary(std::string const& op
-                             , util::sptr<Expression const> const& rhs
-                             , bool in_pipe)
+static std::string strPreUnaryOperator(std::string const& op_img)
 {
-    return "(" + strOperator(op) + rhs->str(in_pipe) + ")";
+    static std::map<std::string, std::string> const map{
+        { "*", "new " },
+    };
+    auto r = map.find(op_img);
+    if (map.end() == r) {
+        return op_img;
+    }
+    return r->second;
 }
 
-std::string BinaryOp::str(bool in_pipe) const
+std::string PreUnaryOp::str() const
 {
-    return strBinary(lhs, op, rhs, in_pipe);
+    return "(" + strPreUnaryOperator(op) + rhs->str() + ")";
 }
 
-std::string PreUnaryOp::str(bool in_pipe) const
-{
-    return strPreUnary(op, rhs, in_pipe);
-}
-
-std::string Lambda::str(bool) const
+std::string Lambda::str() const
 {
     std::ostringstream body_os;
     body->write(body_os);
     return
         util::replace_all(
         util::replace_all(
-            "function($PARAMETERS) { $BODY }"
+            "(function($PARAMETERS) { $BODY })"
                 , "$PARAMETERS", util::join(",", formNames(param_names)))
                 , "$BODY", body_os.str())
         ;

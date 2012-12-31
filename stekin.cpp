@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include <grammar/yy-misc.h>
 #include <semantic/filter.h>
@@ -24,9 +25,13 @@ int main(int argc, char* argv[])
     if (error::hasError()) {
         return 1;
     }
-    std::ostream& os = std::cout;
+    std::stringstream os;
     os << "(function() {" << std::endl;
     global_scope->write(os);
     os << "})();" << std::endl;
+    if (error::hasError()) {
+        return 1;
+    }
+    std::cout << os.str();
     return 0;
 }

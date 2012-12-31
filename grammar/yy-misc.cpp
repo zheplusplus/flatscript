@@ -12,8 +12,9 @@ int yywrap(void)
 
 ClauseBuilder grammar::builder;
 int grammar::last_indent = 0;
+int grammar::lineno = 1;
 
 misc::position grammar::here()
 {
-    return misc::position(yylineno);
+    return misc::position(grammar::lineno);
 }

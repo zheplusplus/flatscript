@@ -4,6 +4,10 @@ ifndef PYTHON
 	PYTHON=python2
 endif
 
+ifndef INSTALL_DIR
+	INSTALL_DIR=/usr/bin
+endif
+
 include misc/mf-template.mk
 
 all:code-gen stekin.d env.d lib
@@ -18,6 +22,14 @@ all:code-gen stekin.d env.d lib
 	        output/*.o \
 	        $(LIBS) \
 	     -o stekin
+
+install:
+	@install stekin $(INSTALL_DIR)/stekin || echo "Fail to install to $(INSTALL_DIR),"\
+		"permission denied or directory not existed."\
+		"Try specify installation path manully by passing INSTALL_DIR=directory"
+
+uninstall:
+	rm -f $(INSTALL_DIR)/stekin
 
 code-gen:
 	make -f codegen/Makefile PYTHON=$(PYTHON)

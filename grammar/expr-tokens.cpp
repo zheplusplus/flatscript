@@ -39,6 +39,11 @@ void ColonToken::act(AutomationStack& stack)
     stack.top()->pushColon(stack, pos);
 }
 
+void PropertySeparatorToken::act(AutomationStack& stack)
+{
+    stack.top()->pushPropertySeparator(stack, pos);
+}
+
 void CommaToken::act(AutomationStack& stack)
 {
     stack.top()->pushComma(stack, pos);

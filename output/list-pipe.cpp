@@ -7,47 +7,58 @@
 using namespace output;
 
 static std::string const PIPE_MAP(
-"(function (iterlist) {"
+"(function ($list) {\n"
 "    var r = [];\n"
-"    for (var iterindex = 0; iterindex < iterlist.length; ++iterindex) {\n"
-"        var iterelement = iterlist[iterindex];\n"
-"        r.push($VALUE);\n"
+"    var $ind = 0;\n"
+"    for (var $k in $list) {\n"
+"        if ($ind === $list.length) {\n"
+"            break;\n"
+"        }\n"
+"        r.push((function ($index, $key, $element) {\n"
+"           return #VALUE;\n"
+"        })($ind, $k, $list[$k]));\n"
+"        ++$ind;\n"
 "    }\n"
 "    return r;\n"
-"})($LIST)"
+"})(#LIST)"
 );
 
-std::string ListPipeMapper::str(bool in_pipe) const
+std::string ListPipeMapper::str() const
 {
     return std::move(
         util::replace_all(
         util::replace_all(
             PIPE_MAP
-                , "$VALUE", mapper->str(true))
-                , "$LIST", list->str(in_pipe))
+                , "#VALUE", mapper->str())
+                , "#LIST", list->str())
         );
 }
 
 static std::string const PIPE_FILTER(
-"(function (iterlist) {"
+"(function ($list) {\n"
 "    var r = [];\n"
-"    for (var iterindex = 0; iterindex < iterlist.length; ++iterindex) {\n"
-"        var iterelement = iterlist[iterindex];\n"
-"        if ($PREDICATE) {\n"
-"            r.push(iterelement);\n"
+"    var $index = 0;\n"
+"    for (var $key in $list) {\n"
+"        if ($index === $list.length) {\n"
+"            break;\n"
 "        }\n"
+"        var $element = $list[$key];\n"
+"        if (#PREDICATE) {\n"
+"            r.push($element);\n"
+"        }\n"
+"        ++$index;\n"
 "    }\n"
 "    return r;\n"
-"})($LIST)"
+"})(#LIST)"
 );
 
-std::string ListPipeFilter::str(bool in_pipe) const
+std::string ListPipeFilter::str() const
 {
     return std::move(
         util::replace_all(
         util::replace_all(
             PIPE_FILTER
-                , "$PREDICATE", filter->str(true))
-                , "$LIST", list->str(in_pipe))
+                , "#PREDICATE", filter->str())
+                , "#LIST", list->str())
         );
 }

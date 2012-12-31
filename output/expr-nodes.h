@@ -10,54 +10,64 @@
 
 namespace output {
 
-    struct BoolLiteral
+    struct PropertyNameExpr
         : Expression
     {
-        BoolLiteral(misc::position const& pos, bool v)
+        explicit PropertyNameExpr(misc::position const& pos)
             : Expression(pos)
+        {}
+
+        std::string strAsProp() const;
+    };
+
+    struct BoolLiteral
+        : PropertyNameExpr
+    {
+        BoolLiteral(misc::position const& pos, bool v)
+            : PropertyNameExpr(pos)
             , value(v)
         {}
 
-        std::string str(bool) const;
+        std::string str() const;
 
         bool const value;
     };
 
     struct IntLiteral
-        : Expression
+        : PropertyNameExpr
     {
         IntLiteral(misc::position const& pos, mpz_class const& v)
-            : Expression(pos)
+            : PropertyNameExpr(pos)
             , value(v)
         {}
 
-        std::string str(bool) const;
+        std::string str() const;
 
         mpz_class const value;
     };
 
     struct FloatLiteral
-        : Expression
+        : PropertyNameExpr
     {
         FloatLiteral(misc::position const& pos, mpf_class const& v)
-            : Expression(pos)
+            : PropertyNameExpr(pos)
             , value(v)
         {}
 
-        std::string str(bool) const;
+        std::string str() const;
 
         mpf_class const value;
     };
 
     struct StringLiteral
-        : Expression
+        : PropertyNameExpr
     {
         StringLiteral(misc::position const& pos, std::string const& v)
-            : Expression(pos)
+            : PropertyNameExpr(pos)
             , value(v)
         {}
 
-        std::string str(bool) const;
+        std::string str() const;
 
         std::string const value;
     };
@@ -70,40 +80,50 @@ namespace output {
             , value(std::move(v))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         std::vector<util::sptr<Expression const>> const value;
     };
 
-    struct ListElement
+    struct PipeElement
         : Expression
     {
-        explicit ListElement(misc::position const& pos)
+        explicit PipeElement(misc::position const& pos)
             : Expression(pos)
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
     };
 
-    struct ListIndex
+    struct PipeIndex
         : Expression
     {
-        explicit ListIndex(misc::position const& pos)
+        explicit PipeIndex(misc::position const& pos)
             : Expression(pos)
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
+    };
+
+    struct PipeKey
+        : Expression
+    {
+        explicit PipeKey(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        std::string str() const;
     };
 
     struct Reference
-        : Expression
+        : PropertyNameExpr
     {
         Reference(misc::position const& pos, std::string const& n)
-            : Expression(pos)
+            : PropertyNameExpr(pos)
             , name(n)
         {}
 
-        std::string str(bool) const;
+        std::string str() const;
 
         std::string const name;
     };
@@ -116,7 +136,7 @@ namespace output {
             , name(n)
         {}
 
-        std::string str(bool) const;
+        std::string str() const;
 
         std::string const name;
     };
@@ -132,7 +152,7 @@ namespace output {
                 , args(std::move(a))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const callee;
         std::vector<util::sptr<Expression const>> const args;
@@ -149,7 +169,7 @@ namespace output {
             , member(mem)
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const referee;
         std::string const member;
@@ -166,7 +186,7 @@ namespace output {
                 , key(std::move(k))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const collection;
         util::sptr<Expression const> const key;
@@ -182,7 +202,7 @@ namespace output {
                 : Expression(pos)
             {}
 
-            std::string str(bool) const;
+            std::string str() const;
         };
 
         ListSlice(misc::position const& pos
@@ -197,7 +217,7 @@ namespace output {
             , step(std::move(s))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const list;
         util::sptr<Expression const> const begin;
@@ -215,7 +235,7 @@ namespace output {
             , items(std::move(i))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         std::vector<ItemType> const items;
     };
@@ -231,7 +251,7 @@ namespace output {
             , rhs(std::move(r))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const lhs;
         util::sptr<Expression const> const rhs;
@@ -250,7 +270,7 @@ namespace output {
             , rhs(std::move(r))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const lhs;
         std::string const op;
@@ -266,7 +286,7 @@ namespace output {
             , rhs(std::move(r))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         std::string const op;
         util::sptr<Expression const> const rhs;
@@ -283,7 +303,7 @@ namespace output {
                 , body(std::move(b))
         {}
 
-        std::string str(bool) const;
+        std::string str() const;
 
         std::vector<std::string> const param_names;
         util::sptr<Statement const> const body;

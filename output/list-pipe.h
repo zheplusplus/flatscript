@@ -18,7 +18,7 @@ namespace output {
             , mapper(std::move(m))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const list;
         util::sptr<Expression const> const mapper;
@@ -35,7 +35,7 @@ namespace output {
             , filter(std::move(f))
         {}
 
-        std::string str(bool in_pipe) const;
+        std::string str() const;
 
         util::sptr<Expression const> const list;
         util::sptr<Expression const> const filter;

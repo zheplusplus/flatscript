@@ -14,7 +14,8 @@ namespace output {
     struct Expression {
         virtual ~Expression() {}
 
-        virtual std::string str(bool in_pipe) const = 0;
+        virtual std::string str() const = 0;
+        virtual std::string strAsProp() const;
 
         misc::position const pos;
 

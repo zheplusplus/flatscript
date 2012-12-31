@@ -53,7 +53,7 @@ namespace test {
         util::sptr<grammar::Function const> func_or_nul_if_not_set;
         util::sptr<semantic::Filter> filter;
 
-        void deliverTo(util::sref<grammar::ClauseBase>) {}
+        void deliver() {}
     };
 
     struct GrammarData {
@@ -114,10 +114,11 @@ namespace test {
     extern NodeType const OPERAND;
     extern NodeType const LIST_PIPELINE_BEGIN;
     extern NodeType const LIST_PIPELINE_END;
-    extern NodeType const LIST_ELEMENT;
-    extern NodeType const LIST_INDEX;
     extern NodeType const PIPE_MAP;
     extern NodeType const PIPE_FILTER;
+    extern NodeType const PIPE_ELEMENT;
+    extern NodeType const PIPE_INDEX;
+    extern NodeType const PIPE_KEY;
 
     extern NodeType const CALL_BEGIN;
     extern NodeType const CALL_END;

@@ -306,6 +306,13 @@ util::sptr<output::Expression const> BinaryOp::compile(util::sref<SymbolTable>) 
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> TypeOf::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, PRE_UNARY_OP, "[ typeof ]")(pos, OPERAND);
+    expr->compile(nulSymbols());
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> Reference::compile(util::sref<SymbolTable>) const
 {
     DataTree::actualOne()(pos, IDENTIFIER, name);
@@ -354,21 +361,27 @@ util::sptr<output::Expression const> ListLiteral::compile(util::sref<SymbolTable
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListElement::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> PipeElement::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, LIST_ELEMENT);
+    DataTree::actualOne()(pos, PIPE_ELEMENT);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListIndex::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> PipeIndex::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, LIST_INDEX);
+    DataTree::actualOne()(pos, PIPE_INDEX);
+    return nulOutputExpr();
+}
+
+util::sptr<output::Expression const> PipeKey::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, PIPE_KEY);
     return nulOutputExpr();
 }
 
 util::sptr<output::Expression const> ListAppend::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "++")(pos, OPERAND);
+    DataTree::actualOne()(pos, BINARY_OP, "[ ++ ]")(pos, OPERAND);
     lhs->compile(nulSymbols());
     DataTree::actualOne()(pos, OPERAND);
     rhs->compile(nulSymbols());
@@ -387,7 +400,7 @@ util::sptr<output::Expression const> Call::compile(util::sref<SymbolTable>) cons
 
 util::sptr<output::Expression const> MemberAccess::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, ".")(pos, OPERAND);
+    DataTree::actualOne()(pos, BINARY_OP, "[ . ]")(pos, OPERAND);
     referee->compile(nulSymbols());
     DataTree::actualOne()(pos, OPERAND);
     DataTree::actualOne()(pos, IDENTIFIER, member);
@@ -450,7 +463,7 @@ util::sptr<output::Expression const> Lambda::compile(util::sref<SymbolTable>) co
 
 util::sptr<output::Expression const> ListPipeMapper::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "|:")(pos, OPERAND);
+    DataTree::actualOne()(pos, BINARY_OP, "[ |: ]")(pos, OPERAND);
     list->compile(nulSymbols());
     DataTree::actualOne()(pos, OPERAND);
     mapper->compile(nulSymbols());
@@ -459,7 +472,7 @@ util::sptr<output::Expression const> ListPipeMapper::compile(util::sref<SymbolTa
 
 util::sptr<output::Expression const> ListPipeFilter::compile(util::sref<SymbolTable>) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "|?")(pos, OPERAND);
+    DataTree::actualOne()(pos, BINARY_OP, "[ |? ]")(pos, OPERAND);
     list->compile(nulSymbols());
     DataTree::actualOne()(pos, OPERAND);
     filter->compile(nulSymbols());
@@ -478,6 +491,9 @@ bool PreUnaryOp::boolValue(util::sref<SymbolTable const>) const { return false; 
 mpz_class PreUnaryOp::intValue(util::sref<SymbolTable const>) const { return 0; }
 mpf_class PreUnaryOp::floatValue(util::sref<SymbolTable const>) const { return 0; }
 std::string PreUnaryOp::stringValue(util::sref<SymbolTable const>) const { return ""; }
+bool TypeOf::isLiteral(util::sref<SymbolTable const>) const { return false; }
+std::string TypeOf::literalType(util::sref<SymbolTable const>) const { return ""; }
+std::string TypeOf::stringValue(util::sref<SymbolTable const>) const { return ""; }
 bool Reference::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Reference::literalType(util::sref<SymbolTable const>) const { return ""; }
 bool Reference::boolValue(util::sref<SymbolTable const>) const { return false; }
@@ -501,4 +517,5 @@ std::string FloatLiteral::literalType(util::sref<SymbolTable const>) const { ret
 mpf_class FloatLiteral::floatValue(util::sref<SymbolTable const>) const { return 0; }
 bool StringLiteral::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string StringLiteral::literalType(util::sref<SymbolTable const>) const { return ""; }
+bool StringLiteral::boolValue(util::sref<SymbolTable const>) const { return false; }
 std::string StringLiteral::stringValue(util::sref<SymbolTable const>) const { return ""; }

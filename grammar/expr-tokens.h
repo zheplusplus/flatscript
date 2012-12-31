@@ -80,6 +80,16 @@ namespace grammar {
         void act(AutomationStack& stack);
     };
 
+    struct PropertySeparatorToken
+        : Token
+    {
+        explicit PropertySeparatorToken(misc::position const& pos)
+            : Token(pos, "")
+        {}
+
+        void act(AutomationStack& stack);
+    };
+
     struct CommaToken
         : Token
     {

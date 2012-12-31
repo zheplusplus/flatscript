@@ -74,8 +74,9 @@ NodeType const test::PRE_UNARY_OP("prefix unary operation");
 NodeType const test::CALL("call");
 NodeType const test::REFERENCE("reference");
 NodeType const test::IMPORTED_NAME("imported name");
-NodeType const test::LIST_ELEMENT("list element");
-NodeType const test::LIST_INDEX("list index");
+NodeType const test::PIPE_ELEMENT("list element");
+NodeType const test::PIPE_INDEX("list index");
+NodeType const test::PIPE_KEY("list key");
 
 NodeType const test::LIST_PIPELINE("list pipeline");
 NodeType const test::PIPE_MAP("pipe map");

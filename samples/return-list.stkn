@@ -3,7 +3,7 @@ func rlist(x, y, z)
 
 console.log(rlist(0, 1, 2))
 
-func list20(x, _, z)
+func list20(x, y, z)
     return [z] ++ [x]
 
 console.log(list20(0, 1, 2))

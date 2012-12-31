@@ -7,14 +7,14 @@ func fib(n)
         return add()
     return 1
 
-if n > 5
+if n > 1_234_567_890
     write(fib(10))
 else
     write(false)
 
 func print_10()
     if true
-        write(+10.0)
+        write(+1_234._5)
 
 x: print_10
 y: fib
@@ -32,7 +32,7 @@ xx().first()
 ([] ++ []).push_back(0)
 x.xx().first()
 
-[] |? $i = 0 |: $ * $
+[] |? $i = 0 |: $ * $k
 
 s: 'sizukani tiriyuku' + "the quick brown fox jumps over a lazy dog."
 sk: "a quote\" and something \\else in\t the\n string"
@@ -44,8 +44,22 @@ import kagami, hiiragi
 emirin.katou: kagami.hiiragi
 
 x: {
-    1: 2,
-    3: 4,
-    5: 7
+    _1: 2,
+    _3:: 4,
+    _5: 7
 }
-y: {}
+y: {} # this is comment
+
+# this is comment
+  # this is comment with leading space
+
+triple_quoted: '''<input type='text' value=''>''' + '''\\\'''' + '''
+this very long text will
+take at least 3 lines
+as it said
+''' + '
+single quoted
+'
+line_test: 0
+
+log('I think ' + typeof 0 + ' is the type of 0.')

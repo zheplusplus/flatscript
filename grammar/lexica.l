@@ -6,8 +6,16 @@
 %option always-interactive
 
 %%
+^[ ]*#[^\n]*\n {
+    ++grammar::lineno;
+}
+
+#[^\n]*\n {
+    return EOL;
+}
+
 ^[ |\t]*\n {
-    ++yylineno;
+    ++grammar::lineno;
 }
 
 \r {}
@@ -57,6 +65,10 @@ export {
     return KW_EXPORT;
 }
 
+typeof {
+    return KW_TYPEOF;
+}
+
 true {
     return BOOL_TRUE;
 }
@@ -65,11 +77,25 @@ false {
     return BOOL_FALSE;
 }
 
-[0-9]+ {
+[A-Z] {
+    error::reservedWord(grammar::here(), yytext);
+    return IDENT;
+}
+
+[_]+ {
+    error::reservedWord(grammar::here(), yytext);
+    return IDENT;
+}
+
+[0-9][0-9_]* {
     return INT_LITERAL;
 }
 
-[0-9]*\.[0-9]+ {
+[0-9][0-9_]*\.[0-9_]+ {
+    return DOUBLE_LITERAL;
+}
+
+\.[0-9_]+ {
     return DOUBLE_LITERAL;
 }
 
@@ -83,6 +109,14 @@ false {
 
 \'(\\.|[^\\'])*\' {
     return STRING_LITERAL;
+}
+
+\"\"\"((\\.|[^\\"])|\"[^\"]|\"\"[^\"])*\"\"\" {
+    return TRIPLE_QUOTED_STRING_LITERAL;
+}
+
+\'\'\'((\\.|[^\\'])|\'[^\']|\'\'[^\'])*\'\'\' {
+    return TRIPLE_QUOTED_STRING_LITERAL;
 }
 
 [+][+] {
@@ -117,12 +151,20 @@ false {
     return PIPE_FILTER;
 }
 
+:: {
+    return PROP_SEP;
+}
+
 [$] {
-    return LIST_ELEMENT;
+    return PIPE_ELEMENT;
 }
 
 [$]i {
-    return LIST_INDEX;
+    return PIPE_INDEX;
+}
+
+[$]k {
+    return PIPE_KEY;
 }
 
 [-+*/%=<>!()\[\],:.\|{}] {

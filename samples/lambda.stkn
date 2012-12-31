@@ -15,3 +15,19 @@ console.log(x((x, y): y))
 y: make_pair(false, true)
 console.log(y(first))
 console.log(y((x, y): y))
+
+key: 'spring'
+{
+    spring: ():
+        console.log('3 4 5')
+      ,
+    summer: ():
+        console.log('6 7 8')
+      ,
+    autumn: ():
+        console.log('9 10 11')
+      ,
+    winter: ():
+        console.log('12 1 2')
+      ,
+}[key]()

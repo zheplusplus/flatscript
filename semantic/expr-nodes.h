@@ -56,6 +56,22 @@ namespace semantic {
         util::sptr<Expression const> const rhs;
     };
 
+    struct TypeOf
+        : Expression
+    {
+        TypeOf(misc::position const& pos, util::sptr<Expression const> e)
+            : Expression(pos)
+            , expr(std::move(e))
+        {}
+
+        util::sptr<output::Expression const> compile(util::sref<SymbolTable> st) const;
+        bool isLiteral(util::sref<SymbolTable const> st) const;
+        std::string literalType(util::sref<SymbolTable const>) const;
+        std::string stringValue(util::sref<SymbolTable const> st) const;
+
+        util::sptr<Expression const> const expr;
+    };
+
     struct Reference
         : Expression
     {
@@ -144,6 +160,7 @@ namespace semantic {
         util::sptr<output::Expression const> compile(util::sref<SymbolTable>) const;
         bool isLiteral(util::sref<SymbolTable const>) const;
         std::string literalType(util::sref<SymbolTable const>) const;
+        bool boolValue(util::sref<SymbolTable const>) const;
         std::string stringValue(util::sref<SymbolTable const>) const;
 
         std::string const value;
@@ -162,20 +179,30 @@ namespace semantic {
         std::vector<util::sptr<Expression const>> const value;
     };
 
-    struct ListElement
+    struct PipeElement
         : Expression
     {
-        explicit ListElement(misc::position const& pos)
+        explicit PipeElement(misc::position const& pos)
             : Expression(pos)
         {}
 
         util::sptr<output::Expression const> compile(util::sref<SymbolTable>) const;
     };
 
-    struct ListIndex
+    struct PipeIndex
         : Expression
     {
-        explicit ListIndex(misc::position const& pos)
+        explicit PipeIndex(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<output::Expression const> compile(util::sref<SymbolTable>) const;
+    };
+
+    struct PipeKey
+        : Expression
+    {
+        explicit PipeKey(misc::position const& pos)
             : Expression(pos)
         {}
 

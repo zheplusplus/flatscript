@@ -42,16 +42,16 @@ namespace grammar {
         virtual void pushOpenBrace(AutomationStack& stack, misc::position const& pos);
         virtual void matchClosing(AutomationStack& stack, Token const& closer);
         virtual void pushColon(AutomationStack& stack, misc::position const& pos);
+        virtual void pushPropertySeparator(AutomationStack& stack, misc::position const& pos);
         virtual void pushComma(AutomationStack& stack, misc::position const& pos);
 
         virtual void accepted(AutomationStack&, util::sptr<Expression const> expr) = 0;
         virtual void accepted(AutomationStack&, std::vector<util::sptr<Expression const>>) {}
         virtual void accepted(AutomationStack&, misc::position const&, Block&&) {}
-        virtual bool eolAsBreak(bool sub_empty) const = 0;
-        virtual void eol(ClauseStackWrapper& clauses
-                       , AutomationStack& stack
-                       , misc::position const& pos) = 0;
-        virtual void eof(AutomationStack&, misc::position const&) {}
+        virtual bool finishOnBreak(bool sub_empty) const = 0;
+        virtual void finish(ClauseStackWrapper& clauses
+                          , AutomationStack& stack
+                          , misc::position const& pos) = 0;
 
         AutomationBase()
             : _previous(nullptr)
@@ -89,13 +89,12 @@ namespace grammar {
         virtual void acceptFunc(util::sptr<Function const> func) = 0;
         virtual void acceptStmt(util::sptr<Statement> stmt) = 0;
         virtual void acceptExpr(util::sptr<Expression const>) {}
-        virtual void deliverTo(util::sref<ClauseBase> acc) = 0;
         virtual void acceptElse(misc::position const& else_pos);
+        virtual void deliver() = 0;
+        virtual bool shrinkOn(int level) const;
 
         void nextToken(util::sptr<Token> const& token);
-        void eol(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses);
-        bool tryEol(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses);
-        bool continueArith() const;
+        bool tryFinish(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses);
         void prepareArith();
         void prepareReturn();
         void prepareExport(std::vector<std::string> const& names);

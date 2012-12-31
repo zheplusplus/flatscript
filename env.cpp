@@ -2,7 +2,12 @@
 
 #include "env.h"
 
-static std::set<std::string> pre_imported;
+static std::set<std::string> pre_imported({
+    "console", "setTimeout", "setInterval", "clearTimeout", "parseInt", "parseFloat", "Number",
+    "Date", "Math", "Object", "Function", "escape", "unescape", "encodeURI", "encodeURIComponent",
+    "decodeURI", "decodeURIComponent", "JSON", "NaN", "null", "undefined", "isFinite", "isNaN",
+    "RegExp",
+});
 
 void stekin::initEnv(int argc, char* argv[])
 {

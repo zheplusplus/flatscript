@@ -1,4 +1,4 @@
-func write_0_2(x, _, z)
+func write_0_2(x, y, z)
     console.log(x)
     console.log(z)
 

@@ -15,12 +15,12 @@ int yylex();
 extern "C" int yywrap(void);
 
 extern char* yytext;
-extern int yylineno;
 
 namespace grammar {
 
     extern ClauseBuilder builder;
     extern int last_indent;
+    extern int lineno;
 
     misc::position here();
 

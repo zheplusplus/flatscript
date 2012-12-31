@@ -77,8 +77,9 @@ NodeType const test::LIST_PIPELINE_BEGIN("list pipeline begin");
 NodeType const test::LIST_PIPELINE_END("list pipeline end");
 NodeType const test::PIPE_MAP("pipeline map");
 NodeType const test::PIPE_FILTER("pipeline filter");
-NodeType const test::LIST_ELEMENT("list element");
-NodeType const test::LIST_INDEX("list index");
+NodeType const test::PIPE_ELEMENT("pipe element");
+NodeType const test::PIPE_INDEX("pipe index");
+NodeType const test::PIPE_KEY("pipe key");
 
 NodeType const test::CALL_BEGIN("call begin");
 NodeType const test::CALL_END("call end");

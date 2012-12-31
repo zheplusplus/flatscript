@@ -22,34 +22,41 @@ TEST_F(ExprNodesTest, SimpleLiterals)
     misc::position pos(1);
     semantic::SymbolTable st;
     semantic::IntLiteral int0(pos, "20110116");
-    int0.compile(util::mkref(st))->str(false);
+    int0.compile(util::mkref(st))->str();
     EXPECT_TRUE(int0.isLiteral(util::mkref(st)));
 
     semantic::FloatLiteral float0(pos, "19.50");
-    float0.compile(util::mkref(st))->str(false);
+    float0.compile(util::mkref(st))->str();
     EXPECT_TRUE(float0.isLiteral(util::mkref(st)));
 
     semantic::BoolLiteral bool0(pos, true);
-    bool0.compile(util::mkref(st))->str(false);
+    bool0.compile(util::mkref(st))->str();
     EXPECT_TRUE(bool0.isLiteral(util::mkref(st)));
     EXPECT_TRUE(bool0.boolValue(util::mkref(st)));
 
     semantic::IntLiteral int1(pos, "441499");
-    int1.compile(util::mkref(st))->str(false);
+    int1.compile(util::mkref(st))->str();
     EXPECT_TRUE(int1.isLiteral(util::mkref(st)));
 
     semantic::FloatLiteral float1(pos, "0.1950");
-    float1.compile(util::mkref(st))->str(false);
+    float1.compile(util::mkref(st))->str();
     EXPECT_TRUE(float1.isLiteral(util::mkref(st)));
 
     semantic::BoolLiteral bool1(pos, false);
-    bool1.compile(util::mkref(st))->str(false);
+    bool1.compile(util::mkref(st))->str();
     EXPECT_TRUE(bool1.isLiteral(util::mkref(st)));
     EXPECT_FALSE(bool1.boolValue(util::mkref(st)));
 
-    semantic::StringLiteral str(pos, "");
-    str.compile(util::mkref(st))->str(false);
-    EXPECT_TRUE(str.isLiteral(util::mkref(st)));
+    semantic::StringLiteral str0(pos, "");
+    str0.compile(util::mkref(st))->str();
+    EXPECT_TRUE(str0.isLiteral(util::mkref(st)));
+    EXPECT_FALSE(str0.boolValue(util::mkref(st)));
+    EXPECT_FALSE(error::hasError());
+
+    semantic::StringLiteral str1(pos, "x");
+    str1.compile(util::mkref(st))->str();
+    EXPECT_TRUE(str1.isLiteral(util::mkref(st)));
+    EXPECT_TRUE(str1.boolValue(util::mkref(st)));
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -60,6 +67,7 @@ TEST_F(ExprNodesTest, SimpleLiterals)
         (pos, FLOATING, "0.195")
         (pos, BOOLEAN, "false")
         (pos, STRING, "")
+        (pos, STRING, "x")
     ;
 }
 
@@ -75,7 +83,7 @@ TEST_F(ExprNodesTest, ListLiterals)
     members.push_back(util::mkptr(new semantic::FloatLiteral(pos, "20.54")));
 
     semantic::ListLiteral ls(pos, std::move(members));
-    ls.compile(util::mkref(st))->str(false);
+    ls.compile(util::mkref(st))->str();
     EXPECT_FALSE(ls.isLiteral(util::mkref(st)));
 
     EXPECT_FALSE(error::hasError());
@@ -97,11 +105,11 @@ TEST_F(ExprNodesTest, Reference)
 
     semantic::Reference ref0(pos, "a20110116");
     EXPECT_FALSE(ref0.isLiteral(util::mkref(st)));
-    ref0.compile(util::mkref(st))->str(false);
+    ref0.compile(util::mkref(st))->str();
 
     semantic::Reference ref1(pos, "b1950");
     EXPECT_FALSE(ref0.isLiteral(util::mkref(st)));
-    ref1.compile(util::mkref(st))->str(false);
+    ref1.compile(util::mkref(st))->str();
 
     EXPECT_FALSE(error::hasError());
 
@@ -131,10 +139,10 @@ TEST_F(ExprNodesTest, Calls)
     args.push_back(util::mkptr(new semantic::Reference(pos, "darekatasukete")));
     semantic::Call call1(pos, util::mkptr(new semantic::Reference(pos, "leap")), std::move(args));
 
-    call0.compile(util::mkref(st))->str(false);
+    call0.compile(util::mkref(st))->str();
     EXPECT_FALSE(call0.isLiteral(util::mkref(st)));
 
-    call1.compile(util::mkref(st))->str(false);
+    call1.compile(util::mkref(st))->str();
     EXPECT_FALSE(call1.isLiteral(util::mkref(st)));
 
     EXPECT_FALSE(error::hasError());
@@ -164,10 +172,10 @@ TEST_F(ExprNodesTest, FoldBinaryOp)
                            , "+"
                            , util::mkptr(new semantic::StringLiteral(pos, ", 2012")));
     EXPECT_TRUE(bin_a.isLiteral(util::mkref(st)));
-    bin_a.compile(util::mkref(st))->str(false);
+    bin_a.compile(util::mkref(st))->str();
 
     EXPECT_TRUE(bin_b.isLiteral(util::mkref(st)));
-    bin_b.compile(util::mkref(st))->str(false);
+    bin_b.compile(util::mkref(st))->str();
 
     ASSERT_FALSE(error::hasError());
     DataTree::expectOne()
@@ -245,10 +253,10 @@ TEST_F(ExprNodesTest, ListAppending)
                            , util::mkptr(new semantic::Reference(pos, "chiaki"))
                            , util::mkptr(new semantic::Reference(pos, "douma")));
 
-    lsa.compile(util::mkref(st))->str(false);
+    lsa.compile(util::mkref(st))->str();
     ASSERT_FALSE(error::hasError());
 
-    lsa.compile(util::mkref(st))->str(false);
+    lsa.compile(util::mkref(st))->str();
 
     DataTree::expectOne()
         (pos, BINARY_OP, "++")
@@ -287,4 +295,34 @@ TEST_F(ExprNodesTest, FoldDiv0)
     ASSERT_EQ(2, recs.size());
     ASSERT_EQ(pos_a, recs[0].pos);
     ASSERT_EQ(pos_b, recs[1].pos);
+}
+
+TEST_F(ExprNodesTest, TypeOf)
+{
+    misc::position pos(10);
+    semantic::SymbolTable st;
+    st.defName(pos, "v1701");
+
+    semantic::TypeOf t0(pos, util::mkptr(new semantic::BoolLiteral(pos, false)));
+    semantic::TypeOf t1(pos, util::mkptr(new semantic::StringLiteral(pos, "s20121225")));
+    semantic::TypeOf t2(pos, util::mkptr(new semantic::Reference(pos, "v1701")));
+    semantic::BinaryOp bin(pos
+                         , util::mkptr(new semantic::TypeOf(
+                                        pos, util::mkptr(new semantic::IntLiteral(pos, "1700"))))
+                         , "="
+                         , util::mkptr(new semantic::StringLiteral(pos, "number")));
+
+    t0.compile(util::mkref(st))->str();
+    t1.compile(util::mkref(st))->str();
+    t2.compile(util::mkref(st))->str();
+    bin.compile(util::mkref(st))->str();
+    EXPECT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (pos, STRING, "boolean")
+        (pos, STRING, "string")
+        (pos, PRE_UNARY_OP, "typeof ")
+            (pos, REFERENCE, "v1701")
+        (pos, BOOLEAN, "true")
+    ;
 }

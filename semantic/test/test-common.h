@@ -63,8 +63,9 @@ namespace test {
     extern NodeType const CALL;
     extern NodeType const REFERENCE;
     extern NodeType const IMPORTED_NAME;
-    extern NodeType const LIST_ELEMENT;
-    extern NodeType const LIST_INDEX;
+    extern NodeType const PIPE_ELEMENT;
+    extern NodeType const PIPE_INDEX;
+    extern NodeType const PIPE_KEY;
 
     extern NodeType const LIST_PIPELINE;
     extern NodeType const PIPE_MAP;

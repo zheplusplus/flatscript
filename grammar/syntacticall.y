@@ -31,11 +31,11 @@
 
 %token INDENT EOL
 %token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_IMPORT KW_EXPORT
-%token LIST_APPEND LE GE NE AND OR PIPE_MAP PIPE_FILTER
-%token BOOL_TRUE BOOL_FALSE
-%token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL
+%token LIST_APPEND LE GE NE AND OR PIPE_MAP PIPE_FILTER PROP_SEP
+%token KW_TYPEOF BOOL_TRUE BOOL_FALSE
+%token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
 %token IDENT
-%token LIST_ELEMENT LIST_INDEX
+%token PIPE_ELEMENT PIPE_INDEX PIPE_KEY
 
 %%
 
@@ -57,8 +57,8 @@ indent:
 eol:
    EOL
    {
-        $$ = yylineno;
-        ++yylineno;
+        $$ = grammar::lineno;
+        ++grammar::lineno;
    }
 ;
 
@@ -180,6 +180,11 @@ expr_token:
         $$ = new grammar::OpToken(grammar::here(), "||");
     }
     |
+    KW_TYPEOF
+    {
+        $$ = new grammar::OpToken(grammar::here(), "typeof");
+    }
+    |
     op
     {
         $$ = new grammar::OpToken(grammar::here(), $1->deliver());
@@ -200,6 +205,11 @@ expr_token:
         $$ = new grammar::OpToken(grammar::here(), "|?");
     }
     |
+    PROP_SEP
+    {
+        $$ = new grammar::PropertySeparatorToken(grammar::here());
+    }
+    |
     BOOL_TRUE
     {
         $$ = new grammar::FactorToken(
@@ -214,14 +224,16 @@ expr_token:
     |
     INT_LITERAL
     {
+        std::string image(util::replace_all(yytext, "_", ""));
         $$ = new grammar::FactorToken(
-            grammar::here(), util::mkptr(new grammar::IntLiteral(grammar::here(), yytext)), yytext);
+            grammar::here(), util::mkptr(new grammar::IntLiteral(grammar::here(), image)), yytext);
     }
     |
     DOUBLE_LITERAL
     {
+        std::string image(util::replace_all(yytext, "_", ""));
         $$ = new grammar::FactorToken(
-          grammar::here(), util::mkptr(new grammar::FloatLiteral(grammar::here(), yytext)), yytext);
+           grammar::here(), util::mkptr(new grammar::FloatLiteral(grammar::here(), image)), yytext);
     }
     |
     STRING_LITERAL
@@ -229,6 +241,15 @@ expr_token:
         std::string image(util::comprehend(yytext, 1, -1));
         $$ = new grammar::FactorToken(grammar::here(), util::mkptr(
                                     new grammar::StringLiteral(grammar::here(), image)), image);
+        grammar::lineno += std::count(yytext + 1, yytext + strlen(yytext) - 1, '\n');
+    }
+    |
+    TRIPLE_QUOTED_STRING_LITERAL
+    {
+        std::string image(util::comprehend(yytext, 3, -3));
+        $$ = new grammar::FactorToken(grammar::here(), util::mkptr(
+                                    new grammar::StringLiteral(grammar::here(), image)), image);
+        grammar::lineno += std::count(yytext + 3, yytext + strlen(yytext) - 3, '\n');
     }
     |
     ident
@@ -238,16 +259,22 @@ expr_token:
         $$ = new grammar::FactorToken(here, util::mkptr(new grammar::Identifier(here, id)), id);
     }
     |
-    LIST_ELEMENT
+    PIPE_ELEMENT
     {
         misc::position here(grammar::here());
-        $$ = new grammar::FactorToken(here, util::mkptr(new grammar::ListElement(here)), yytext);
+        $$ = new grammar::FactorToken(here, util::mkptr(new grammar::PipeElement(here)), yytext);
     }
     |
-    LIST_INDEX
+    PIPE_INDEX
     {
         misc::position here(grammar::here());
-        $$ = new grammar::FactorToken(here, util::mkptr(new grammar::ListIndex(here)), yytext);
+        $$ = new grammar::FactorToken(here, util::mkptr(new grammar::PipeIndex(here)), yytext);
+    }
+    |
+    PIPE_KEY
+    {
+        misc::position here(grammar::here());
+        $$ = new grammar::FactorToken(here, util::mkptr(new grammar::PipeKey(here)), yytext);
     }
     |
     '('
