@@ -3,10 +3,14 @@
 
 #include <string>
 
+#include <util/pointer.h>
+
 namespace output {
 
     std::string formName(std::string const& name);
     std::vector<std::string> formNames(std::vector<std::string> const& names);
+
+    std::string formAsyncRef(util::id const& id);
 
 }
 

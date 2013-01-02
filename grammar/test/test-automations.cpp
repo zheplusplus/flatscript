@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <util/string.h>
+#include <misc/const.h>
 #include <test/phony-errors.h>
 
 #include "test-common.h"
@@ -9,10 +10,10 @@
 
 using namespace test;
 
-struct ExprAutomationTest
+struct AutomationTest
     : GrammarTest
 {
-    ExprAutomationTest()
+    AutomationTest()
         : stack(nullptr)
     {}
 
@@ -70,7 +71,7 @@ struct TestToken
     void act(grammar::AutomationStack&) {}
 };
 
-TEST_F(ExprAutomationTest, ReduceArithExpression)
+TEST_F(AutomationTest, ReduceArithExpression)
 {
     misc::position pos(1);
     TestClause clause;
@@ -90,7 +91,7 @@ TEST_F(ExprAutomationTest, ReduceArithExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -120,7 +121,7 @@ TEST_F(ExprAutomationTest, ReduceArithExpression)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceLogicExpression)
+TEST_F(AutomationTest, ReduceLogicExpression)
 {
     misc::position pos(2);
     TestClause clause;
@@ -140,7 +141,7 @@ TEST_F(ExprAutomationTest, ReduceLogicExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -170,7 +171,7 @@ TEST_F(ExprAutomationTest, ReduceLogicExpression)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReducePipeExpression)
+TEST_F(AutomationTest, ReducePipeExpression)
 {
     misc::position pos(3);
     TestClause clause;
@@ -191,16 +192,16 @@ TEST_F(ExprAutomationTest, ReducePipeExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, ARITHMETICS)
-            (pos, BINARY_OP, "[ |: ]")
+            (pos, BINARY_OP, int(cons::MAP))
             (pos, OPERAND)
-                (pos, BINARY_OP, "[ |? ]")
+                (pos, BINARY_OP, int(cons::FILTER))
                 (pos, OPERAND)
                     (pos, BINARY_OP, "[ ++ ]")
                     (pos, OPERAND)
@@ -223,7 +224,7 @@ TEST_F(ExprAutomationTest, ReducePipeExpression)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceNameDef)
+TEST_F(AutomationTest, ReduceNameDef)
 {
     misc::position pos(4);
     TestClause clause;
@@ -243,7 +244,7 @@ TEST_F(ExprAutomationTest, ReduceNameDef)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -269,7 +270,7 @@ TEST_F(ExprAutomationTest, ReduceNameDef)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceCallExpression)
+TEST_F(AutomationTest, ReduceCallExpression)
 {
     misc::position pos(5);
     TestClause clause;
@@ -291,7 +292,7 @@ TEST_F(ExprAutomationTest, ReduceCallExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -320,7 +321,7 @@ TEST_F(ExprAutomationTest, ReduceCallExpression)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceSubExpression)
+TEST_F(AutomationTest, ReduceSubExpression)
 {
     misc::position pos(6);
     TestClause clause;
@@ -341,7 +342,7 @@ TEST_F(ExprAutomationTest, ReduceSubExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -368,7 +369,7 @@ TEST_F(ExprAutomationTest, ReduceSubExpression)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceAnonyFunc)
+TEST_F(AutomationTest, ReduceAnonyFunc)
 {
     misc::position pos(7);
     TestClause clause;
@@ -394,7 +395,7 @@ TEST_F(ExprAutomationTest, ReduceAnonyFunc)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -416,7 +417,7 @@ TEST_F(ExprAutomationTest, ReduceAnonyFunc)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceDefineAnonyFunc)
+TEST_F(AutomationTest, ReduceDefineAnonyFunc)
 {
     misc::position pos(8);
     TestClause clause;
@@ -436,7 +437,7 @@ TEST_F(ExprAutomationTest, ReduceDefineAnonyFunc)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -453,7 +454,7 @@ TEST_F(ExprAutomationTest, ReduceDefineAnonyFunc)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceLookupSlice)
+TEST_F(AutomationTest, ReduceLookupSlice)
 {
     misc::position pos(9);
     TestClause clause;
@@ -474,7 +475,7 @@ TEST_F(ExprAutomationTest, ReduceLookupSlice)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -494,7 +495,7 @@ TEST_F(ExprAutomationTest, ReduceLookupSlice)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceAnonyFuncAsArg)
+TEST_F(AutomationTest, ReduceAnonyFuncAsArg)
 {
     misc::position pos(10);
     TestClause clause;
@@ -515,7 +516,7 @@ TEST_F(ExprAutomationTest, ReduceAnonyFuncAsArg)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -536,7 +537,7 @@ TEST_F(ExprAutomationTest, ReduceAnonyFuncAsArg)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceListLiteral)
+TEST_F(AutomationTest, ReduceListLiteral)
 {
     misc::position pos(11);
     TestClause clause;
@@ -561,7 +562,7 @@ TEST_F(ExprAutomationTest, ReduceListLiteral)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -585,7 +586,7 @@ TEST_F(ExprAutomationTest, ReduceListLiteral)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceDictionary)
+TEST_F(AutomationTest, ReduceDictionary)
 {
     misc::position pos(12);
     TestClause clause;
@@ -626,7 +627,7 @@ TEST_F(ExprAutomationTest, ReduceDictionary)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -657,7 +658,7 @@ TEST_F(ExprAutomationTest, ReduceDictionary)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceInvalidNameDef)
+TEST_F(AutomationTest, ReduceInvalidNameDef)
 {
     misc::position pos(13);
     TestClause clause;
@@ -682,7 +683,7 @@ TEST_F(ExprAutomationTest, ReduceInvalidNameDef)
     ASSERT_EQ(pos, recs[0].pos);
 }
 
-TEST_F(ExprAutomationTest, ReduceInvalidLeftValue)
+TEST_F(AutomationTest, ReduceInvalidLeftValue)
 {
     misc::position pos(14);
     TestClause clause;
@@ -703,7 +704,7 @@ TEST_F(ExprAutomationTest, ReduceInvalidLeftValue)
     ASSERT_EQ(pos, recs[0].pos);
 }
 
-TEST_F(ExprAutomationTest, ReduceInvalidLambdaParams)
+TEST_F(AutomationTest, ReduceInvalidLambdaParams)
 {
     misc::position pos(15);
     TestClause clause;
@@ -726,7 +727,7 @@ TEST_F(ExprAutomationTest, ReduceInvalidLambdaParams)
     ASSERT_EQ(pos, recs[0].pos);
 }
 
-TEST_F(ExprAutomationTest, UnexpectedBinaryOp)
+TEST_F(AutomationTest, UnexpectedBinaryOp)
 {
     misc::position pos(16);
     TestClause clause;
@@ -747,7 +748,7 @@ TEST_F(ExprAutomationTest, UnexpectedBinaryOp)
     ASSERT_EQ(".", recs[0].image);
 }
 
-TEST_F(ExprAutomationTest, UnexpectedPreUnaryOp)
+TEST_F(AutomationTest, UnexpectedPreUnaryOp)
 {
     misc::position pos(17);
     TestClause clause;
@@ -768,7 +769,7 @@ TEST_F(ExprAutomationTest, UnexpectedPreUnaryOp)
     ASSERT_EQ("!", recs[0].image);
 }
 
-TEST_F(ExprAutomationTest, UnexpectedDictionaryFinished)
+TEST_F(AutomationTest, UnexpectedDictionaryFinished)
 {
     misc::position pos(18);
     misc::position pos_a(1800);
@@ -805,7 +806,7 @@ TEST_F(ExprAutomationTest, UnexpectedDictionaryFinished)
     ASSERT_EQ("}", recs[2].image);
 }
 
-TEST_F(ExprAutomationTest, UnexpectedSliceSeperator)
+TEST_F(AutomationTest, UnexpectedSliceSeperator)
 {
     misc::position pos(19);
     misc::position pos_a(1900);
@@ -839,7 +840,7 @@ TEST_F(ExprAutomationTest, UnexpectedSliceSeperator)
     ASSERT_EQ(erecs[0].pos, pos_a);
 }
 
-TEST_F(ExprAutomationTest, BracketNestedExpressions)
+TEST_F(AutomationTest, BracketNestedExpressions)
 {
     misc::position pos(20);
     TestClause clause;
@@ -857,7 +858,7 @@ TEST_F(ExprAutomationTest, BracketNestedExpressions)
 
     clause.compile();
     ASSERT_FALSE(error::hasError());
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -873,7 +874,7 @@ TEST_F(ExprAutomationTest, BracketNestedExpressions)
     ;
 }
 
-TEST_F(ExprAutomationTest, ParenNestedExpressions)
+TEST_F(AutomationTest, ParenNestedExpressions)
 {
     misc::position pos(21);
     TestClause clause;
@@ -891,7 +892,7 @@ TEST_F(ExprAutomationTest, ParenNestedExpressions)
 
     clause.compile();
     ASSERT_FALSE(error::hasError());
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -905,7 +906,7 @@ TEST_F(ExprAutomationTest, ParenNestedExpressions)
     ;
 }
 
-TEST_F(ExprAutomationTest, ReduceAnonyFuncAsOneOfArgs)
+TEST_F(AutomationTest, ReduceAnonyFuncAsOneOfArgs)
 {
     misc::position pos(22);
     TestClause clause;
@@ -942,7 +943,7 @@ TEST_F(ExprAutomationTest, ReduceAnonyFuncAsOneOfArgs)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(nulSymbols());
+    clause.filter->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -977,7 +978,7 @@ TEST_F(ExprAutomationTest, ReduceAnonyFuncAsOneOfArgs)
     ;
 }
 
-TEST_F(ExprAutomationTest, EmptyNested)
+TEST_F(AutomationTest, EmptyNested)
 {
     misc::position pos(23);
     TestClause clause;
@@ -993,4 +994,293 @@ TEST_F(ExprAutomationTest, EmptyNested)
     ASSERT_TRUE(error::hasError());
     ASSERT_EQ(1, getInvalidEmptyExprRecs().size());
     ASSERT_EQ(pos, getInvalidEmptyExprRecs()[0].pos);
+}
+
+TEST_F(AutomationTest, ReduceSimpleAsyncPlaceholderInCall)
+{
+    misc::position pos(24);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "motoharu");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+
+    pushIdent(pos, "tadakuni");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->pushComma(stackref(), pos);
+    pushInteger(pos, "20130102");
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "*"));
+
+    pushIdent(pos, "hidenori");
+    stack->top()->pushOpenParen(stackref(), pos);
+    pushInteger(pos, "1056");
+    stack->top()->pushComma(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    pushIdent(pos, "yositake");
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+
+    clause.compile();
+    clause.filter->compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
+    ASSERT_TRUE(stack->empty());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (pos, ARITHMETICS)
+            (pos, BINARY_OP, "+")
+            (pos, OPERAND)
+                (pos, ASYNC_CALL)
+                (pos, CALL_BEGIN)
+                    (pos, IDENTIFIER, "motoharu")
+                (pos, ARGUMENTS)
+                    (pos, ASYNC_PLACEHOLDER_BEGIN)
+                    (pos, ASYNC_PLACEHOLDER_END)
+                (pos, CALL_END)
+            (pos, OPERAND)
+                (pos, BINARY_OP, "*")
+                (pos, OPERAND)
+                    (pos, ASYNC_CALL)
+                    (pos, CALL_BEGIN)
+                        (pos, IDENTIFIER, "tadakuni")
+                    (pos, ARGUMENTS)
+                        (pos, ASYNC_PLACEHOLDER_BEGIN)
+                        (pos, ASYNC_PLACEHOLDER_END)
+                        (pos, INTEGER, "20130102")
+                    (pos, CALL_END)
+                (pos, OPERAND)
+                    (pos, ASYNC_CALL)
+                    (pos, CALL_BEGIN)
+                        (pos, IDENTIFIER, "hidenori")
+                    (pos, ARGUMENTS)
+                        (pos, INTEGER, "1056")
+                        (pos, ASYNC_PLACEHOLDER_BEGIN)
+                            (pos, PARAMETER, "yositake")
+                        (pos, ASYNC_PLACEHOLDER_END)
+                    (pos, CALL_END)
+        (BLOCK_END)
+    ;
+}
+
+TEST_F(AutomationTest, ReduceParenAsyncPlaceholderInCall)
+{
+    misc::position pos(25);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "tosiyuki");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "<"));
+
+    pushIdent(pos, "mituo");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    stack->top()->pushComma(stackref(), pos);
+    pushIdent(pos, "JanSecond");
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "-"));
+
+    pushIdent(pos, "yuusuke");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->pushOpenParen(stackref(), pos);
+    pushIdent(pos, "ringochan");
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    stack->top()->pushComma(stackref(), pos);
+    pushInteger(pos, "1106");
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+
+    pushIdent(pos, "otoha");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->pushOpenParen(stackref(), pos);
+    pushIdent(pos, "yurine");
+    stack->top()->pushComma(stackref(), pos);
+    pushIdent(pos, "homura");
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "/"));
+
+    pushIdent(pos, "ekou");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->pushOpenParen(stackref(), pos);
+    pushIdent(pos, "kabba");
+    stack->top()->pushComma(stackref(), pos);
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+    clause.compile();
+    clause.filter->compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
+    ASSERT_TRUE(stack->empty());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (pos, ARITHMETICS)
+            (pos, BINARY_OP, "<")
+            (pos, OPERAND)
+                (pos, ASYNC_CALL)
+                (pos, CALL_BEGIN)
+                    (pos, IDENTIFIER, "tosiyuki")
+                (pos, ARGUMENTS)
+                    (pos, ASYNC_PLACEHOLDER_BEGIN)
+                    (pos, ASYNC_PLACEHOLDER_END)
+                (pos, CALL_END)
+            (pos, OPERAND)
+                (pos, BINARY_OP, "-")
+                (pos, OPERAND)
+                    (pos, ASYNC_CALL)
+                    (pos, CALL_BEGIN)
+                        (pos, IDENTIFIER, "mituo")
+                    (pos, ARGUMENTS)
+                        (pos, ASYNC_PLACEHOLDER_BEGIN)
+                        (pos, ASYNC_PLACEHOLDER_END)
+                        (pos, IDENTIFIER, "JanSecond")
+                    (pos, CALL_END)
+                (pos, OPERAND)
+                    (pos, BINARY_OP, "/")
+                    (pos, OPERAND)
+                        (pos, BINARY_OP, "%")
+                        (pos, OPERAND)
+                            (pos, ASYNC_CALL)
+                            (pos, CALL_BEGIN)
+                                (pos, IDENTIFIER, "yuusuke")
+                            (pos, ARGUMENTS)
+                                (pos, ASYNC_PLACEHOLDER_BEGIN)
+                                    (pos, PARAMETER, "ringochan")
+                                (pos, ASYNC_PLACEHOLDER_END)
+                                (pos, INTEGER, "1106")
+                            (pos, CALL_END)
+                        (pos, OPERAND)
+                            (pos, ASYNC_CALL)
+                            (pos, CALL_BEGIN)
+                                (pos, IDENTIFIER, "otoha")
+                            (pos, ARGUMENTS)
+                                (pos, ASYNC_PLACEHOLDER_BEGIN)
+                                    (pos, PARAMETER, "yurine")
+                                    (pos, PARAMETER, "homura")
+                                (pos, ASYNC_PLACEHOLDER_END)
+                            (pos, CALL_END)
+                    (pos, OPERAND)
+                        (pos, ASYNC_CALL)
+                        (pos, CALL_BEGIN)
+                            (pos, IDENTIFIER, "ekou")
+                        (pos, ARGUMENTS)
+                            (pos, ASYNC_PLACEHOLDER_BEGIN)
+                                (pos, PARAMETER, "kabba")
+                            (pos, ASYNC_PLACEHOLDER_END)
+                        (pos, CALL_END)
+        (BLOCK_END)
+    ;
+}
+
+TEST_F(AutomationTest, ReduceAsyncPlaceholderNotInCall)
+{
+    misc::position pos(26);
+    misc::position pos_a(2600);
+    misc::position pos_b(2601);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    stack->top()->pushOpenBracket(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos_a, "%"));
+    pushIdent(pos, "nue");
+    stack->top()->pushComma(stackref(), pos);
+    pushIdent(pos, "narumi");
+    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "++"));
+
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos_b, "%"));
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+    clause.compile();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<AsyncPlaceholderNotArgumentRec> recs(getAsyncPlaceholderNotArgumentRecs());
+    ASSERT_EQ(2, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+    ASSERT_EQ(pos_b, recs[1].pos);
+}
+
+TEST_F(AutomationTest, ReduceAsyncPlaceholderNotNames)
+{
+    misc::position pos(27);
+    misc::position pos_a(2700);
+    misc::position pos_b(2701);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "hinaru");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    stack->top()->pushOpenParen(stackref(), pos);
+    pushInteger(pos_a, "1129");
+    stack->top()->pushComma(stackref(), pos);
+    pushBoolean(pos_b, false);
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+    clause.compile();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<InvalidNameRec> recs(getInvalidNameRecs());
+    ASSERT_EQ(2, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+    ASSERT_EQ(pos_b, recs[1].pos);
+}
+
+TEST_F(AutomationTest, ReduceMoreThanOneAsyncPlaceholders)
+{
+    misc::position pos(28);
+    misc::position pos_a(2800);
+    misc::position pos_b(2801);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "wanyuudou");
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos_a, "%"));
+    stack->top()->pushComma(stackref(), pos);
+    pushBoolean(pos_b, false);
+    stack->top()->pushComma(stackref(), pos);
+    stack->top()->pushOp(stackref(), TestToken(pos_b, "%"));
+    pushIdent(pos, "tutigumo");
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+    clause.compile();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<MoreThanOneAsyncPlaceholderRec> recs(getMoreThanOneAsyncPlaceholderRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos_b, recs[0].pos);
 }

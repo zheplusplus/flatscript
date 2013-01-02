@@ -9,7 +9,7 @@ namespace grammar {
     struct ArithAutomation
         : AutomationBase
     {
-        void pushOp(AutomationStack&, Token const& token);
+        void pushOp(AutomationStack& stack, Token const& token);
         void pushFactor(AutomationStack& stack
                       , util::sptr<Expression const> factor
                       , std::string const& image);
@@ -63,7 +63,7 @@ namespace grammar {
         void matchClosing(AutomationStack& stack, Token const& closer);
         void pushComma(AutomationStack& stack, misc::position const& pos);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
-        bool finishOnBreak(bool) const;
+        bool finishOnBreak(bool) const { return false; }
         void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&) {}
     protected:
         std::vector<util::sptr<Expression const>> _list;
@@ -120,7 +120,7 @@ namespace grammar {
         void pushColon(AutomationStack& stack, misc::position const& pos);
         void pushPropertySeparator(AutomationStack& stack, misc::position const& pos);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
-        bool finishOnBreak(bool) const;
+        bool finishOnBreak(bool) const { return false; }
         void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&) {}
 
         DictAutomation()
@@ -138,7 +138,33 @@ namespace grammar {
         bool _wait_for_colon;
         bool _wait_for_comma;
         util::sptr<Expression const> _key_cache;
-        std::vector<Dictionary::ItemType> _items;
+        util::ptrkvarr<Expression const> _items;
+    };
+
+    struct AsyncPlaceholderAutomation
+        : AutomationBase
+    {
+        explicit AsyncPlaceholderAutomation(misc::position const& ps)
+            : pos(ps)
+            , _wait_for_open_paren(true)
+            , _wait_for_param(true)
+        {}
+
+        misc::position const pos;
+
+        void pushFactor(AutomationStack& stack
+                      , util::sptr<Expression const> factor
+                      , std::string const&);
+        void pushOpenParen(AutomationStack&, misc::position const& pos);
+        void matchClosing(AutomationStack& stack, Token const& closer);
+        void pushComma(AutomationStack& stack, misc::position const& pos);
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        bool finishOnBreak(bool) const { return false; }
+        void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&) {}
+    private:
+        bool _wait_for_open_paren;
+        bool _wait_for_param;
+        std::vector<std::string> _params;
     };
 
 }

@@ -19,7 +19,7 @@ TEST_F(ClauseBuilderTest, Empty)
     misc::position pos(1);
 
     grammar::ClauseBuilder builder;
-    builder.buildAndClear()->compile(nulSymbols());
+    builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -47,7 +47,7 @@ TEST_F(ClauseBuilderTest, IfBranch)
                         pos, util::mkptr(new grammar::Identifier(pos, "mayoi")), "mayoi")))
                                   ->deliver());
 
-    builder.buildAndClear()->compile(nulSymbols());
+    builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -144,7 +144,7 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
                                 new grammar::Identifier(item_pos1, "widowmaker")), "widowmaker")))
                               ->deliver());
 
-    builder0.buildAndClear()->compile(nulSymbols());
+    builder0.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -204,7 +204,7 @@ TEST_F(ClauseBuilderTest, PushExprSequence)
                             pos, util::mkptr(new grammar::Identifier(pos, "kirisiki")), "kirisiki"))
           ->deliver());
 
-    builder.buildAndClear()->compile(nulSymbols());
+    builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

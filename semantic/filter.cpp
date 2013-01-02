@@ -5,6 +5,7 @@
 #include "filter.h"
 #include "stmt-nodes.h"
 #include "function.h"
+#include "compiling-space.h"
 
 using namespace semantic;
 
@@ -81,11 +82,10 @@ void Filter::addBranchAlterOnly(misc::position const& pos
                 new Branch(pos, std::move(predicate), Block(), std::move(alternative->_block))));
 }
 
-util::sptr<output::Statement const> Filter::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Statement const> Filter::compile(CompilingSpace space) const
 {
-    util::sptr<output::Block> block(new output::Block);
-    _block.compile(st, *block);
-    return std::move(block);
+    _block.compile(space);
+    return space.deliver();
 }
 
 void Filter::_checkBranchesTermination(misc::position const& pos

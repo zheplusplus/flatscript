@@ -66,6 +66,7 @@ namespace grammar {
 
     struct AutomationStack {
         void push(util::sptr<AutomationBase> automation);
+        void replace(util::sptr<AutomationBase> automation);
         util::sref<AutomationBase> top() const;
         void reduced(util::sptr<Expression const> expr);
         void reduced(std::vector<util::sptr<Expression const>> list);

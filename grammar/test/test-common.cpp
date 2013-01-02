@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include <semantic/global-filter.h>
 #include <semantic/node-base.h>
 #include <semantic/function.h>
@@ -16,6 +18,12 @@ util::sptr<semantic::Filter> test::mkfilter()
 util::sref<semantic::SymbolTable> test::nulSymbols()
 {
     return util::sref<semantic::SymbolTable>(nullptr);
+}
+
+semantic::CompilingSpace& test::nulSpace()
+{
+    static semantic::CompilingSpace* const n(nullptr);
+    return *n;
 }
 
 DataTree& DataTree::operator()(misc::position const& pos
@@ -53,10 +61,11 @@ DataTree& DataTree::operator()(misc::position const& pos, NodeType const& type, 
     return *this;
 }
 
-std::ostream& operator<<(std::ostream& os, GrammarData const& data)
+std::string GrammarData::str() const
 {
-    return -1 == data.func_arg_size ? (os << data.pos)
-                                    : (os << data.pos << " arg size=" << data.func_arg_size);
+    std::ostringstream os;
+    -1 == int_val ? (os << pos) : (os << pos << " int value=" << int_val);
+    return os.str();
 }
 
 std::string const test::NAME_DEF_FILTERED(" name def filtered");
@@ -75,8 +84,6 @@ NodeType const test::PRE_UNARY_OP("prefix unary operation");
 NodeType const test::OPERAND("operand");
 NodeType const test::LIST_PIPELINE_BEGIN("list pipeline begin");
 NodeType const test::LIST_PIPELINE_END("list pipeline end");
-NodeType const test::PIPE_MAP("pipeline map");
-NodeType const test::PIPE_FILTER("pipeline filter");
 NodeType const test::PIPE_ELEMENT("pipe element");
 NodeType const test::PIPE_INDEX("pipe index");
 NodeType const test::PIPE_KEY("pipe key");
@@ -84,6 +91,10 @@ NodeType const test::PIPE_KEY("pipe key");
 NodeType const test::CALL_BEGIN("call begin");
 NodeType const test::CALL_END("call end");
 NodeType const test::ARGUMENTS("arguments");
+NodeType const test::ASYNC_PLACEHOLDER_BEGIN("asynchronous placeholder begin");
+NodeType const test::ASYNC_PLACEHOLDER_END("asynchronous placeholder end");
+NodeType const test::ASYNC_CALL("asynchronous call");
+
 NodeType const test::LIST_SLICE_BEGIN("list slice begin");
 NodeType const test::LIST_SLICE_END("list slice end");
 NodeType const test::LIST_SLICE_DEFAULT("list slice default");

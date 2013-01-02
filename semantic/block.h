@@ -2,10 +2,9 @@
 #define __STEKIN_SEMANTIC_BLOCK_H__
 
 #include <string>
-#include <vector>
 
 #include <output/fwd-decl.h>
-#include <util/pointer.h>
+#include <util/arrays.h>
 #include <misc/pos-type.h>
 
 #include "fwd-decl.h"
@@ -24,7 +23,7 @@ namespace semantic {
             , _funcs(std::move(rhs._funcs))
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
 
         void addStmt(util::sptr<Statement const> stmt);
         void defFunc(misc::position const& pos
@@ -33,8 +32,8 @@ namespace semantic {
                    , util::sptr<Filter> body);
         void append(Block following);
     private:
-        std::vector<util::sptr<Statement const>> _stmts;
-        std::vector<util::sptr<Function const>> _funcs;
+        util::ptrarr<Statement const> _stmts;
+        util::ptrarr<Function const> _funcs;
     };
 
 }

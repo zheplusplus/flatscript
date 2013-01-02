@@ -86,7 +86,7 @@ HEADER_BEGIN = lineno() + '''
 
 namespace semantic {
 
-    util::sptr<output::Expression const> compileLiteral(Expression const* e,
+    util::sptr<output::Expression const> compileLiteral(util::sref<Expression const> e,
                                                         util::sref<SymbolTable const> st);
 '''
 
@@ -231,7 +231,7 @@ std::string semantic::foldBinaryType(std::string const& op, std::string const& l
 def build_compile_literals():
     return lineno() + '''
         util::sptr<output::Expression const> semantic::compileLiteral(
-                                Expression const* e, util::sref<SymbolTable const> st)
+                                util::sref<Expression const> e, util::sref<SymbolTable const> st)
         $(
             {literal_types}
             return util::sptr<output::Expression const>(nullptr);

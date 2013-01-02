@@ -24,29 +24,31 @@ std::set<std::string> const& stekin::preImported()
 void Block::write(std::ostream&) const
 {
     DataTree::actualOne()(SCOPE_BEGIN);
-    std::for_each(_funcs.begin()
-                , _funcs.end()
-                , [&](util::sptr<Function const> const& func)
-                  {
-                      func->write(dummyos());
-                  });
-    std::for_each(_stmts.begin()
-                , _stmts.end()
-                , [&](util::sptr<Statement const> const& stmt)
-                  {
-                      stmt->write(dummyos());
-                  });
+    _funcs.iter([&](util::sptr<Function const> const& func, int)
+                {
+                    func->write(dummyos());
+                });
+    _stmts.iter([&](util::sptr<Statement const> const& stmt, int)
+                {
+                    stmt->write(dummyos());
+                });
     DataTree::actualOne()(SCOPE_END);
 }
 
 void Block::addStmt(util::sptr<Statement const> stmt)
 {
-    _stmts.push_back(std::move(stmt));
+    _stmts.append(std::move(stmt));
 }
 
 void Block::addFunc(util::sptr<Function const> func)
 {
-    _funcs.push_back(std::move(func));
+    _funcs.append(std::move(func));
+}
+
+void Block::append(util::sptr<Block> b)
+{
+    _stmts.append(std::move(b->_stmts));
+    _funcs.append(std::move(b->_funcs));
 }
 
 void Function::write(std::ostream&) const
@@ -98,6 +100,12 @@ void NameDef::write(std::ostream&) const
     init->str();
 }
 
+void AsyncCallResultDef::write(std::ostream&) const
+{
+    DataTree::actualOne()(ASYNC_RESULT_DEF);
+    async_result->str();
+}
+
 void Branch::write(std::ostream&) const
 {
     DataTree::actualOne()(BRANCH);
@@ -109,6 +117,12 @@ void Branch::write(std::ostream&) const
 void Arithmetics::write(std::ostream&) const
 {
     DataTree::actualOne()(ARITHMETICS);
+    expr->str();
+}
+
+void AsyncPipeBody::write(std::ostream&) const
+{
+    DataTree::actualOne()(ASYNC_PIPE_BODY, int(pipe_type));
     expr->str();
 }
 
@@ -146,14 +160,12 @@ std::string StringLiteral::str() const
     return "";
 }
 
-static void writeList(std::vector<util::sptr<Expression const>> const& list)
+static void writeList(util::ptrarr<Expression const> const& list)
 {
-    std::for_each(list.begin()
-                , list.end()
-                , [&](util::sptr<Expression const> const& member)
-                  {
-                      member->str();
-                  });
+    list.iter([&](util::sptr<Expression const> const& member, int)
+              {
+                  member->str();
+              });
 }
 
 std::string ListLiteral::str() const
@@ -244,14 +256,12 @@ std::string ListSlice::Default::str() const
 std::string Dictionary::str() const
 {
     DataTree::actualOne()(pos, DICT_BEGIN);
-    std::for_each(items.begin()
-                , items.end()
-                , [&](ItemType const& item)
-                  {
-                      DataTree::actualOne()(pos, DICT_ITEM);
-                      item.first->str();
-                      item.second->str();
-                  });
+    items.iter([&](util::ptrkv<Expression const> const& kv, int)
+               {
+                   DataTree::actualOne()(pos, DICT_ITEM);
+                   kv.key->str();
+                   kv.value->str();
+               });
     DataTree::actualOne()(pos, DICT_END);
     return "";
 }
@@ -284,18 +294,31 @@ std::string Lambda::str() const
     return "";
 }
 
-std::string ListPipeMapper::str() const
+std::string AsyncReference::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "|:");
-    list->str();
-    mapper->str();
+    DataTree::actualOne()(pos, ASYNC_REFERENCE);
     return "";
 }
 
-std::string ListPipeFilter::str() const
+std::string Pipeline::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "|?");
+    DataTree::actualOne()(pos, BINARY_OP, int(pipe_type));
     list->str();
-    filter->str();
+    section->str();
+    return "";
+}
+
+std::string AsyncPipeResult::str() const
+{
+    DataTree::actualOne()(pos, ASYNC_PIPE_RESULT);
+    return "";
+}
+
+std::string AsyncPipe::str() const
+{
+    DataTree::actualOne()(pos, ASYNC_PIPELINE);
+    list->str();
+    recursion->write(dummyos());
+    succession->write(dummyos());
     return "";
 }

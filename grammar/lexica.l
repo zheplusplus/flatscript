@@ -77,6 +77,34 @@ false {
     return BOOL_FALSE;
 }
 
+try {
+    return KW_RESERVED;
+}
+
+raise {
+    return KW_RESERVED;
+}
+
+catch {
+    return KW_RESERVED;
+}
+
+with {
+    return KW_RESERVED;
+}
+
+break {
+    return KW_RESERVED;
+}
+
+continue {
+    return KW_RESERVED;
+}
+
+yield {
+    return KW_RESERVED;
+}
+
 [A-Z] {
     error::reservedWord(grammar::here(), yytext);
     return IDENT;

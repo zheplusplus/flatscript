@@ -1,0 +1,19 @@
+func asyncTextGen(input, cb)
+    if true
+        setTimeout(%, 1)
+        if input.length < 4
+            cb(input + ' is quite short')
+        else
+            cb(input + ' is quite long')
+    return input.length
+
+console.log(asyncTextGen('cat', %text))
+console.log(text)
+console.log(asyncTextGen(text, %moreText))
+console.log(moreText)
+
+func cancelAtFirstTime(timeoutHandle)
+    clearTimeout(timeoutHandle)
+
+cancelAtFirstTime(setInterval(%, 1))
+console.log(0)

@@ -22,8 +22,13 @@ std::string Expression::reduceAsName() const
     return "";
 }
 
-util::sptr<semantic::Expression const> Expression::reduceAsLeftValue(bool) const
+util::sptr<semantic::Expression const> Expression::reduceAsLeftValue(BaseReducingEnv const&) const
 {
     error::invalidLeftValue(pos);
     return util::mkptr(new semantic::ListSlice::Default(pos));
+}
+
+util::sptr<semantic::Expression const> Expression::reduceAsArg(ArgReducingEnv& env, int) const
+{
+    return reduceAsExpr(env);
 }

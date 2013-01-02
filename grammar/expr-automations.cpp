@@ -1,6 +1,7 @@
 #include <map>
 #include <algorithm>
 
+#include <util/arrays.h>
 #include <report/errors.h>
 
 #include "expr-automations.h"
@@ -91,9 +92,9 @@ namespace {
 
         void operate(ArithAutomation::FactorStack& factors) const
         {
-            std::vector<util::sptr<Expression const>> args;
+            util::ptrarr<Expression const> args;
             for (int i = 0; i < args_count; ++i) {
-                args.push_back(std::move(factors.back()));
+                args.append(std::move(factors.back()));
                 factors.pop_back();
             }
             util::sptr<Expression const> callee(std::move(factors.back()));
@@ -219,8 +220,12 @@ void ArithAutomation::_reduceBinaryOrPostfix(int pri)
     }
 }
 
-void ArithAutomation::pushOp(AutomationStack&, Token const& token)
+void ArithAutomation::pushOp(AutomationStack& stack, Token const& token)
 {
+    if ("%" == token.image && _empty()) {
+        stack.replace(util::mkptr(new AsyncPlaceholderAutomation(token.pos)));
+        return;
+    }
     if (UNARY_PRI_MAPPING.find(token.image) != UNARY_PRI_MAPPING.end() && _need_factor) {
         _op_stack.push_back(util::mkptr(new PreUnaryOperator(token.pos, token.image)));
         return;
@@ -403,11 +408,6 @@ void ExprListAutomation::pushComma(AutomationStack& stack, misc::position const&
 void ExprListAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
 {
     _list.push_back(std::move(expr));
-}
-
-bool ExprListAutomation::finishOnBreak(bool) const
-{
-    return false;
 }
 
 void ListLiteralAutomation::matchClosing(AutomationStack& stack, Token const& closer)
@@ -662,13 +662,59 @@ void DictAutomation::accepted(AutomationStack&, util::sptr<Expression const> exp
         if (expr->empty()) {
             error::invalidEmptyExpr(expr->pos);
         }
-        _items.push_back(std::make_pair(std::move(_key_cache), std::move(expr)));
+        _items.append(std::move(_key_cache), std::move(expr));
         _wait_for_comma = true;
     }
     _wait_for_key = !_wait_for_key;
 }
 
-bool DictAutomation::finishOnBreak(bool) const
+void AsyncPlaceholderAutomation::pushFactor(
+            AutomationStack& stack, util::sptr<Expression const> factor, std::string const&)
 {
-    return false;
+    if (_wait_for_open_paren) {
+        _params.push_back(factor->reduceAsName());
+        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
+        return;
+    }
+    if (_wait_for_param) {
+        _params.push_back(factor->reduceAsName());
+        _wait_for_param = false;
+    }
+}
+
+void AsyncPlaceholderAutomation::pushOpenParen(AutomationStack&, misc::position const& pos)
+{
+    if (!_wait_for_open_paren) {
+        error::unexpectedToken(pos, "(");
+        return;
+    }
+    _wait_for_open_paren = false;
+}
+
+void AsyncPlaceholderAutomation::matchClosing(AutomationStack& stack, Token const& closer)
+{
+    if (_wait_for_open_paren) {
+        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
+        stack.top()->matchClosing(stack, closer);
+        return;
+    }
+    if (closer.image == ")") {
+        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
+        return;
+    }
+    error::unexpectedToken(closer.pos, closer.image);
+}
+
+void AsyncPlaceholderAutomation::pushComma(AutomationStack& stack, misc::position const& pos)
+{
+    if (_wait_for_open_paren) {
+        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
+        stack.top()->pushComma(stack, pos);
+        return;
+    }
+    if (_wait_for_param) {
+        error::unexpectedToken(pos, ",");
+        return;
+    }
+    _wait_for_param = true;
 }

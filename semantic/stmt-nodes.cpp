@@ -6,67 +6,75 @@
 #include "stmt-nodes.h"
 #include "function.h"
 #include "filter.h"
-#include "symbol-table.h"
+#include "compiling-space.h"
 
 using namespace semantic;
 
-void Arithmetics::compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const
+void Arithmetics::compile(CompilingSpace& space) const
 {
-    block->addStmt(util::mkptr(new output::Arithmetics(expr->compile(st))));
+    util::sptr<output::Expression const> cexpr(expr->compile(space));
+    space.block()->addStmt(util::mkptr(new output::Arithmetics(std::move(cexpr))));
 }
 
-void Branch::compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const
+void Branch::compile(CompilingSpace& space) const
 {
-    if (predicate->isLiteral(st)) {
-        (predicate->boolValue(st) ? consequence : alternative).compile(st, block);
+    if (predicate->isLiteral(space.sym())) {
+        CompilingSpace branch_space(space.sym());
+        (predicate->boolValue(space.sym()) ? consequence : alternative).compile(branch_space);
+        space.block()->append(branch_space.deliver());
         return;
     }
-    util::sptr<output::Block> consq(new output::Block);
-    consequence.compile(st, *consq);
-    util::sptr<output::Block> alter(new output::Block);
-    alternative.compile(st, *alter);
-    block->addStmt(util::mkptr(new output::Branch(
-                        predicate->compile(st), std::move(consq), std::move(alter))));
+    util::sptr<output::Expression const> compiled_pred(predicate->compile(space));
+    CompilingSpace consq_space(space.sym());
+    consequence.compile(consq_space);
+    CompilingSpace alter_space(space.sym());
+    alternative.compile(alter_space);
+    space.block()->addStmt(util::mkptr(new output::Branch(
+                        std::move(compiled_pred), consq_space.deliver(), alter_space.deliver())));
 }
 
-void NameDef::compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const
+void NameDef::compile(CompilingSpace& space) const
 {
-    util::sptr<output::Expression const> init_value(init->compile(st));
-    if (init->isLiteral(st)) {
-        st->defConst(pos, name, *init);
+    util::sptr<output::Expression const> init_value(init->compile(space));
+    if (init->isLiteral(space.sym())) {
+        space.sym()->defConst(pos, name, *init);
         return;
     }
-    st->defName(pos, name);
-    block->addStmt(util::mkptr(new output::NameDef(name, std::move(init_value))));
+    space.sym()->defName(pos, name);
+    space.block()->addStmt(util::mkptr(new output::NameDef(name, std::move(init_value))));
 }
 
-void Return::compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const
+void Return::compile(CompilingSpace& space) const
 {
-    block->addStmt(util::mkptr(new output::Return(ret_val->compile(st))));
+    util::sptr<output::Expression const> cret(ret_val->compile(space));
+    space.block()->addStmt(util::mkptr(new output::Return(std::move(cret))));
 }
 
-void ReturnNothing::compile(util::sref<SymbolTable>, util::sref<output::Block> block) const
+void ReturnNothing::compile(CompilingSpace& space) const
 {
-    block->addStmt(util::mkptr(new output::ReturnNothing));
+    space.block()->addStmt(util::mkptr(new output::ReturnNothing));
 }
 
-void Import::compile(util::sref<SymbolTable> st, util::sref<output::Block>) const
+void Import::compile(CompilingSpace& space) const
 {
     std::for_each(names.begin()
                 , names.end()
                 , [&](std::string const& name)
                   {
-                      st->imported(pos, name);
+                      space.sym()->imported(pos, name);
                   });
 }
 
-void Export::compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const
+void Export::compile(CompilingSpace& space) const
 {
-    st->compileRef(pos, export_point[0]);
-    block->addStmt(util::mkptr(new output::Export(export_point, value->compile(st))));
+    space.sym()->compileRef(pos, export_point[0]);
+    util::sptr<output::Expression const> cval(value->compile(space));
+    space.block()->addStmt(util::mkptr(new output::Export(export_point, std::move(cval))));
 }
 
-void AttrSet::compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const
+void AttrSet::compile(CompilingSpace& space) const
 {
-    block->addStmt(util::mkptr(new output::AttrSet(set_point->compile(st), value->compile(st))));
+    util::sptr<output::Expression const> csp(set_point->compile(space));
+    util::sptr<output::Expression const> cval(value->compile(space));
+    space.block()->addStmt(util::mkptr(new output::AttrSet(std::move(csp), std::move(cval))));
 }

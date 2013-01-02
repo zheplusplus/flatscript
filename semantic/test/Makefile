@@ -7,16 +7,14 @@ test:$(TESTDIR)/test-semantic.out
 include $(WORKDIR)/Makefile
 
 TEST_DEP=semantic phony-output.dt test-common.dt
-TEST_OBJ=$(WORKDIR)/*.o $(TESTDIR)/phony-output.o $(TESTDIR)/test-common.o
+TEST_OBJ=$(WORKDIR)/*.o $(TESTDIR)/test-*.o $(TESTDIR)/phony-output.o
 
 $(TESTDIR)/test-semantic.out:$(TEST_DEP) \
                              test-expr-nodes.dt \
                              test-symbol-table.dt \
-                             test-filter.dt
+                             test-filter.dt \
+                             test-async-calls.dt
 	$(LINK) $(TEST_OBJ) \
-	        $(TESTDIR)/test-expr-nodes.o \
-	        $(TESTDIR)/test-symbol-table.o \
-	        $(TESTDIR)/test-filter.o \
 	        $(TEST_LIBS) \
 	     -o $(TESTDIR)/test-semantic.out
 

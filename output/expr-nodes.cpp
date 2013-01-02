@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <sstream>
 #include <map>
 #include <set>
@@ -44,16 +43,12 @@ std::string StringLiteral::str() const
     return util::cstr_repr(value.c_str(), value.size());
 }
 
-static std::vector<std::string> strList(std::vector<util::sptr<Expression const>> const& list)
+static std::vector<std::string> strList(util::ptrarr<Expression const> const& list)
 {
-    std::vector<std::string> result;
-    std::for_each(list.begin()
-                , list.end()
-                , [&](util::sptr<Expression const> const& expr)
-                  {
-                      result.push_back(expr->str());
-                  });
-    return std::move(result);
+    return list.mapv([&](util::sptr<Expression const> const& expr, int)
+                     {
+                         return expr->str();
+                     });
 }
 
 std::string ListLiteral::str() const
@@ -157,15 +152,12 @@ std::string ListSlice::Default::str() const
 
 std::string Dictionary::str() const
 {
-    std::vector<std::string> item_strings;
-    std::for_each(items.begin()
-                , items.end()
-                , [&](ItemType const& item)
-                  {
-                      item_strings.push_back(
-                          item.first->strAsProp() + ":" + item.second->str());
-                  });
-    return "({" + util::join(",", item_strings) + "})";
+    return "({"
+         + util::join(",", items.mapv([&](util::ptrkv<Expression const> const& kv, int)
+                                      {
+                                          return kv.key->str() + ":" + kv.value->str();
+                                      }))
+         + "})";
 }
 
 std::string ListAppend::str() const
@@ -219,4 +211,9 @@ std::string Lambda::str() const
                 , "$PARAMETERS", util::join(",", formNames(param_names)))
                 , "$BODY", body_os.str())
         ;
+}
+
+std::string AsyncReference::str() const
+{
+    return formAsyncRef(ref_id);
 }

@@ -69,7 +69,7 @@ TEST_F(AnonymousFunctionTest, AsNameDef)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(nulSymbols());
+    builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -110,7 +110,7 @@ TEST_F(AnonymousFunctionTest, TerminateByEnd)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(nulSymbols());
+    builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -161,7 +161,7 @@ TEST_F(AnonymousFunctionTest, FuncAsArg)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(nulSymbols());
+    builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -205,7 +205,7 @@ TEST_F(AnonymousFunctionTest, TerminateByReturn)
                                                      ->deliver());
     builder.addReturn(0, pos_b, (new grammar::TokenSequence(id(pos_b, "souitirou")))->deliver());
 
-    builder.buildAndClear()->compile(nulSymbols());
+    builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include <util/string.h>
 
 #include "function.h"

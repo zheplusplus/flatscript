@@ -48,3 +48,5 @@ verify set-attribute
 verify dict
 verify lambda
 verify set-timeout
+verify async-calls
+verify async-pipes

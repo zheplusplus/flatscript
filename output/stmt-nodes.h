@@ -49,6 +49,17 @@ namespace output {
         void write(std::ostream& os) const;
     };
 
+    struct AsyncCallResultDef
+        : Statement
+    {
+        explicit AsyncCallResultDef(util::sptr<Expression const> ar)
+            : async_result(std::move(ar))
+        {}
+
+        util::sptr<Expression const> const async_result;
+        void write(std::ostream& os) const;
+    };
+
     struct Return
         : Statement
     {

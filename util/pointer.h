@@ -20,30 +20,31 @@ namespace util {
         void const* const _id;
     };
 
-    template <typename _RawType>
+    template <typename RawType>
     struct sref {
-        typedef typename std::unique_ptr<_RawType>::pointer pointer;
+        typedef RawType value_type;
+        typedef typename std::unique_ptr<RawType>::pointer pointer;
 
         explicit sref(pointer ptr)
             : _ptr(ptr)
         {}
 
-        template <typename _ConvertableType>
-        sref(sref<_ConvertableType> rhs)
-            : _ptr(rhs.convert<_RawType>()._ptr)
+        template <typename ConvertableType>
+        sref(sref<ConvertableType> rhs)
+            : _ptr(rhs.template convert<RawType>()._ptr)
         {}
 
-        template <typename _ConvertableType>
-        sref operator=(sref<_ConvertableType> rhs)
+        template <typename ConvertableType>
+        sref operator=(sref<ConvertableType> rhs)
         {
-            _ptr = rhs.convert<_RawType>()._ptr;
+            _ptr = rhs.template convert<RawType>()._ptr;
             return *this;
         }
 
-        template <typename _TargetType>
-        sref<_TargetType> convert() const
+        template <typename TargetType>
+        sref<TargetType> convert() const
         {
-            return sref<_TargetType>(_ptr);
+            return sref<TargetType>(_ptr);
         }
 
         bool operator==(sref rhs) const
@@ -81,7 +82,7 @@ namespace util {
             return util::id(_ptr);
         }
 
-        _RawType cp() const
+        RawType cp() const
         {
             return *_ptr;
         }
@@ -91,11 +92,12 @@ namespace util {
         explicit sref(int) = delete;
     };
 
-    template <typename _RawType>
+    template <typename RawType>
     struct sptr
-        : public std::unique_ptr<_RawType>
+        : std::unique_ptr<RawType>
     {
-        typedef std::unique_ptr<_RawType> base_type;
+        typedef RawType value_type;
+        typedef std::unique_ptr<RawType> base_type;
         typedef typename base_type::pointer pointer;
         typedef typename base_type::deleter_type deleter_type;
 
@@ -103,21 +105,21 @@ namespace util {
             : base_type(p)
         {}
 
-        template <typename _ConvertableType>
-        sptr(sptr<_ConvertableType>&& rhs)
+        template <typename ConvertableType>
+        sptr(sptr<ConvertableType>&& rhs)
             : base_type(std::move(rhs))
         {}
 
-        template <typename _ConvertableType>
-        sptr& operator=(sptr<_ConvertableType>&& rhs)
+        template <typename ConvertableType>
+        sptr& operator=(sptr<ConvertableType>&& rhs)
         {
             base_type::operator=(std::move(rhs));
             return *this;
         }
 
-        sref<_RawType> operator*() const
+        sref<RawType> operator*() const
         {
-            return sref<_RawType>(base_type::get());
+            return sref<RawType>(base_type::get());
         }
 
         util::id id() const
@@ -130,7 +132,7 @@ namespace util {
             return id().str();
         }
 
-        _RawType cp() const
+        RawType cp() const
         {
             return *base_type::get();
         }
@@ -150,16 +152,16 @@ namespace util {
         explicit operator bool() const = delete;
     };
 
-    template <typename _RawType>
-    sptr<_RawType> mkptr(_RawType* ptr)
+    template <typename RawType>
+    sptr<RawType> mkptr(RawType* ptr)
     {
-        return sptr<_RawType>(ptr);
+        return sptr<RawType>(ptr);
     }
 
-    template <typename _RawType>
-    sref<_RawType> mkref(_RawType& obj)
+    template <typename RawType>
+    sref<RawType> mkref(RawType& obj)
     {
-        return sref<_RawType>(&obj);
+        return sref<RawType>(&obj);
     }
 
 }

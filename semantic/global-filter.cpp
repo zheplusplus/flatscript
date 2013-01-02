@@ -8,14 +8,14 @@
 
 using namespace semantic;
 
-util::sptr<output::Statement const> GlobalFilter::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Statement const> GlobalFilter::compile(CompilingSpace space) const
 {
     misc::position pos(0);
     std::for_each(stekin::preImported().begin()
                 , stekin::preImported().end()
                 , [&](std::string const& name)
                   {
-                      st->imported(pos, name);
+                      space.sym()->imported(pos, name);
                   });
-    return Filter::compile(st);
+    return Filter::compile(std::move(space));
 }

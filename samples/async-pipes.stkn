@@ -1,0 +1,18 @@
+list: [4, 2, 3, 1]
+
+func print(element, cb)
+    setTimeout(%, 1)
+    console.log('Element: ' + element)
+    cb()
+
+func echo(cb, index)
+    setTimeout(%, 1)
+    console.log('Index: ' + index)
+    cb()
+
+func g(p, q, cb)
+    setTimeout(cb, 1)
+    return 0
+
+x: list |: g(print($, %), echo(%, $i), %)
+console.log(x)

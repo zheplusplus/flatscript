@@ -2,8 +2,9 @@
 #define __STEKIN_OUTPUT_EXPRESSION_NODES_H__
 
 #include <string>
-#include <vector>
 #include <gmpxx.h>
+
+#include <util/arrays.h>
 
 #include "node-base.h"
 #include "fwd-decl.h"
@@ -75,14 +76,14 @@ namespace output {
     struct ListLiteral
         : Expression
     {
-        ListLiteral(misc::position const& pos, std::vector<util::sptr<Expression const>> v)
+        ListLiteral(misc::position const& pos, util::ptrarr<Expression const> v)
             : Expression(pos)
             , value(std::move(v))
         {}
 
         std::string str() const;
 
-        std::vector<util::sptr<Expression const>> const value;
+        util::ptrarr<Expression const> const value;
     };
 
     struct PipeElement
@@ -146,7 +147,7 @@ namespace output {
     {
         Call(misc::position const& pos
            , util::sptr<Expression const> c
-           , std::vector<util::sptr<Expression const>> a)
+           , util::ptrarr<Expression const> a)
                 : Expression(pos)
                 , callee(std::move(c))
                 , args(std::move(a))
@@ -155,7 +156,7 @@ namespace output {
         std::string str() const;
 
         util::sptr<Expression const> const callee;
-        std::vector<util::sptr<Expression const>> const args;
+        util::ptrarr<Expression const> const args;
     };
 
     struct MemberAccess
@@ -228,16 +229,14 @@ namespace output {
     struct Dictionary
         : Expression
     {
-        typedef std::pair<util::sptr<Expression const>, util::sptr<Expression const>> ItemType;
-
-        Dictionary(misc::position const& pos, std::vector<ItemType> i)
+        Dictionary(misc::position const& pos, util::ptrkvarr<Expression const> i)
             : Expression(pos)
             , items(std::move(i))
         {}
 
         std::string str() const;
 
-        std::vector<ItemType> const items;
+        util::ptrkvarr<Expression const> const items;
     };
 
     struct ListAppend
@@ -307,6 +306,19 @@ namespace output {
 
         std::vector<std::string> const param_names;
         util::sptr<Statement const> const body;
+    };
+
+    struct AsyncReference
+        : Expression
+    {
+        AsyncReference(misc::position const& pos, util::id const& id)
+            : Expression(pos)
+            , ref_id(id)
+        {}
+
+        std::string str() const;
+
+        util::id const ref_id;
     };
 
 }

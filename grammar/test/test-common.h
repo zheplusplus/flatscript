@@ -3,6 +3,7 @@
 
 #include <semantic/node-base.h>
 #include <semantic/filter.h>
+#include <semantic/compiling-space.h>
 #include <output/node-base.h>
 #include <misc/pos-type.h>
 #include <test/data-node.h>
@@ -16,6 +17,7 @@ namespace test {
 
     util::sptr<semantic::Filter> mkfilter();
     util::sref<semantic::SymbolTable> nulSymbols();
+    semantic::CompilingSpace& nulSpace();
 
     struct TestClause
         : grammar::ClauseBase
@@ -58,27 +60,29 @@ namespace test {
 
     struct GrammarData {
         misc::position const pos;
-        int const func_arg_size;
+        int const int_val;
 
-        GrammarData(misc::position const& ps, int arg_size)
+        GrammarData(misc::position const& ps, int iv)
             : pos(ps)
-            , func_arg_size(arg_size)
+            , int_val(iv)
         {}
 
         explicit GrammarData(misc::position const ps)
             : pos(ps)
-            , func_arg_size(-1)
+            , int_val(-1)
         {}
 
         GrammarData()
             : pos(-1)
-            , func_arg_size(-1)
+            , int_val(-1)
         {}
 
         bool operator==(GrammarData const& rhs) const
         {
-            return pos == rhs.pos && func_arg_size == rhs.func_arg_size;
+            return pos == rhs.pos && int_val == rhs.int_val;
         }
+
+        std::string str() const;
     };
 
     struct DataTree
@@ -114,8 +118,6 @@ namespace test {
     extern NodeType const OPERAND;
     extern NodeType const LIST_PIPELINE_BEGIN;
     extern NodeType const LIST_PIPELINE_END;
-    extern NodeType const PIPE_MAP;
-    extern NodeType const PIPE_FILTER;
     extern NodeType const PIPE_ELEMENT;
     extern NodeType const PIPE_INDEX;
     extern NodeType const PIPE_KEY;
@@ -123,6 +125,10 @@ namespace test {
     extern NodeType const CALL_BEGIN;
     extern NodeType const CALL_END;
     extern NodeType const ARGUMENTS;
+    extern NodeType const ASYNC_PLACEHOLDER_BEGIN;
+    extern NodeType const ASYNC_PLACEHOLDER_END;
+    extern NodeType const ASYNC_CALL;
+
     extern NodeType const LIST_SLICE_BEGIN;
     extern NodeType const LIST_SLICE_END;
     extern NodeType const LIST_SLICE_DEFAULT;
@@ -160,7 +166,5 @@ namespace test {
     };
 
 }
-
-std::ostream& operator<<(std::ostream& os, test::GrammarData const& data);
 
 #endif /* __STEKIN_GRAMMAR_TEST_TEST_COMMON_H__ */

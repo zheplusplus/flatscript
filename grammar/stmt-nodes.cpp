@@ -13,31 +13,32 @@ static util::sptr<semantic::Filter> mkSymDefFilter()
 
 void Arithmetics::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addArith(pos, expr->reduceAsExpr(false));
+    filter->addArith(pos, expr->reduceAsExpr(ExprReducingEnv()));
 }
 
 void Branch::compile(util::sref<semantic::Filter> filter) const
 {
     filter->addBranch(pos
-                    , predicate->reduceAsExpr(false)
+                    , predicate->reduceAsExpr(ExprReducingEnv())
                     , consequence.compile(mkSymDefFilter())
                     , alternative.compile(mkSymDefFilter()));
 }
 
 void BranchConsqOnly::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addBranch(pos, predicate->reduceAsExpr(false), consequence.compile(mkSymDefFilter()));
+    filter->addBranch(
+            pos, predicate->reduceAsExpr(ExprReducingEnv()), consequence.compile(mkSymDefFilter()));
 }
 
 void BranchAlterOnly::compile(util::sref<semantic::Filter> filter) const
 {
     filter->addBranchAlterOnly(
-            pos, predicate->reduceAsExpr(false), alternative.compile(mkSymDefFilter()));
+            pos, predicate->reduceAsExpr(ExprReducingEnv()), alternative.compile(mkSymDefFilter()));
 }
 
 void Return::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addReturn(pos, ret_val->reduceAsExpr(false));
+    filter->addReturn(pos, ret_val->reduceAsExpr(ExprReducingEnv()));
 }
 
 void ReturnNothing::compile(util::sref<semantic::Filter> filter) const
@@ -47,7 +48,7 @@ void ReturnNothing::compile(util::sref<semantic::Filter> filter) const
 
 void NameDef::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->defName(pos, name, init->reduceAsExpr(false));
+    filter->defName(pos, name, init->reduceAsExpr(ExprReducingEnv()));
 }
 
 void Import::compile(util::sref<semantic::Filter> filter) const
@@ -57,10 +58,12 @@ void Import::compile(util::sref<semantic::Filter> filter) const
 
 void Export::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addExport(pos, export_point, value->reduceAsExpr(false));
+    filter->addExport(pos, export_point, value->reduceAsExpr(ExprReducingEnv()));
 }
 
 void AttrSet::compile(util::sref<semantic::Filter> filter) const
 {
-    filter->addAttrSet(pos, set_point->reduceAsLeftValue(false), value->reduceAsExpr(false));
+    filter->addAttrSet(pos
+                     , set_point->reduceAsLeftValue(ExprReducingEnv())
+                     , value->reduceAsExpr(ExprReducingEnv()));
 }

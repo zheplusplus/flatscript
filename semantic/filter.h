@@ -48,7 +48,7 @@ namespace semantic {
                            , std::vector<std::string> const& param_names
                            , util::sptr<Filter> body) = 0;
 
-        virtual util::sptr<output::Statement const> compile(util::sref<SymbolTable> st) const;
+        virtual util::sptr<output::Statement const> compile(CompilingSpace space) const;
     protected:
         void _checkBranchesTermination(misc::position const& pos
                                      , util::sptr<Filter> const& consequence

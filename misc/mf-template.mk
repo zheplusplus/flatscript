@@ -10,12 +10,16 @@ ifndef PYTHON
 	PYTHON=python2
 endif
 
+ifndef COMPILER
+	COMPILER=clang++
+endif
+
 CODEGEN=codegen
 
-CC=g++ -c -std=c++0x
+CC=$(COMPILER) -c -std=c++0x
 INCLUDE=-I.
-RESOLVE_DEP=g++ -MM $(INCLUDE)
-LINK=g++ $(DYN_LINK)
+RESOLVE_DEP=$(COMPILER) -MM $(INCLUDE)
+LINK=$(COMPILER) $(DYN_LINK)
 AR=ar rcs
 
 CFLAGS=-Wall -Wextra -Wold-style-cast -Werror $(OPT_FLAGS)

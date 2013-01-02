@@ -1,20 +1,17 @@
-#include <algorithm>
-
 #include <output/node-base.h>
 #include <output/function.h>
-#include <util/vector-append.h>
 
 #include "block.h"
 #include "function.h"
 #include "node-base.h"
 #include "filter.h"
-#include "symbol-table.h"
+#include "compiling-space.h"
 
 using namespace semantic;
 
 void Block::addStmt(util::sptr<Statement const> stmt)
 {
-    _stmts.push_back(std::move(stmt));
+    _stmts.append(std::move(stmt));
 }
 
 void Block::defFunc(misc::position const& pos
@@ -22,33 +19,29 @@ void Block::defFunc(misc::position const& pos
                   , std::vector<std::string> const& param_names
                   , util::sptr<Filter> body)
 {
-    _funcs.push_back(util::mkptr(new Function(pos, name, param_names, std::move(body))));
+    _funcs.append(util::mkptr(new Function(pos, name, param_names, std::move(body))));
 }
 
-void Block::compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const
+void Block::compile(CompilingSpace& space) const
 {
-    std::for_each(_funcs.begin()
-                , _funcs.end()
-                , [&](util::sptr<Function const> const& func)
-                  {
-                      st->defName(func->pos, func->name);
-                  });
-    std::for_each(_stmts.begin()
-                , _stmts.end()
-                , [&](util::sptr<Statement const> const& stmt)
-                  {
-                      stmt->compile(st, block);
-                  });
-    std::for_each(_funcs.begin()
-                , _funcs.end()
-                , [&](util::sptr<Function const> const& func)
-                  {
-                      block->addFunc(func->compile(st));
-                  });
+    util::sref<SymbolTable> root_sym(space.sym());
+    util::sref<output::Block> root_block(space.block());
+    _funcs.iter([&](util::sptr<Function const> const& func, int)
+                {
+                    root_sym->defName(func->pos, func->name);
+                });
+    _stmts.iter([&](util::sptr<Statement const> const& stmt, int)
+                {
+                    stmt->compile(space);
+                });
+    _funcs.iter([&](util::sptr<Function const> const& func, int)
+                {
+                    root_block->addFunc(func->compile(root_sym));
+                });
 }
 
 void Block::append(Block following)
 {
-    util::ptrs_append(_funcs, std::move(following._funcs));
-    util::ptrs_append(_stmts, std::move(following._stmts));
+    _funcs.append(std::move(following._funcs));
+    _stmts.append(std::move(following._stmts));
 }

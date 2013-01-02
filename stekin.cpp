@@ -3,7 +3,7 @@
 
 #include <grammar/yy-misc.h>
 #include <semantic/filter.h>
-#include <semantic/symbol-table.h>
+#include <semantic/compiling-space.h>
 #include <output/node-base.h>
 #include <report/errors.h>
 
@@ -20,8 +20,8 @@ int main(int argc, char* argv[])
     if (error::hasError()) {
         return 1;
     }
-    semantic::SymbolTable st;
-    util::sptr<output::Statement const> global_scope(global_flow->compile(util::mkref(st)));
+    util::sptr<output::Statement const> global_scope(
+                        global_flow->compile(semantic::CompilingSpace()));
     if (error::hasError()) {
         return 1;
     }

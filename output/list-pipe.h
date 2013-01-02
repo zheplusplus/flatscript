@@ -1,44 +1,74 @@
 #ifndef __STEKIN_OUTPUT_LIST_PIPELINE_H__
 #define __STEKIN_OUTPUT_LIST_PIPELINE_H__
 
-#include <vector>
+#include <misc/const.h>
 
 #include "node-base.h"
 
 namespace output {
 
-    struct ListPipeMapper
+    struct Pipeline
         : Expression
     {
-        ListPipeMapper(misc::position const& pos
-                     , util::sptr<Expression const> l
-                     , util::sptr<Expression const> m)
+        Pipeline(misc::position const& pos
+               , util::sptr<Expression const> ls
+               , util::sptr<Expression const> sec
+               , cons::PipelineType tp)
             : Expression(pos)
-            , list(std::move(l))
-            , mapper(std::move(m))
+            , list(std::move(ls))
+            , section(std::move(sec))
+            , pipe_type(tp)
         {}
 
         std::string str() const;
 
         util::sptr<Expression const> const list;
-        util::sptr<Expression const> const mapper;
+        util::sptr<Expression const> const section;
+        cons::PipelineType pipe_type;
     };
 
-    struct ListPipeFilter
+    struct AsyncPipeResult
         : Expression
     {
-        ListPipeFilter(misc::position const& pos
-                     , util::sptr<Expression const> l
-                     , util::sptr<Expression const> f)
+        explicit AsyncPipeResult(misc::position const& pos)
             : Expression(pos)
-            , list(std::move(l))
-            , filter(std::move(f))
+        {}
+
+        std::string str() const;
+    };
+
+    struct AsyncPipeBody
+        : Statement
+    {
+        AsyncPipeBody(util::sptr<Expression const> e, cons::PipelineType tp)
+            : expr(std::move(e))
+            , pipe_type(tp)
+        {}
+
+        void write(std::ostream& os) const;
+
+        util::sptr<Expression const> const expr;
+        cons::PipelineType pipe_type;
+    };
+
+    struct AsyncPipe
+        : Expression
+    {
+        AsyncPipe(misc::position const& pos
+                , util::sptr<Expression const> ls
+                , util::sptr<Statement const> r
+                , util::sptr<Statement const> s)
+            : Expression(pos)
+            , list(std::move(ls))
+            , recursion(std::move(r))
+            , succession(std::move(s))
         {}
 
         std::string str() const;
 
         util::sptr<Expression const> const list;
-        util::sptr<Expression const> const filter;
+        util::sptr<Statement const> const recursion;
+        util::sptr<Statement const> const succession;
     };
 
 }

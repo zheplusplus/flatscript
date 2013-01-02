@@ -209,19 +209,27 @@ std::cerr << "    invalid indentation" << std::endl;
 , Param(POS_TYPE, 'pos')),
 
 ReportFunc(
-'excessiveIndent',
-lineno() + '''
-std::cerr << pos.str() << std::endl;
-std::cerr << "    excessive indentation" << std::endl;
-'''
-, Param(POS_TYPE, 'pos')),
-
-ReportFunc(
 'unexpectedEof',
 lineno() + '''
 std::cerr << "Unexpected end of file; expression not finished" << std::endl;
 '''
 ),
+
+ReportFunc(
+'asyncPlaceholderNotArgument',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    asynchronous placeholder should appear as an arugment." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'moreThanOneAsyncPlaceholder',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    more than one asynchronous placeholders in one call." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
 
 ReportFunc(
 'divZero',

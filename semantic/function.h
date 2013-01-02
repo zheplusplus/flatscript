@@ -9,11 +9,11 @@ namespace semantic {
         Function(misc::position const& ps
                , std::string const& func_name
                , std::vector<std::string> const& params
-               , util::sptr<Filter> func_body)
+               , util::sptr<Filter const> func_body)
             : pos(ps)
             , name(func_name)
             , param_names(params)
-            , _body(std::move(func_body))
+            , body(std::move(func_body))
         {}
 
         util::sptr<output::Function const> compile(util::sref<SymbolTable> st) const;
@@ -21,8 +21,7 @@ namespace semantic {
         misc::position const pos;
         std::string const name;
         std::vector<std::string> const param_names;
-    private:
-        util::sptr<Filter> const _body;
+        util::sptr<Filter const> const body;
     };
 
 }

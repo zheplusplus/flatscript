@@ -22,16 +22,6 @@ namespace misc {
         bool operator==(position const& rhs) const;
     };
 
-    struct trace {
-        trace& add(position const& pos);
-        position top() const;
-        std::string str(std::string const& message) const;
-
-        bool operator==(trace const& rhs) const;
-    private:
-        std::list<position> _trace;
-    };
-
 }
 
 #endif /* __STEKIN_MISCELLANY_POSITION_TYPE_H__ */

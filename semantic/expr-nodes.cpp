@@ -2,37 +2,47 @@
 #include <map>
 
 #include <output/expr-nodes.h>
+#include <output/stmt-nodes.h>
 #include <util/string.h>
 #include <report/errors.h>
 
 #include "expr-nodes.h"
 #include "function.h"
-#include "symbol-table.h"
+#include "compiling-space.h"
 #include "filter.h"
 #include "const-fold.h"
 
 using namespace semantic;
 
-static std::vector<util::sptr<output::Expression const>> compileList(
-                        std::vector<util::sptr<Expression const>> const& list
-                      , util::sref<SymbolTable> st)
+static util::ptrarr<output::Expression const> compileList(
+                        util::ptrarr<Expression const> const& list
+                      , CompilingSpace& space)
 {
-    std::vector<util::sptr<output::Expression const>> compiled_list;
-    std::for_each(list.begin()
-                , list.end()
-                , [&](util::sptr<Expression const> const& value)
-                  {
-                      compiled_list.push_back(value->compile(st));
-                  });
-    return std::move(compiled_list);
+    return list.map([&](util::sptr<Expression const> const& value, int)
+                    {
+                        return value->compile(space);
+                    });
 }
 
-util::sptr<output::Expression const> PreUnaryOp::compile(util::sref<SymbolTable> st) const
+static bool isListAsync(util::ptrarr<Expression const> const& list)
 {
-    if (isLiteral(st)) {
-        return compileLiteral(this, st);
+    return list.any([&](util::sptr<Expression const> const& value, int)
+                    {
+                        return value->isAsync();
+                    });
+}
+
+util::sptr<output::Expression const> PreUnaryOp::compile(CompilingSpace& space) const
+{
+    if (isLiteral(space.sym())) {
+        return compileLiteral(util::mkref(*this), space.sym());
     }
-    return util::mkptr(new output::PreUnaryOp(pos, op_img, rhs->compile(st)));
+    return util::mkptr(new output::PreUnaryOp(pos, op_img, rhs->compile(space)));
+}
+
+bool PreUnaryOp::isAsync() const
+{
+    return rhs->isAsync();
 }
 
 bool PreUnaryOp::isLiteral(util::sref<SymbolTable const> st) const
@@ -65,12 +75,18 @@ std::string PreUnaryOp::stringValue(util::sref<SymbolTable const> st) const
     return foldPreUnaryStringValue(pos, op_img, rhs, st);
 }
 
-util::sptr<output::Expression const> BinaryOp::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> BinaryOp::compile(CompilingSpace& space) const
 {
-    if (isLiteral(st)) {
-        return compileLiteral(this, st);
+    if (isLiteral(space.sym())) {
+        return compileLiteral(util::mkref(*this), space.sym());
     }
-    return util::mkptr(new output::BinaryOp(pos, lhs->compile(st), op_img, rhs->compile(st)));
+    util::sptr<output::Expression const> clhs(lhs->compile(space));
+    return util::mkptr(new output::BinaryOp(pos, std::move(clhs), op_img, rhs->compile(space)));
+}
+
+bool BinaryOp::isAsync() const
+{
+    return lhs->isAsync() || rhs->isAsync();
 }
 
 bool BinaryOp::isLiteral(util::sref<SymbolTable const> st) const
@@ -103,22 +119,17 @@ std::string BinaryOp::stringValue(util::sref<SymbolTable const> st) const
     return foldBinaryStringValue(pos, op_img, lhs, rhs, st);
 }
 
-util::sptr<output::Expression const> TypeOf::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> TypeOf::compile(CompilingSpace& space) const
 {
-    if (isLiteral(st)) {
-        return util::mkptr(new output::StringLiteral(pos, stringValue(st)));
+    if (isLiteral(space.sym())) {
+        return util::mkptr(new output::StringLiteral(pos, stringValue(space.sym())));
     }
-    return util::mkptr(new output::PreUnaryOp(pos, "typeof ", expr->compile(st)));
+    return util::mkptr(new output::PreUnaryOp(pos, "typeof ", expr->compile(space)));
 }
 
 bool TypeOf::isLiteral(util::sref<SymbolTable const> st) const
 {
     return expr->isLiteral(st);
-}
-
-std::string TypeOf::literalType(util::sref<SymbolTable const>) const
-{
-    return "string";
 }
 
 std::string TypeOf::stringValue(util::sref<SymbolTable const> st) const
@@ -132,9 +143,9 @@ std::string TypeOf::stringValue(util::sref<SymbolTable const> st) const
     return map[expr->literalType(st)];
 }
 
-util::sptr<output::Expression const> Reference::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> Reference::compile(CompilingSpace& space) const
 {
-    return st->compileRef(pos, name);
+    return space.sym()->compileRef(pos, name);
 }
 
 bool Reference::isLiteral(util::sref<SymbolTable const> st) const
@@ -167,14 +178,9 @@ std::string Reference::stringValue(util::sref<SymbolTable const> st) const
     return st->literalOrNul(name)->stringValue(st);
 }
 
-util::sptr<output::Expression const> BoolLiteral::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> BoolLiteral::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::BoolLiteral(pos, value));
-}
-
-bool BoolLiteral::isLiteral(util::sref<SymbolTable const>) const
-{
-    return true;
 }
 
 bool BoolLiteral::boolValue(util::sref<SymbolTable const>) const
@@ -182,24 +188,9 @@ bool BoolLiteral::boolValue(util::sref<SymbolTable const>) const
     return value;
 }
 
-std::string BoolLiteral::literalType(util::sref<SymbolTable const>) const
-{
-    return "bool";
-}
-
-util::sptr<output::Expression const> IntLiteral::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> IntLiteral::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::IntLiteral(pos, value));
-}
-
-bool IntLiteral::isLiteral(util::sref<SymbolTable const>) const
-{
-    return true;
-}
-
-std::string IntLiteral::literalType(util::sref<SymbolTable const>) const
-{
-    return "int";
 }
 
 mpz_class IntLiteral::intValue(util::sref<SymbolTable const>) const
@@ -207,19 +198,9 @@ mpz_class IntLiteral::intValue(util::sref<SymbolTable const>) const
     return value;
 }
 
-util::sptr<output::Expression const> FloatLiteral::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> FloatLiteral::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::FloatLiteral(pos, value));
-}
-
-bool FloatLiteral::isLiteral(util::sref<SymbolTable const>) const
-{
-    return true;
-}
-
-std::string FloatLiteral::literalType(util::sref<SymbolTable const>) const
-{
-    return "float";
 }
 
 mpf_class FloatLiteral::floatValue(util::sref<SymbolTable const>) const
@@ -227,19 +208,9 @@ mpf_class FloatLiteral::floatValue(util::sref<SymbolTable const>) const
     return value;
 }
 
-util::sptr<output::Expression const> StringLiteral::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> StringLiteral::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::StringLiteral(pos, value));
-}
-
-bool StringLiteral::isLiteral(util::sref<SymbolTable const>) const
-{
-    return true;
-}
-
-std::string StringLiteral::literalType(util::sref<SymbolTable const>) const
-{
-    return "string";
 }
 
 bool StringLiteral::boolValue(util::sref<SymbolTable const>) const
@@ -252,72 +223,133 @@ std::string StringLiteral::stringValue(util::sref<SymbolTable const>) const
     return value;
 }
 
-util::sptr<output::Expression const> ListLiteral::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> ListLiteral::compile(CompilingSpace& space) const
 {
-    return util::mkptr(new output::ListLiteral(pos, compileList(value, st)));
+    return util::mkptr(new output::ListLiteral(pos, compileList(value, space)));
 }
 
-util::sptr<output::Expression const> PipeElement::compile(util::sref<SymbolTable>) const
+bool ListLiteral::isAsync() const
+{
+    return isListAsync(value);
+}
+
+util::sptr<output::Expression const> PipeElement::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::PipeElement(pos));
 }
 
-util::sptr<output::Expression const> PipeIndex::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> PipeIndex::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::PipeIndex(pos));
 }
 
-util::sptr<output::Expression const> PipeKey::compile(util::sref<SymbolTable>) const
+util::sptr<output::Expression const> PipeKey::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::PipeKey(pos));
 }
 
-util::sptr<output::Expression const> ListAppend::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> ListAppend::compile(CompilingSpace& space) const
 {
-    return util::mkptr(new output::ListAppend(pos, lhs->compile(st), rhs->compile(st)));
+    util::sptr<output::Expression const> clhs(lhs->compile(space));
+    return util::mkptr(new output::ListAppend(pos, std::move(clhs), rhs->compile(space)));
 }
 
-util::sptr<output::Expression const> Call::compile(util::sref<SymbolTable> st) const
+bool ListAppend::isAsync() const
 {
-    return util::mkptr(new output::Call(pos, callee->compile(st), compileList(args, st)));
+    return lhs->isAsync() || rhs->isAsync();
 }
 
-util::sptr<output::Expression const> MemberAccess::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> Call::compile(CompilingSpace& space) const
 {
-    return util::mkptr(new output::MemberAccess(pos, referee->compile(st), member));
+    util::sptr<output::Expression const> ccallee(callee->compile(space));
+    return util::mkptr(new output::Call(pos, std::move(ccallee), compileList(args, space)));
 }
 
-util::sptr<output::Expression const> Lookup::compile(util::sref<SymbolTable> st) const
+bool Call::isAsync() const
 {
-    return util::mkptr(new output::Lookup(pos, collection->compile(st), key->compile(st)));
+    return callee->isAsync() || isListAsync(args);
 }
 
-util::sptr<output::Expression const> ListSlice::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> MemberAccess::compile(CompilingSpace& space) const
 {
+    return util::mkptr(new output::MemberAccess(pos, referee->compile(space), member));
+}
+
+bool MemberAccess::isAsync() const
+{
+    return referee->isAsync();
+}
+
+util::sptr<output::Expression const> Lookup::compile(CompilingSpace& space) const
+{
+    util::sptr<output::Expression const> ccollection(collection->compile(space));
+    return util::mkptr(new output::Lookup(pos, std::move(ccollection), key->compile(space)));
+}
+
+bool Lookup::isAsync() const
+{
+    return collection->isAsync() || key->isAsync();
+}
+
+util::sptr<output::Expression const> ListSlice::compile(CompilingSpace& space) const
+{
+    util::sptr<output::Expression const> clist(list->compile(space));
+    util::sptr<output::Expression const> cbegin(begin->compile(space));
+    util::sptr<output::Expression const> cend(end->compile(space));
     return util::mkptr(new output::ListSlice(
-                pos, list->compile(st), begin->compile(st), end->compile(st), step->compile(st)));
+                pos, std::move(clist), std::move(cbegin), std::move(cend), step->compile(space)));
 }
 
-util::sptr<output::Expression const> ListSlice::Default::compile(util::sref<SymbolTable>) const
+bool ListSlice::isAsync() const
+{
+    return list->isAsync() || begin->isAsync() || end->isAsync() || step->isAsync();
+}
+
+util::sptr<output::Expression const> ListSlice::Default::compile(CompilingSpace&) const
 {
     return util::mkptr(new output::ListSlice::Default(pos));
 }
 
-util::sptr<output::Expression const> Dictionary::compile(util::sref<SymbolTable> st) const
+util::sptr<output::Expression const> Dictionary::compile(CompilingSpace& space) const
 {
-    std::vector<output::Dictionary::ItemType> compiled_items;
-    std::for_each(items.begin()
-                , items.end()
-                , [&](ItemType const& item)
-                  {
-                      compiled_items.push_back(std::make_pair(item.first->compile(st)
-                                                            , item.second->compile(st)));
-                  });
-    return util::mkptr(new output::Dictionary(pos, std::move(compiled_items)));
+    return util::mkptr(new output::Dictionary(pos, items.map(
+                    [&](util::ptrkv<Expression const> const& kv, int)
+                    {
+                        util::sptr<output::Expression const> ckey(kv.key->compile(space));
+                        return util::mkkv(std::move(ckey), kv.value->compile(space));
+                    })));
 }
 
-util::sptr<output::Expression const> Lambda::compile(util::sref<SymbolTable> st) const
+bool Dictionary::isAsync() const
 {
-    SymbolTable body_st(pos, st, param_names);
-    return util::mkptr(new output::Lambda(pos, param_names, body->compile(util::mkref(body_st))));
+    return items.any([&](util::ptrkv<Expression const> const& kv, int)
+                     {
+                         return kv.key->isAsync() || kv.value->isAsync();
+                     });
+}
+
+util::sptr<output::Expression const> Lambda::compile(CompilingSpace& space) const
+{
+    return util::mkptr(new output::Lambda(
+                  pos, param_names, body->compile(CompilingSpace(pos, space.sym(), param_names))));
+}
+
+util::sptr<output::Expression const> AsyncCall::compile(CompilingSpace& space) const
+{
+    util::sptr<output::Expression const> compl_callee(callee->compile(space));
+    util::ptrarr<output::Expression const> compl_fargs(compileList(former_args, space));
+    util::ptrarr<output::Expression const> compl_largs(compileList(latter_args, space));
+
+    util::sref<output::Block> current_flow(space.block());
+    util::sptr<output::Block> async_flow(new output::Block);
+    space.setAsyncSpace(pos, async_params, *async_flow);
+
+    compl_fargs.append(util::mkptr(new output::Lambda(pos, async_params, std::move(async_flow))))
+               .append(std::move(compl_largs));
+
+    util::sptr<output::Expression const> compl_call(util::mkptr(
+                        new output::Call(pos, std::move(compl_callee), std::move(compl_fargs))));
+    util::id compl_call_id(compl_call.id());
+    current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(std::move(compl_call))));
+    return util::mkptr(new output::AsyncReference(pos, compl_call_id));
 }

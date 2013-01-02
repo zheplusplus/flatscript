@@ -5,7 +5,7 @@
 #include <test/phony-errors.h>
 
 #include "test-common.h"
-#include "../symbol-table.h"
+#include "../compiling-space.h"
 #include "../function.h"
 #include "../func-body-filter.h"
 #include "../stmt-nodes.h"
@@ -17,29 +17,40 @@ struct SymbolTableTest
     : SemanticTest
 {
     SymbolTableTest()
-        : symbols(nullptr)
+        : _space(nullptr)
     {}
 
     void SetUp()
     {
         SemanticTest::SetUp();
-        symbols.reset(new semantic::SymbolTable);
+        _space = new semantic::CompilingSpace;
+    }
+
+    void TearDown()
+    {
+        delete _space;
+        SemanticTest::TearDown();
     }
 
     util::sref<semantic::SymbolTable> refSym()
     {
-        return *symbols;
+        return _space->sym();
     }
 
-    util::sptr<semantic::SymbolTable> symbols;
+    semantic::CompilingSpace& space()
+    {
+        return *_space;
+    }
+
+    semantic::CompilingSpace* _space;
 };
 
 TEST_F(SymbolTableTest, DefName)
 {
     misc::position pos(1);
-    symbols->defName(pos, "nerv");
-    symbols->defName(pos, "seele");
-    symbols->defName(pos, "lilith");
+    refSym()->defName(pos, "nerv");
+    refSym()->defName(pos, "seele");
+    refSym()->defName(pos, "lilith");
     ASSERT_FALSE(error::hasError());
     semantic::SymbolTable inner_symbols(pos, refSym(), std::vector<std::string>());
     inner_symbols.defName(pos, "nerv");
@@ -52,13 +63,13 @@ TEST_F(SymbolTableTest, DefName)
 TEST_F(SymbolTableTest, RefLocalName)
 {
     misc::position pos(2);
-    symbols->defName(pos, "nerv");
-    symbols->defName(pos, "seele");
-    symbols->defName(pos, "lilith");
+    refSym()->defName(pos, "nerv");
+    refSym()->defName(pos, "seele");
+    refSym()->defName(pos, "lilith");
 
-    symbols->compileRef(pos, "nerv")->str();
-    symbols->compileRef(pos, "seele")->str();
-    symbols->compileRef(pos, "lilith")->str();
+    refSym()->compileRef(pos, "nerv")->str();
+    refSym()->compileRef(pos, "seele")->str();
+    refSym()->compileRef(pos, "lilith")->str();
     ASSERT_FALSE(error::hasError());
 
     semantic::SymbolTable inner_symbols(pos, refSym(), std::vector<std::string>());
@@ -91,11 +102,11 @@ TEST_F(SymbolTableTest, RedefName)
     misc::position err_pos0(500);
     misc::position err_pos1(501);
 
-    symbols->defName(pos, "suzuhara");
-    symbols->defName(pos, "aida");
+    refSym()->defName(pos, "suzuhara");
+    refSym()->defName(pos, "aida");
 
-    symbols->defName(err_pos0, "suzuhara");
-    symbols->defName(err_pos1, "aida");
+    refSym()->defName(err_pos0, "suzuhara");
+    refSym()->defName(err_pos1, "aida");
     ASSERT_TRUE(error::hasError());
     std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
     ASSERT_EQ(2, redefs.size());
@@ -118,7 +129,7 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     misc::position pos(6);
     misc::position ref_pos0(600);
     misc::position ref_pos1(601);
-    symbols->defName(pos, "katsuragi");
+    refSym()->defName(pos, "katsuragi");
 
     semantic::SymbolTable inner_symbols_a(pos, refSym(), std::vector<std::string>());
     inner_symbols_a.compileRef(ref_pos0, "katsuragi");
@@ -134,8 +145,8 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     ASSERT_EQ("katsuragi", invalid_refs[0].name);
 
     clearErr();
-    symbols->defName(pos, "penpen");
-    symbols->compileRef(pos, "penpen");
+    refSym()->defName(pos, "penpen");
+    refSym()->compileRef(pos, "penpen");
 
     semantic::SymbolTable inner_symbols_b(pos, refSym(), std::vector<std::string>());
     inner_symbols_b.compileRef(pos, "katsuragi");
@@ -148,13 +159,12 @@ TEST_F(SymbolTableTest, ImportAlreadyDef)
     misc::position pos(7);
     misc::position ref_pos(700);
 
-    symbols->defName(pos, "akari");
+    refSym()->defName(pos, "akari");
     semantic::Import import(ref_pos, std::vector<std::string>({ "akari", "akaza" }));
-    util::sptr<output::Block> block(new output::Block);
-    import.compile(refSym(), *block);
+    import.compile(space());
 
     ASSERT_TRUE(error::hasError());
-    std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
+    std::vector<NameAlreadyInLocalRec> redefs(getNameAlreadyInLocalRecs());
     ASSERT_EQ(1, redefs.size());
     ASSERT_EQ(pos, redefs[0].prev_def_pos);
     ASSERT_EQ(ref_pos, redefs[0].this_def_pos);
@@ -167,12 +177,11 @@ TEST_F(SymbolTableTest, ImportBeforeDef)
     misc::position ref_pos(800);
 
     semantic::Import import(ref_pos, std::vector<std::string>({ "yuru", "yuri" }));
-    util::sptr<output::Block> block(new output::Block);
-    import.compile(refSym(), *block);
-    symbols->defName(pos, "yuri");
+    import.compile(space());
+    refSym()->defName(pos, "yuri");
 
     ASSERT_TRUE(error::hasError());
-    std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
+    std::vector<NameAlreadyInLocalRec> redefs(getNameAlreadyInLocalRecs());
     ASSERT_EQ(1, redefs.size());
     ASSERT_EQ(ref_pos, redefs[0].prev_def_pos);
     ASSERT_EQ(pos, redefs[0].this_def_pos);
@@ -184,13 +193,12 @@ TEST_F(SymbolTableTest, ImportBeforeRef)
     misc::position pos(9);
     misc::position ref_pos(900);
 
-    symbols->compileRef(ref_pos, "akane");
+    refSym()->compileRef(ref_pos, "akane");
     semantic::Import import(pos, std::vector<std::string>({ "akane" }));
-    util::sptr<output::Block> block(new output::Block);
-    import.compile(refSym(), *block);
+    import.compile(space());
 
     ASSERT_TRUE(error::hasError());
-    std::vector<NameRefBeforeDefRec> invalid_refs = getNameRefBeforeDefRecs();
+    std::vector<NameRefBeforeDefRec> invalid_refs(getNameRefBeforeDefRecs());
     ASSERT_EQ(1, invalid_refs.size());
     ASSERT_EQ(pos, invalid_refs[0].def_pos);
     ASSERT_EQ(1, invalid_refs[0].ref_positions.size());
@@ -203,14 +211,14 @@ TEST_F(SymbolTableTest, CompileRef)
     misc::position pos(10);
     misc::position ref_pos(1000);
 
-    symbols->imported(pos, "akemi");
+    refSym()->imported(pos, "akemi");
     util::sptr<semantic::Expression const> i(new semantic::IntLiteral(pos, 20121115));
-    symbols->defConst(pos, "kaname", *i);
-    symbols->defName(pos, "miki");
+    refSym()->defConst(pos, "kaname", *i);
+    refSym()->defName(pos, "miki");
 
-    symbols->compileRef(ref_pos, "akemi")->str();
-    symbols->compileRef(ref_pos, "kaname")->str();
-    symbols->compileRef(ref_pos, "miki")->str();
+    refSym()->compileRef(ref_pos, "akemi")->str();
+    refSym()->compileRef(ref_pos, "kaname")->str();
+    refSym()->compileRef(ref_pos, "miki")->str();
 
     ASSERT_FALSE(error::hasError());
 

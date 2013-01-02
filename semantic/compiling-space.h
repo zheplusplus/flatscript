@@ -1,12 +1,12 @@
-#ifndef __STEKIN_SEMANTIC_SYMBOL_TABLE_H__
-#define __STEKIN_SEMANTIC_SYMBOL_TABLE_H__
+#ifndef __STEKIN_SEMANTIC_COMPILING_SPACE_H__
+#define __STEKIN_SEMANTIC_COMPILING_SPACE_H__
 
 #include <string>
+#include <vector>
 #include <map>
 #include <list>
-#include <vector>
 
-#include <output/fwd-decl.h>
+#include <output/block.h>
 #include <util/pointer.h>
 #include <misc/pos-type.h>
 
@@ -18,6 +18,10 @@ namespace semantic {
         SymbolTable(misc::position const& pos
                   , util::sref<SymbolTable const> ext_sym
                   , std::vector<std::string> const& params);
+
+        explicit SymbolTable(util::sref<SymbolTable const> ext_sym)
+            : ext_symbols(ext_sym)
+        {}
 
         SymbolTable()
             : ext_symbols(nullptr)
@@ -50,6 +54,46 @@ namespace semantic {
         std::vector<std::string> const _parameters;
     };
 
+    struct CompilingSpace {
+        CompilingSpace()
+            : CompilingSpace(SymbolTable())
+        {}
+
+        explicit CompilingSpace(util::sref<SymbolTable> ext_st)
+            : CompilingSpace(SymbolTable(ext_st))
+        {}
+
+        CompilingSpace(misc::position const& pos
+                     , util::sref<SymbolTable> ext_st
+                     , std::vector<std::string> const& params)
+            : CompilingSpace(SymbolTable(pos, ext_st, params))
+        {}
+    private:
+        explicit CompilingSpace(SymbolTable const& st);
+    public:
+        CompilingSpace(CompilingSpace&& rhs)
+            : _main_block(std::move(rhs._main_block))
+            , _symbol(rhs._symbol)
+            , _current_block(rhs._current_block)
+        {}
+
+        util::sref<SymbolTable> sym();
+        util::sref<output::Block> block() const;
+
+        void setAsyncSpace(misc::position const& pos
+                         , std::vector<std::string> const& params
+                         , util::sref<output::Block> block);
+        void setAsyncSpace(util::sref<output::Block> block);
+
+        util::sptr<output::Block> deliver();
+    private:
+        util::sptr<output::Block> _main_block;
+        SymbolTable _symbol;
+        util::sref<output::Block> _current_block;
+
+        CompilingSpace(CompilingSpace const&) = delete;
+    };
+
 }
 
-#endif /* __STEKIN_SEMANTIC_SYMBOL_TABLE_H__ */
+#endif /* __STEKIN_SEMANTIC_COMPILING_SPACE_H__ */

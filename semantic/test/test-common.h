@@ -13,26 +13,28 @@ namespace test {
 
     struct SemanticData {
         misc::position const pos;
-        int const size;
+        int const int_val;
 
-        SemanticData(misc::position const& ps, int s)
+        SemanticData(misc::position const& ps, int iv)
             : pos(ps)
-            , size(s)
+            , int_val(iv)
         {}
 
         explicit SemanticData(misc::position const ps)
             : pos(ps)
-            , size(-1)
+            , int_val(-1)
         {}
 
         SemanticData()
-            : size(-1)
+            : int_val(-1)
         {}
 
         bool operator==(SemanticData const& rhs) const
         {
-            return pos == rhs.pos && size == rhs.size;
+            return pos == rhs.pos && int_val == rhs.int_val;
         }
+
+        std::string str() const;
     };
 
     struct DataTree
@@ -49,6 +51,7 @@ namespace test {
                            , int size);
         DataTree& operator()(NodeType const& type);
         DataTree& operator()(NodeType const& type, std::string const& str);
+        DataTree& operator()(NodeType const& type, int value);
         DataTree& operator()(misc::position const& pos, NodeType const& type);
         DataTree& operator()(misc::position const& pos, NodeType const& type, int size);
     };
@@ -60,16 +63,19 @@ namespace test {
     extern NodeType const LIST;
     extern NodeType const BINARY_OP;
     extern NodeType const PRE_UNARY_OP;
-    extern NodeType const CALL;
     extern NodeType const REFERENCE;
     extern NodeType const IMPORTED_NAME;
     extern NodeType const PIPE_ELEMENT;
     extern NodeType const PIPE_INDEX;
     extern NodeType const PIPE_KEY;
 
+    extern NodeType const CALL;
+    extern NodeType const ASYNC_REFERENCE;
+
     extern NodeType const LIST_PIPELINE;
-    extern NodeType const PIPE_MAP;
-    extern NodeType const PIPE_FILTER;
+    extern NodeType const ASYNC_PIPE_RESULT;
+    extern NodeType const ASYNC_PIPE_BODY;
+    extern NodeType const ASYNC_PIPELINE;
 
     extern NodeType const LIST_SLICE;
     extern NodeType const LIST_SLICE_DEFAULT;
@@ -79,6 +85,7 @@ namespace test {
     extern NodeType const DICT_ITEM;
 
     extern NodeType const NAME_DEF;
+    extern NodeType const ASYNC_RESULT_DEF;
 
     extern NodeType const STATEMENT;
     extern NodeType const ARITHMETICS;
@@ -104,7 +111,5 @@ namespace test {
     };
 
 }
-
-std::ostream& operator<<(std::ostream& os, test::SemanticData const& data);
 
 #endif /* __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__ */

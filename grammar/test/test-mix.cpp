@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <misc/const.h>
 #include <test/phony-errors.h>
 
 #include "test-common.h"
@@ -10,7 +11,7 @@ using namespace test;
 TEST(Syntax, Mix)
 {
     yyparse();
-    grammar::builder.buildAndClear()->compile(nulSymbols());
+    grammar::builder.buildAndClear()->compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -239,9 +240,9 @@ TEST(Syntax, Mix)
                 (misc::position(33), CALL_END)
 
             (misc::position(35), ARITHMETICS)
-                (misc::position(35), BINARY_OP, "[ |: ]")
+                (misc::position(35), BINARY_OP, int(cons::MAP))
                 (misc::position(35), OPERAND)
-                    (misc::position(35), BINARY_OP, "[ |? ]")
+                    (misc::position(35), BINARY_OP, int(cons::FILTER))
                     (misc::position(35), OPERAND)
                         (misc::position(35), LIST_BEGIN)
                         (misc::position(35), LIST_END)

@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
 #include <semantic/func-body-filter.h>
@@ -15,48 +13,46 @@ bool EmptyExpr::empty() const
     return true;
 }
 
-util::sptr<semantic::Expression const> EmptyExpr::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> EmptyExpr::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::ListSlice::Default(pos));
 }
 
-util::sptr<semantic::Expression const> PreUnaryOp::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> PreUnaryOp::reduceAsExpr(BaseReducingEnv const& env) const
 {
     if ("typeof" == op_img) {
-        return util::mkptr(new semantic::TypeOf(pos, rhs->reduceAsExpr(in_pipe)));
+        return util::mkptr(new semantic::TypeOf(pos, rhs->reduceAsExpr(env)));
     }
-    return util::mkptr(new semantic::PreUnaryOp(pos, op_img, rhs->reduceAsExpr(in_pipe)));
+    return util::mkptr(new semantic::PreUnaryOp(pos, op_img, rhs->reduceAsExpr(env)));
 }
 
-util::sptr<semantic::Expression const> BinaryOp::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> BinaryOp::reduceAsExpr(BaseReducingEnv const& env) const
 {
     if ("." == op_img) {
         return util::mkptr(new semantic::MemberAccess(
-                            pos, lhs->reduceAsExpr(in_pipe), rhs->reduceAsName()));
+                            pos, lhs->reduceAsExpr(env), rhs->reduceAsName()));
     }
     if ("++" == op_img) {
         return util::mkptr(new semantic::ListAppend(
-                            pos, lhs->reduceAsExpr(in_pipe), rhs->reduceAsExpr(in_pipe)));
+                            pos, lhs->reduceAsExpr(env), rhs->reduceAsExpr(env)));
     }
-    if ("|:" == op_img) {
-        return util::mkptr(new semantic::ListPipeMapper(
-                            pos, lhs->reduceAsExpr(in_pipe), rhs->reduceAsExpr(true)));
-    }
-    if ("|?" == op_img) {
-        return util::mkptr(new semantic::ListPipeFilter(
-                            pos, lhs->reduceAsExpr(in_pipe), rhs->reduceAsExpr(true)));
+    if ("|:" == op_img || "|?" == op_img) {
+        return util::mkptr(new semantic::Pipeline(pos
+                                                , lhs->reduceAsExpr(env)
+                                                , rhs->reduceAsExpr(PipeReducingEnv())
+                                                , ':' == op_img[1] ? cons::MAP : cons::FILTER));
     }
     return util::mkptr(new semantic::BinaryOp(
-                            pos, lhs->reduceAsExpr(in_pipe), op_img, rhs->reduceAsExpr(in_pipe)));
+                            pos, lhs->reduceAsExpr(env), op_img, rhs->reduceAsExpr(env)));
 }
 
-util::sptr<semantic::Expression const> BinaryOp::reduceAsLeftValue(bool in_pipe) const
+util::sptr<semantic::Expression const> BinaryOp::reduceAsLeftValue(BaseReducingEnv const& env) const
 {
     if ("." != op_img) {
-        return Expression::reduceAsLeftValue(in_pipe);
+        return Expression::reduceAsLeftValue(env);
     }
-    return util::mkptr(
-            new semantic::MemberAccess(pos, lhs->reduceAsExpr(in_pipe), rhs->reduceAsName()));
+    return util::mkptr(new semantic::MemberAccess(
+                                pos, lhs->reduceAsExpr(env), rhs->reduceAsName()));
 }
 
 bool Identifier::isName() const
@@ -69,119 +65,130 @@ std::string Identifier::reduceAsName() const
     return name;
 }
 
-util::sptr<semantic::Expression const> Identifier::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> Identifier::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::Reference(pos, name));
 }
 
-util::sptr<semantic::Expression const> BoolLiteral::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> BoolLiteral::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::BoolLiteral(pos, value));
 }
 
-util::sptr<semantic::Expression const> IntLiteral::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> IntLiteral::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::IntLiteral(pos, value));
 }
 
-util::sptr<semantic::Expression const> FloatLiteral::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> FloatLiteral::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::FloatLiteral(pos, value));
 }
 
-util::sptr<semantic::Expression const> StringLiteral::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> StringLiteral::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::StringLiteral(pos, value));
 }
 
-static std::vector<util::sptr<semantic::Expression const>> reduceList(
-                        std::vector<util::sptr<Expression const>> const& list, bool in_pipe)
+util::sptr<semantic::Expression const> ListLiteral::reduceAsExpr(BaseReducingEnv const& env) const
 {
-    std::vector<util::sptr<semantic::Expression const>> result;
-    std::for_each(list.begin()
-                , list.end()
-                , [&](util::sptr<Expression const> const& i)
-                  {
-                      result.push_back(i->reduceAsExpr(in_pipe));
-                  });
-    return std::move(result);
+    return util::mkptr(new semantic::ListLiteral(
+                pos, value.map([&](util::sptr<Expression const> const& e, int) {
+                         return e->reduceAsExpr(env);
+                     })));
 }
 
-util::sptr<semantic::Expression const> ListLiteral::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> PipeElement::reduceAsExpr(BaseReducingEnv const& env) const
 {
-    return util::mkptr(new semantic::ListLiteral(pos, reduceList(value, in_pipe)));
-}
-
-util::sptr<semantic::Expression const> PipeElement::reduceAsExpr(bool in_pipe) const
-{
-    if (!in_pipe) {
+    if (!env.inPipe()) {
         error::pipeReferenceNotInListContext(pos);
     }
     return util::mkptr(new semantic::PipeElement(pos));
 }
 
-util::sptr<semantic::Expression const> PipeIndex::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> PipeIndex::reduceAsExpr(BaseReducingEnv const& env) const
 {
-    if (!in_pipe) {
+    if (!env.inPipe()) {
         error::pipeReferenceNotInListContext(pos);
     }
     return util::mkptr(new semantic::PipeIndex(pos));
 }
 
-util::sptr<semantic::Expression const> PipeKey::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> PipeKey::reduceAsExpr(BaseReducingEnv const& env) const
 {
-    if (!in_pipe) {
+    if (!env.inPipe()) {
         error::pipeReferenceNotInListContext(pos);
     }
     return util::mkptr(new semantic::PipeKey(pos));
 }
 
-util::sptr<semantic::Expression const> Call::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> Call::reduceAsExpr(BaseReducingEnv const& env) const
+{
+    ArgReducingEnv args_env(env);
+    util::ptrarr<semantic::Expression const> reduced_args(
+            args.map([&](util::sptr<Expression const> const& e, int index) {
+                return e->reduceAsArg(args_env, index);
+            }));
+    if (args_env.isAsync()) {
+        return util::mkptr(new semantic::AsyncCall(
+                    pos
+                  , callee->reduceAsExpr(env)
+                  , reduced_args.deliverRange(0, args_env.asyncIndex())
+                  , args_env.asyncParams()
+                  , reduced_args.deliverRange(args_env.asyncIndex() + 1, reduced_args.size())));
+    }
+    return util::mkptr(new semantic::Call(pos, callee->reduceAsExpr(env), std::move(reduced_args)));
+}
+
+util::sptr<semantic::Expression const> Lookup::reduceAsExpr(BaseReducingEnv const& env) const
 {
     return util::mkptr(
-            new semantic::Call(pos, callee->reduceAsExpr(in_pipe), reduceList(args, in_pipe)));
+          new semantic::Lookup(pos, collection->reduceAsExpr(env), key->reduceAsExpr(env)));
 }
 
-util::sptr<semantic::Expression const> Lookup::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> Lookup::reduceAsLeftValue(BaseReducingEnv const& env) const
 {
-    return util::mkptr(
-          new semantic::Lookup(pos, collection->reduceAsExpr(in_pipe), key->reduceAsExpr(in_pipe)));
+    return reduceAsExpr(env);
 }
 
-util::sptr<semantic::Expression const> Lookup::reduceAsLeftValue(bool in_pipe) const
-{
-    return reduceAsExpr(in_pipe);
-}
-
-util::sptr<semantic::Expression const> ListSlice::Default::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> ListSlice::Default::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::ListSlice::Default(pos));
 }
 
-util::sptr<semantic::Expression const> ListSlice::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> ListSlice::reduceAsExpr(BaseReducingEnv const& env) const
 {
     return util::mkptr(new semantic::ListSlice(pos
-                                             , list->reduceAsExpr(in_pipe)
-                                             , begin->reduceAsExpr(in_pipe)
-                                             , end->reduceAsExpr(in_pipe)
-                                             , step->reduceAsExpr(in_pipe)));
+                                             , list->reduceAsExpr(env)
+                                             , begin->reduceAsExpr(env)
+                                             , end->reduceAsExpr(env)
+                                             , step->reduceAsExpr(env)));
 }
 
-util::sptr<semantic::Expression const> Dictionary::reduceAsExpr(bool in_pipe) const
+util::sptr<semantic::Expression const> Dictionary::reduceAsExpr(BaseReducingEnv const& env) const
 {
-    std::vector<semantic::Dictionary::ItemType> reduced_items;
-    std::for_each(items.begin()
-                , items.end()
-                , [&](ItemType const& item)
-                  {
-                      reduced_items.push_back(std::make_pair(item.first->reduceAsExpr(in_pipe)
-                                                           , item.second->reduceAsExpr(in_pipe)));
-                  });
-    return util::mkptr(new semantic::Dictionary(pos, std::move(reduced_items)));
+    return util::mkptr(new semantic::Dictionary(pos, items.map(
+              [&](util::ptrkv<Expression const> const& kv, int)
+              {
+                  return util::mkkv(kv.key->reduceAsExpr(env), kv.value->reduceAsExpr(env));
+              })));
 }
 
-util::sptr<semantic::Expression const> Lambda::reduceAsExpr(bool) const
+util::sptr<semantic::Expression const> Lambda::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::Lambda(pos, param_names, body.compile(
                                     util::mkptr(new semantic::FuncBodyFilter(pos, param_names)))));
+}
+
+util::sptr<semantic::Expression const> AsyncPlaceholder::reduceAsExpr(BaseReducingEnv const&) const
+{
+    error::asyncPlaceholderNotArgument(pos);
+    return util::sptr<semantic::Expression const>(nullptr);
+}
+
+util::sptr<semantic::Expression const> AsyncPlaceholder::reduceAsArg(
+                                                ArgReducingEnv& env, int index) const
+{
+    env.setAsync(pos, index, param_names);
+    return util::sptr<semantic::Expression const>(nullptr);
 }

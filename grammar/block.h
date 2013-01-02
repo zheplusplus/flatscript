@@ -2,7 +2,7 @@
 #define __STEKIN_GRAMMAR_BLOCK_H__
 
 #include <semantic/fwd-decl.h>
-#include <util/pointer.h>
+#include <util/arrays.h>
 
 #include "fwd-decl.h"
 
@@ -11,7 +11,7 @@ namespace grammar {
     struct Block {
         util::sptr<semantic::Filter> compile(util::sptr<semantic::Filter> filter) const;
 
-        void addStmt(util::sptr<Statement> stmt);
+        void addStmt(util::sptr<Statement const> stmt);
         void addFunc(util::sptr<Function const> func);
 
         Block() = default;
@@ -23,8 +23,8 @@ namespace grammar {
             , _funcs(std::move(rhs._funcs))
         {}
     private:
-        std::vector<util::sptr<Statement>> _stmts;
-        std::vector<util::sptr<Function const>> _funcs;
+        util::ptrarr<Statement const> _stmts;
+        util::ptrarr<Function const> _funcs;
     };
 
 }

@@ -69,10 +69,12 @@ TEST(Pointer, SPtr)
         {
             --count;
         }
+
+        void nop() {}
     };
 
     struct counter_inherit
-        : public counter
+        : counter
     {};
 
     {
@@ -89,9 +91,14 @@ TEST(Pointer, SPtr)
         ASSERT_TRUE(count0.nul());
         ASSERT_TRUE((*count0).nul());
 
-        util::sptr<counter> count2(new counter_inherit);
+        util::sptr<counter_inherit> count2(new counter_inherit);
         count1 = std::move(count2);
         ASSERT_EQ(1, count);
+
+        util::sptr<counter_inherit> count3(new counter_inherit);
+        ASSERT_EQ(2, count);
+        util::sptr<counter> count4(std::move(count3));
+        count4->nop();
     }
     ASSERT_EQ(0, count);
 }

@@ -17,7 +17,7 @@ namespace semantic {
             , expr(std::move(e))
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
 
         util::sptr<Expression const> const expr;
     };
@@ -32,7 +32,7 @@ namespace semantic {
             , alternative(std::move(a))
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
 
         util::sptr<Expression const> const predicate;
         Block const consequence;
@@ -47,7 +47,7 @@ namespace semantic {
             , ret_val(std::move(retval))
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
 
         util::sptr<Expression const> const ret_val;
     };
@@ -59,7 +59,7 @@ namespace semantic {
             : Statement(pos)
         {}
 
-        void compile(util::sref<SymbolTable>, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
     };
 
     struct NameDef
@@ -71,7 +71,7 @@ namespace semantic {
             , init(std::move(i))
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
 
         std::string const name;
         util::sptr<Expression const> const init;
@@ -85,7 +85,7 @@ namespace semantic {
             , names(n)
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block>) const;
+        void compile(CompilingSpace& space) const;
 
         std::vector<std::string> const names;
     };
@@ -101,7 +101,7 @@ namespace semantic {
                 , value(std::move(v))
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
 
         std::vector<std::string> const export_point;
         util::sptr<Expression const> const value;
@@ -118,7 +118,7 @@ namespace semantic {
             , value(std::move(v))
         {}
 
-        void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const;
+        void compile(CompilingSpace& space) const;
 
         util::sptr<Expression const> const set_point;
         util::sptr<Expression const> const value;

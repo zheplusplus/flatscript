@@ -26,7 +26,7 @@ TEST_F(ClauseTest, FuncClause)
     ASSERT_TRUE(receiver.stmt_or_nul_if_not_set.nul());
     ASSERT_TRUE(receiver.func_or_nul_if_not_set.not_nul());
     receiver.compile();
-    receiver.filter->compile(nulSymbols());
+    receiver.filter->compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -75,7 +75,7 @@ TEST_F(ClauseTest, FuncAccNested)
     ASSERT_TRUE(receiver.stmt_or_nul_if_not_set.nul());
     ASSERT_TRUE(receiver.func_or_nul_if_not_set.not_nul());
     receiver.compile();
-    receiver.filter->compile(nulSymbols());
+    receiver.filter->compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)

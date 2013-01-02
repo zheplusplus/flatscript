@@ -9,8 +9,8 @@
 
 namespace test {
 
-    template <typename _NodeData> struct NothingNodeTempl;
-    template <typename _NodeData> struct StringNodeTempl;
+    template <typename NodeData> struct NothingNodeTempl;
+    template <typename NodeData> struct StringNodeTempl;
 
     struct NodeType {
         std::string const type_img;
@@ -25,10 +25,10 @@ namespace test {
         }
     };
 
-    template <typename _NodeData>
+    template <typename NodeData>
     struct DataNodeTempl {
         NodeType const type_img;
-        _NodeData const sub_data;
+        NodeData const sub_data;
     public:
         virtual ~DataNodeTempl() {}
 
@@ -39,19 +39,19 @@ namespace test {
 
         virtual std::ostream& print(std::ostream& os) const = 0;
 
-        virtual bool cmp(DataNodeTempl<_NodeData> const& rhs) const = 0;
+        virtual bool cmp(DataNodeTempl<NodeData> const& rhs) const = 0;
 
-        virtual bool cmp_no_data(NothingNodeTempl<_NodeData> const&) const
+        virtual bool cmp_no_data(NothingNodeTempl<NodeData> const&) const
         {
             return false;
         }
 
-        virtual bool cmp_str_data(StringNodeTempl<_NodeData> const&) const
+        virtual bool cmp_str_data(StringNodeTempl<NodeData> const&) const
         {
             return false;
         }
     protected:
-        DataNodeTempl(NodeType const& timg, _NodeData const& sdata)
+        DataNodeTempl(NodeType const& timg, NodeData const& sdata)
             : type_img(timg)
             , sub_data(sdata)
         {}
@@ -110,15 +110,15 @@ namespace test {
 
 }
 
-template <typename _NodeData>
-std::ostream& operator<<(std::ostream& os, util::sref<test::DataNodeTempl<_NodeData> const> node)
+template <typename NodeData>
+std::ostream& operator<<(std::ostream& os, util::sref<test::DataNodeTempl<NodeData> const> node)
 {
     return node->print(os <<  "node type: " << node->type_img.type_img) << std::endl
-               << ":: sub data: " << node->sub_data;
+               << ":: sub data: " << node->sub_data.str();
 }
 
-template <typename _NodeData>
-std::ostream& operator<<(std::ostream& os, test::DataNodeTempl<_NodeData> const& node)
+template <typename NodeData>
+std::ostream& operator<<(std::ostream& os, test::DataNodeTempl<NodeData> const& node)
 {
     return operator<<(os, util::mkref(node));
 }

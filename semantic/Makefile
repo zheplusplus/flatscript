@@ -13,7 +13,7 @@ semantic:$(WORKDIR)/const-fold.h $(WORKDIR)/const-fold.cpp \
          func-body-filter.d \
          global-filter.d \
          block.d \
-         symbol-table.d \
+         compiling-space.d \
          function.d
 
 $(WORKDIR)/const-fold.%:$(CODEGEN)/const-fold.py

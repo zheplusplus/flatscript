@@ -17,7 +17,7 @@ namespace semantic {
     struct Statement {
         misc::position const pos;
 
-        virtual void compile(util::sref<SymbolTable> st, util::sref<output::Block> block) const = 0;
+        virtual void compile(CompilingSpace& space) const = 0;
 
         virtual ~Statement() {}
     protected:
@@ -31,14 +31,16 @@ namespace semantic {
     struct Expression {
         misc::position const pos;
 
-        virtual util::sptr<output::Expression const> compile(util::sref<SymbolTable> st) const = 0;
-        virtual bool isLiteral(util::sref<SymbolTable const> st) const;
-        virtual std::string literalType(util::sref<SymbolTable const> st) const;
+        virtual util::sptr<output::Expression const> compile(CompilingSpace& space) const = 0;
+        virtual bool isLiteral(util::sref<SymbolTable const>) const { return false; }
+        virtual std::string literalType(util::sref<SymbolTable const>) const { return ""; }
 
         virtual bool boolValue(util::sref<SymbolTable const> st) const;
-        virtual mpz_class intValue(util::sref<SymbolTable const> st) const;
-        virtual mpf_class floatValue(util::sref<SymbolTable const> st) const;
-        virtual std::string stringValue(util::sref<SymbolTable const> st) const;
+        virtual mpz_class intValue(util::sref<SymbolTable const>) const { return 0; }
+        virtual mpf_class floatValue(util::sref<SymbolTable const>) const { return 0; }
+        virtual std::string stringValue(util::sref<SymbolTable const>) const { return "";}
+
+        virtual bool isAsync() const { return false; }
 
         virtual ~Expression() {}
 

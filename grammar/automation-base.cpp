@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include <report/errors.h>
 
 #include "node-base.h"
@@ -21,6 +19,12 @@ void AutomationStack::push(util::sptr<AutomationBase> automation)
     _stack.push_back(std::move(automation));
     top()->activated(*this);
     top()->resumed(*this);
+}
+
+void AutomationStack::replace(util::sptr<AutomationBase> automation)
+{
+    _stack.pop_back();
+    push(std::move(automation));
 }
 
 util::sref<AutomationBase> AutomationStack::top() const

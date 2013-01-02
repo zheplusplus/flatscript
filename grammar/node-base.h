@@ -5,6 +5,8 @@
 #include <util/pointer.h>
 #include <misc/pos-type.h>
 
+#include "reducing-env.h"
+
 namespace grammar {
 
     struct Statement {
@@ -29,8 +31,12 @@ namespace grammar {
         virtual bool empty() const;
         virtual bool isName() const;
         virtual std::string reduceAsName() const;
-        virtual util::sptr<semantic::Expression const> reduceAsExpr(bool in_pipe) const = 0;
-        virtual util::sptr<semantic::Expression const> reduceAsLeftValue(bool in_pipe) const;
+        virtual util::sptr<semantic::Expression const> reduceAsExpr(
+                                                    BaseReducingEnv const& env) const = 0;
+        virtual util::sptr<semantic::Expression const> reduceAsLeftValue(
+                                                    BaseReducingEnv const& env) const;
+        virtual util::sptr<semantic::Expression const> reduceAsArg(
+                                                    ArgReducingEnv& env, int index) const;
 
         explicit Expression(misc::position const& ps)
             : pos(ps)

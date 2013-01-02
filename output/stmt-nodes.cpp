@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include <util/string.h>
 
 #include "stmt-nodes.h"
@@ -22,7 +20,13 @@ void Arithmetics::write(std::ostream& os) const
 
 void NameDef::write(std::ostream& os) const
 {
-    os << "const " << formName(name) << "=" << init->str() << ";" << std::endl;
+    os << "var " << formName(name) << "=" << init->str() << ";" << std::endl;
+}
+
+void AsyncCallResultDef::write(std::ostream& os) const
+{
+    os << "var " << formAsyncRef(async_result.id()) << "=" << async_result->str() << ";"
+       << std::endl;
 }
 
 void Return::write(std::ostream& os) const

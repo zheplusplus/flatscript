@@ -1,9 +1,5 @@
 WORKDIR=.
 
-ifndef PYTHON
-	PYTHON=python2
-endif
-
 ifndef INSTALL_DIR
 	INSTALL_DIR=/usr/bin
 endif
@@ -11,10 +7,10 @@ endif
 include misc/mf-template.mk
 
 all:code-gen stekin.d env.d lib
-	make -f report/Makefile MODE=$(MODE)
-	make -f grammar/Makefile MODE=$(MODE)
-	make -f semantic/Makefile MODE=$(MODE)
-	make -f output/Makefile MODE=$(MODE)
+	make -f report/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f grammar/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f semantic/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f output/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	$(LINK) *.o \
 	        report/*.o \
 	        grammar/*.o \
@@ -36,18 +32,18 @@ code-gen:
 
 lib:
 	mkdir -p libs
-	make -f util/Makefile MODE=$(MODE)
-	make -f misc/Makefile MODE=$(MODE)
+	make -f util/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f misc/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 
 runtest:all test-lib
-	make -f util/test/Makefile MODE=$(MODE)
-	make -f grammar/test/Makefile MODE=$(MODE)
-	make -f semantic/test/Makefile MODE=$(MODE)
+	make -f util/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f grammar/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f semantic/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	bash test/sample-test.sh -cm
 
 test-lib:
 	mkdir -p libs
-	make -f test/Makefile MODE=$(MODE)
+	make -f test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 
 clean:
 	make -f util/Makefile clean

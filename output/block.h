@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <util/pointer.h>
+#include <util/arrays.h>
 
 #include "node-base.h"
 #include "function.h"
@@ -19,9 +19,10 @@ namespace output {
         void write(std::ostream& os) const;
         void addStmt(util::sptr<Statement const> stmt);
         void addFunc(util::sptr<Function const> func);
+        void append(util::sptr<Block> b);
     private:
-        std::vector<util::sptr<Statement const>> _stmts;
-        std::vector<util::sptr<Function const>> _funcs;
+        util::ptrarr<Statement const> _stmts;
+        util::ptrarr<Function const> _funcs;
     };
 
 }

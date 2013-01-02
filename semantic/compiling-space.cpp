@@ -3,10 +3,8 @@
 #include <output/expr-nodes.h>
 #include <report/errors.h>
 
-#include "symbol-table.h"
-#include "function.h"
-#include "expr-nodes.h"
-#include "global-filter.h"
+#include "compiling-space.h"
+#include "const-fold.h"
 
 using namespace semantic;
 
@@ -92,7 +90,7 @@ util::sptr<output::Expression const> SymbolTable::compileRef(
     reference(pos, name);
     util::sref<Expression const> literal(literalOrNul(name));
     if (literal.not_nul()) {
-        return literal->compile(util::mkref(*this));
+        return compileLiteral(literal, util::mkref(*this));
     }
     if (isImported(name)) {
         return util::mkptr(new output::ImportedName(pos, name));
@@ -140,4 +138,43 @@ void SymbolTable::_checkDefinition(misc::position const& pos, std::string const&
             ext_symbols->_checkDefinition(pos, name);
         }
     }
+}
+
+CompilingSpace::CompilingSpace(SymbolTable const& st)
+    : _main_block(new output::Block)
+    , _symbol(st)
+    , _current_block(*_main_block)
+{}
+
+util::sref<SymbolTable> CompilingSpace::sym()
+{
+    return util::mkref(_symbol);
+}
+
+util::sref<output::Block> CompilingSpace::block() const
+{
+    return _current_block;
+}
+
+void CompilingSpace::setAsyncSpace(misc::position const& pos
+                                 , std::vector<std::string> const& params
+                                 , util::sref<output::Block> block)
+{
+    std::for_each(params.begin()
+                , params.end()
+                , [&](std::string const& param)
+                  {
+                      _symbol.defName(pos, param);
+                  });
+    setAsyncSpace(block);
+}
+
+void CompilingSpace::setAsyncSpace(util::sref<output::Block> block)
+{
+    _current_block = block;
+}
+
+util::sptr<output::Block> CompilingSpace::deliver()
+{
+    return std::move(_main_block);
 }

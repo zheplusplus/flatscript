@@ -8,7 +8,7 @@ namespace semantic {
     struct GlobalFilter
         : FuncBodyFilter
     {
-        util::sptr<output::Statement const> compile(util::sref<SymbolTable> st) const;
+        util::sptr<output::Statement const> compile(CompilingSpace space) const;
     };
 
 }

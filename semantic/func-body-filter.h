@@ -2,7 +2,7 @@
 #define __STEKIN_SEMANTIC_FUNCTION_BODY_FILTER_H__
 
 #include "filter.h"
-#include "symbol-table.h"
+#include "compiling-space.h"
 
 namespace semantic {
 
