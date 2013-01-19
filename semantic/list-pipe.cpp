@@ -2,38 +2,60 @@
 #include <output/stmt-nodes.h>
 
 #include "compiling-space.h"
+#include "function.h"
 #include "list-pipe.h"
+#include "stmt-nodes.h"
+#include "expr-nodes.h"
 
 using namespace semantic;
 
-util::sptr<output::Expression const> Pipeline::compile(CompilingSpace& space) const
+util::sptr<output::Expression const> Pipeline::compile(BaseCompilingSpace& space) const
 {
-    return section->isAsync() ? _compileAsync(space) : _compileSync(space);
+    return section.isAsync() ? _compileAsync(space) : _compileSync(space);
 }
 
-util::sptr<output::Expression const> Pipeline::_compileAsync(CompilingSpace& space) const
+bool Pipeline::isAsync() const
+{
+    return list->isAsync() || section.isAsync();
+}
+
+util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace& space) const
 {
     util::sref<output::Block> current_flow(space.block());
     util::sptr<output::Expression const> compl_list(list->compile(space));
-
-    util::sptr<output::Block> recursion_flow(new output::Block);
-    space.setAsyncSpace(*recursion_flow);
-    util::sptr<output::Expression const> compl_sec(section->compile(space));
-    space.block()->addStmt(util::mkptr(new output::AsyncPipeBody(std::move(compl_sec), pipe_type)));
 
     util::sptr<output::Block> succession_flow(new output::Block);
     space.setAsyncSpace(*succession_flow);
 
     current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(util::mkptr(
-                                            new output::AsyncPipe(pos
-                                                                , std::move(compl_list)
-                                                                , std::move(recursion_flow)
-                                                                , std::move(succession_flow))))));
+                                new output::AsyncPipeline(pos
+                                                        , std::move(compl_list)
+                                                        , section.compile(PipelineSpace(space))
+                                                        , std::move(succession_flow))))));
     return util::mkptr(new output::AsyncPipeResult(pos));
 }
 
-util::sptr<output::Expression const> Pipeline::_compileSync(CompilingSpace& space) const
+util::sptr<output::Expression const> Pipeline::_compileSync(BaseCompilingSpace& space) const
 {
-    return util::mkptr(new output::Pipeline(
-                pos, list->compile(space), section->compile(space), pipe_type));
+    util::sptr<output::Expression const> clist(list->compile(space));
+    return util::mkptr(new output::SyncPipeline(
+                        pos, std::move(clist), section.compile(PipelineSpace(space))));
+}
+
+util::sptr<Expression const> Pipeline::createMapper(
+      misc::position const& pos, util::sptr<Expression const> ls, util::sptr<Expression const> sec)
+{
+    Block ret;
+    ret.addStmt(util::mkptr(new Return(sec->pos, std::move(sec))));
+    return util::mkptr(new Pipeline(pos, std::move(ls), std::move(ret)));
+}
+
+util::sptr<Expression const> Pipeline::createFilter(
+      misc::position const& pos, util::sptr<Expression const> ls, util::sptr<Expression const> sec)
+{
+    Block ret;
+    ret.addStmt(util::mkptr(new Return(sec->pos, util::mkptr(new PipeElement(sec->pos)))));
+    Block filter;
+    filter.addStmt(util::mkptr(new Branch(sec->pos, std::move(sec), std::move(ret), Block())));
+    return util::mkptr(new Pipeline(pos, std::move(ls), std::move(filter)));
 }

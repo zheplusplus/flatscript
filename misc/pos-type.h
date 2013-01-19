@@ -7,10 +7,10 @@
 namespace misc {
 
     struct position {
-        int const line;
+        int line;
 
-        explicit position(int l)
-            : line(l)
+        explicit position(int ln)
+            : line(ln)
         {}
 
         position()
@@ -20,6 +20,8 @@ namespace misc {
         std::string str() const;
 
         bool operator==(position const& rhs) const;
+
+        position& operator=(position const& rhs);
     };
 
 }

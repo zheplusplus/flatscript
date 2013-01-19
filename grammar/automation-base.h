@@ -14,6 +14,9 @@ namespace grammar {
     struct ClauseStackWrapper;
 
     struct Token {
+        Token(Token const&) = delete;
+        virtual ~Token() {}
+
         misc::position const pos;
         std::string const image;
 
@@ -23,8 +26,6 @@ namespace grammar {
         {}
 
         virtual void act(AutomationStack& stack) = 0;
-
-        Token(Token const&) = delete;
     };
 
     struct AutomationBase {
@@ -34,9 +35,11 @@ namespace grammar {
         virtual void resumed(AutomationStack&) {};
 
         virtual void pushOp(AutomationStack& stack, Token const& token);
+        virtual void pushPipeSep(AutomationStack& stack, Token const& token);
         virtual void pushFactor(AutomationStack& stack
                               , util::sptr<Expression const> factor
                               , std::string const& image);
+        virtual void pushThis(AutomationStack& stack, misc::position const& pos);
         virtual void pushOpenParen(AutomationStack& stack, misc::position const& pos);
         virtual void pushOpenBracket(AutomationStack& stack, misc::position const& pos);
         virtual void pushOpenBrace(AutomationStack& stack, misc::position const& pos);

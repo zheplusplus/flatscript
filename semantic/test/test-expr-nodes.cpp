@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <util/string.h>
 #include <output/node-base.h>
 #include <test/phony-errors.h>
 #include <test/common.h>
@@ -321,4 +322,82 @@ TEST_F(ExprNodesTest, TypeOf)
             (pos, REFERENCE, "v1701")
         (pos, BOOLEAN, "true")
     ;
+}
+
+TEST_F(ExprNodesTest, FoldBitwiseShift)
+{
+    misc::position pos(10);
+    semantic::CompilingSpace space;
+
+    semantic::BinaryOp bin_a(pos
+                           , util::mkptr(new semantic::IntLiteral(pos, "-1"))
+                           , ">>"
+                           , util::mkptr(new semantic::IntLiteral(pos, "4")));
+    EXPECT_TRUE(bin_a.isLiteral(space.sym()));
+    bin_a.compile(space)->str();
+
+    semantic::BinaryOp bin_b(pos
+                           , util::mkptr(new semantic::IntLiteral(pos, "-1"))
+                           , "<<"
+                           , util::mkptr(new semantic::IntLiteral(pos, "4")));
+    EXPECT_TRUE(bin_b.isLiteral(space.sym()));
+    bin_b.compile(space)->str();
+
+    semantic::BinaryOp bin_c(pos
+                           , util::mkptr(new semantic::IntLiteral(pos, "4"))
+                           , "<<"
+                           , util::mkptr(new semantic::IntLiteral(pos, "2")));
+    EXPECT_TRUE(bin_c.isLiteral(space.sym()));
+    bin_c.compile(space)->str();
+
+    semantic::BinaryOp bin_d(pos
+                           , util::mkptr(new semantic::IntLiteral(pos, "-1"))
+                           , ">>>"
+                           , util::mkptr(new semantic::IntLiteral(pos, "4")));
+    EXPECT_TRUE(bin_d.isLiteral(space.sym()));
+    bin_d.compile(space)->str();
+
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (pos, INTEGER, "-1")
+        (pos, INTEGER, "-16")
+        (pos, INTEGER, "16")
+        (pos, INTEGER, util::str(long(0xFFFFFFFFUL >> 4)))
+    ;
+}
+
+TEST_F(ExprNodesTest, FoldUnsupported)
+{
+    misc::position pos(11);
+    misc::position pos_a(1100);
+    misc::position pos_b(1101);
+    semantic::CompilingSpace space;
+
+    semantic::BinaryOp bin_a(pos_a
+                           , util::mkptr(new semantic::FloatLiteral(pos, "2013.0119"))
+                           , "<<"
+                           , util::mkptr(new semantic::IntLiteral(pos, "0")));
+    EXPECT_TRUE(bin_a.isLiteral(space.sym()));
+    bin_a.compile(space);
+
+    semantic::BinaryOp bin_b(pos_b
+                           , util::mkptr(new semantic::IntLiteral(pos, "18"))
+                           , ">>"
+                           , util::mkptr(new semantic::FloatLiteral(pos, ".14")));
+    EXPECT_TRUE(bin_b.isLiteral(space.sym()));
+    bin_b.compile(space);
+
+    EXPECT_TRUE(error::hasError());
+
+    std::vector<BinaryOpNotAvaiRec> recs(getBinaryOpNotAvaiRecs());
+    ASSERT_EQ(2, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+    ASSERT_EQ("<<", recs[0].op_img);
+    ASSERT_EQ("float", recs[0].lhst_name);
+    ASSERT_EQ("int", recs[0].rhst_name);
+    ASSERT_EQ(pos_b, recs[1].pos);
+    ASSERT_EQ(">>", recs[1].op_img);
+    ASSERT_EQ("int", recs[1].lhst_name);
+    ASSERT_EQ("float", recs[1].rhst_name);
 }

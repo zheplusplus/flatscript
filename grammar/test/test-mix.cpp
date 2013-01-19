@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <misc/const.h>
 #include <test/phony-errors.h>
 
 #include "test-common.h"
@@ -11,7 +10,7 @@ using namespace test;
 TEST(Syntax, Mix)
 {
     yyparse();
-    grammar::builder.buildAndClear()->compile(semantic::CompilingSpace());
+    grammar::builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -240,9 +239,9 @@ TEST(Syntax, Mix)
                 (misc::position(33), CALL_END)
 
             (misc::position(35), ARITHMETICS)
-                (misc::position(35), BINARY_OP, int(cons::MAP))
+                (misc::position(35), BINARY_OP, "[ |: ]")
                 (misc::position(35), OPERAND)
-                    (misc::position(35), BINARY_OP, int(cons::FILTER))
+                    (misc::position(35), BINARY_OP, "[ |? ]")
                     (misc::position(35), OPERAND)
                         (misc::position(35), LIST_BEGIN)
                         (misc::position(35), LIST_END)
@@ -253,11 +252,13 @@ TEST(Syntax, Mix)
                         (misc::position(35), OPERAND)
                             (misc::position(35), INTEGER, "0")
                 (misc::position(35), OPERAND)
-                    (misc::position(35), BINARY_OP, "*")
+                    (misc::position(35), PRE_UNARY_OP, "!")
                     (misc::position(35), OPERAND)
-                        (misc::position(35), PIPE_ELEMENT)
-                    (misc::position(35), OPERAND)
-                        (misc::position(35), PIPE_KEY)
+                        (misc::position(35), BINARY_OP, "*")
+                        (misc::position(35), OPERAND)
+                            (misc::position(35), PIPE_ELEMENT)
+                        (misc::position(35), OPERAND)
+                            (misc::position(35), PIPE_KEY)
 
             (misc::position(37), NAME_DEF, "s")
                 (misc::position(37), BINARY_OP, "+")
@@ -346,6 +347,47 @@ TEST(Syntax, Mix)
                     (misc::position(65), OPERAND)
                         (misc::position(65), STRING, " is the type of 0.")
                 (misc::position(65), CALL_END)
+
+            (misc::position(67), NAME_DEF, "bitwise")
+                (misc::position(67), BINARY_OP, "+")
+                (misc::position(67), OPERAND)
+                    (misc::position(67), IDENTIFIER, "x")
+                (misc::position(67), OPERAND)
+                    (misc::position(67), BINARY_OP, "*")
+                    (misc::position(67), OPERAND)
+                        (misc::position(67), PRE_UNARY_OP, "~")
+                        (misc::position(67), OPERAND)
+                            (misc::position(67), PRE_UNARY_OP, "-")
+                            (misc::position(67), OPERAND)
+                                (misc::position(67), IDENTIFIER, "y")
+                    (misc::position(67), OPERAND)
+                        (misc::position(67), IDENTIFIER, "z")
+
+            (misc::position(68), NAME_DEF, "bitwiseX")
+                (misc::position(68), BINARY_OP, "<")
+                (misc::position(68), OPERAND)
+                    (misc::position(68), IDENTIFIER, "x")
+                (misc::position(68), OPERAND)
+                    (misc::position(68), BINARY_OP, "<<")
+                    (misc::position(68), OPERAND)
+                        (misc::position(68), PRE_UNARY_OP, "~")
+                        (misc::position(68), OPERAND)
+                            (misc::position(68), IDENTIFIER, "y")
+                    (misc::position(68), OPERAND)
+                        (misc::position(68), IDENTIFIER, "z")
+
+            (misc::position(69), NAME_DEF, "bitwiseY")
+                (misc::position(69), BINARY_OP, "&")
+                (misc::position(69), OPERAND)
+                    (misc::position(69), BINARY_OP, ">>>")
+                    (misc::position(69), OPERAND)
+                        (misc::position(69), IDENTIFIER, "x")
+                    (misc::position(69), OPERAND)
+                        (misc::position(69), PRE_UNARY_OP, "~")
+                        (misc::position(69), OPERAND)
+                            (misc::position(69), IDENTIFIER, "y")
+                (misc::position(69), OPERAND)
+                    (misc::position(69), IDENTIFIER, "z")
         (BLOCK_END)
     ;
     DataTree::verify();

@@ -17,10 +17,11 @@ namespace semantic {
     struct Statement {
         misc::position const pos;
 
-        virtual void compile(CompilingSpace& space) const = 0;
+        virtual void compile(BaseCompilingSpace& space) const = 0;
+        virtual bool isAsync() const { return false; }
 
         virtual ~Statement() {}
-    protected:
+
         explicit Statement(misc::position const& ps)
             : pos(ps)
         {}
@@ -31,7 +32,7 @@ namespace semantic {
     struct Expression {
         misc::position const pos;
 
-        virtual util::sptr<output::Expression const> compile(CompilingSpace& space) const = 0;
+        virtual util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const = 0;
         virtual bool isLiteral(util::sref<SymbolTable const>) const { return false; }
         virtual std::string literalType(util::sref<SymbolTable const>) const { return ""; }
 

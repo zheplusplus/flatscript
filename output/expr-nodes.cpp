@@ -4,6 +4,7 @@
 
 #include <util/string.h>
 #include <util/str-comprehension.h>
+#include <report/errors.h>
 
 #include "expr-nodes.h"
 #include "name-mangler.h"
@@ -11,6 +12,16 @@
 #include "block.h"
 
 using namespace output;
+
+static bool isReserved(std::string const& name)
+{
+    static std::set<std::string> const RESERVED_WORDS({
+        "break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else",
+        "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this",
+        "throw", "try", "typeof", "var", "void", "while", "with",
+    });
+    return RESERVED_WORDS.find(name) != RESERVED_WORDS.end();
+}
 
 std::string PropertyNameExpr::strAsProp() const
 {
@@ -78,6 +89,9 @@ std::string Reference::str() const
 
 std::string ImportedName::str() const
 {
+    if (isReserved(name)) {
+        error::importReservedWord(pos, name);
+    }
     return name;
 }
 
@@ -88,15 +102,10 @@ std::string Call::str() const
 
 std::string MemberAccess::str() const
 {
-    static std::set<std::string> const RESERVED_WORDS({
-        "break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else",
-        "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this",
-        "throw", "try", "typeof", "var", "void", "while", "with",
-    });
-    if (RESERVED_WORDS.find(member) == RESERVED_WORDS.end()) {
-        return referee->str() + "." + member;
+    if (isReserved(member)) {
+        return referee->str() + "[\"" + member + "\"]";
     }
-    return referee->str() + "[\"" + member + "\"]";
+    return referee->str() + "." + member;
 }
 
 std::string Lookup::str() const
@@ -216,4 +225,9 @@ std::string Lambda::str() const
 std::string AsyncReference::str() const
 {
     return formAsyncRef(ref_id);
+}
+
+std::string This::str() const
+{
+    return "$this";
 }

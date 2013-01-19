@@ -9,6 +9,11 @@ void OpToken::act(AutomationStack& stack)
     stack.top()->pushOp(stack, *this);
 }
 
+void PipeSepToken::act(AutomationStack& stack)
+{
+    stack.top()->pushPipeSep(stack, *this);
+}
+
 void FactorToken::act(AutomationStack& stack)
 {
     stack.top()->pushFactor(stack, std::move(factor), image);
@@ -47,4 +52,9 @@ void PropertySeparatorToken::act(AutomationStack& stack)
 void CommaToken::act(AutomationStack& stack)
 {
     stack.top()->pushComma(stack, pos);
+}
+
+void ThisToken::act(AutomationStack& stack)
+{
+    stack.top()->pushThis(stack, pos);
 }

@@ -19,7 +19,7 @@ TEST_F(ClauseBuilderTest, Empty)
     misc::position pos(1);
 
     grammar::ClauseBuilder builder;
-    builder.buildAndClear()->compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -47,7 +47,7 @@ TEST_F(ClauseBuilderTest, IfBranch)
                         pos, util::mkptr(new grammar::Identifier(pos, "mayoi")), "mayoi")))
                                   ->deliver());
 
-    builder.buildAndClear()->compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -144,7 +144,7 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
                                 new grammar::Identifier(item_pos1, "widowmaker")), "widowmaker")))
                               ->deliver());
 
-    builder0.buildAndClear()->compile(semantic::CompilingSpace());
+    builder0.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -161,7 +161,7 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
         (item_pos0, BOOLEAN, "true")
         (CONSEQUENCE)
             (BLOCK_BEGIN)
-            (item_pos1, NAME_DEF, "wind_force" + NAME_DEF_FILTERED)
+            (item_pos1, NAME_DEF, "wind_force")
                 (item_pos1, INTEGER, "13571")
 
             (item_pos2, BRANCH_ALTER_ONLY)
@@ -204,7 +204,7 @@ TEST_F(ClauseBuilderTest, PushExprSequence)
                             pos, util::mkptr(new grammar::Identifier(pos, "kirisiki")), "kirisiki"))
           ->deliver());
 
-    builder.buildAndClear()->compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

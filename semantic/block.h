@@ -9,7 +9,6 @@
 
 #include "fwd-decl.h"
 #include "node-base.h"
-#include "function.h"
 
 namespace semantic {
 
@@ -23,7 +22,8 @@ namespace semantic {
             , _funcs(std::move(rhs._funcs))
         {}
 
-        void compile(CompilingSpace& space) const;
+        util::sptr<output::Statement const> compile(BaseCompilingSpace&& space) const;
+        bool isAsync() const;
 
         void addStmt(util::sptr<Statement const> stmt);
         void defFunc(misc::position const& pos

@@ -44,7 +44,7 @@ namespace grammar {
                     , std::vector<util::sptr<Token>> const& sequence);
         void addElse(int indent_len, misc::position const& pos);
 
-        util::sptr<semantic::Filter> buildAndClear();
+        semantic::Block buildAndClear();
     private:
         bool _shrinkTo(int level, misc::position const& pos);
         bool _prepareLevel(int level, misc::position const& pos, std::string const& token);

@@ -18,15 +18,21 @@ void Block::addFunc(util::sptr<Function const> Function)
     _funcs.append(std::move(Function));
 }
 
-util::sptr<semantic::Filter> Block::compile(util::sptr<semantic::Filter> filter) const
+util::sptr<semantic::Filter> Block::compile(BaseReducingEnv const& env) const
 {
-    _funcs.iter([&](util::sptr<Function const> const& def, int)
+    util::sptr<semantic::Filter> filter(new semantic::Filter);
+    _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
-                    def->compile(*filter);
+                    func->compile(*filter);
                 });
     _stmts.iter([&](util::sptr<Statement const> const& stmt, int)
                 {
-                    stmt->compile(*filter);
+                    stmt->compile(*filter, env);
                 });
     return std::move(filter);
+}
+
+util::sptr<semantic::Filter> Block::compile() const
+{
+    return compile(ExprReducingEnv());
 }

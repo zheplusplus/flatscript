@@ -26,3 +26,23 @@ func getKey(k)
     return (): k
 kls: ls |: getKey($k)
 console.log(kls |: $())
+
+console.log(ls |:
+    sqr: $ * $
+    if sqr % 3 = 0
+        return sqr
+    return -sqr
+)
+
+console.log(ls |:
+    sqr: $ * $
+    if sqr % 3 = 0
+        return sqr
+)
+
+console.log(ls |:
+    sqr: $ * $
+    # oh lost return
+)
+
+console.log('End')

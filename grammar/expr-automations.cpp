@@ -1,74 +1,176 @@
 #include <map>
 #include <algorithm>
 
+#include <semantic/function.h>
 #include <util/arrays.h>
 #include <report/errors.h>
 
 #include "expr-automations.h"
 #include "stmt-nodes.h"
+#include "expr-nodes.h"
 #include "function.h"
 
 using namespace grammar;
 
+void PipelineAutomation::activated(AutomationStack& stack)
+{
+    stack.push(util::mkptr(new ArithAutomation));
+}
+
+void PipelineAutomation::pushPipeSep(AutomationStack& stack, Token const& token)
+{
+    _tryReducePipe();
+    _cache_op_pos = token.pos;
+    _cache_pipe_op = token.image;
+    stack.push(util::mkptr(new ArithAutomation));
+}
+
+void PipelineAutomation::matchClosing(AutomationStack& stack, Token const& closer)
+{
+    _reduce(stack);
+    stack.top()->matchClosing(stack, closer);
+}
+
+void PipelineAutomation::pushColon(AutomationStack& stack, misc::position const& pos)
+{
+    _reduce(stack);
+    stack.top()->pushColon(stack, pos);
+}
+
+void PipelineAutomation::pushPropertySeparator(AutomationStack& stack, misc::position const& pos)
+{
+    _reduce(stack);
+    stack.top()->pushPropertySeparator(stack, pos);
+}
+
+void PipelineAutomation::pushComma(AutomationStack& stack, misc::position const& pos)
+{
+    _reduce(stack);
+    stack.top()->pushComma(stack, pos);
+}
+
+void PipelineAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
+{
+    if (_cache_list.nul()) {
+        _cache_list = std::move(expr);
+    } else {
+        _cache_section = std::move(expr);
+    }
+}
+
+void PipelineAutomation::accepted(AutomationStack& stack, misc::position const& pos, Block&& block)
+{
+    stack.reduced(util::mkptr(new BlockPipeline(pos, std::move(_cache_list), std::move(block))));
+}
+
+bool PipelineAutomation::finishOnBreak(bool sub_empty) const
+{
+    if ("|:" == _cache_pipe_op && sub_empty && _cache_section.nul()) {
+        return true;
+    }
+    if (_afterOperator(sub_empty)) {
+        return false;
+    }
+    return _previous->finishOnBreak(sub_empty && _cache_list.nul());
+}
+
+void PipelineAutomation::finish(
+            ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos)
+{
+    if ("|:" == _cache_pipe_op && _cache_section.not_nul() && _cache_section->empty()) {
+        wrapper.pushBlockReceiver(util::mkref(*this));
+        return;
+    }
+    _reduce(stack);
+    stack.top()->finish(wrapper, stack, pos);
+}
+
+void PipelineAutomation::_tryReducePipe()
+{
+    if (_cache_section.nul()) {
+        return;
+    }
+    if (_cache_list->empty()) {
+        error::invalidEmptyExpr(_cache_list->pos);
+    }
+    if (_cache_section->empty()) {
+        error::invalidEmptyExpr(_cache_section->pos);
+    }
+    _cache_list.reset(new Pipeline(
+                _cache_op_pos, std::move(_cache_list), _cache_pipe_op, std::move(_cache_section)));
+}
+
+void PipelineAutomation::_reduce(AutomationStack& stack)
+{
+    _tryReducePipe();
+    stack.reduced(std::move(_cache_list));
+}
+
+bool PipelineAutomation::_afterOperator(bool sub_empty) const
+{
+    return sub_empty && _cache_list.not_nul() && (!_cache_pipe_op.empty()) && _cache_section.nul();
+}
+
 namespace {
 
     enum {
-        UNARY_ADD, ADD, MUL, COMP, OR, AND, NOT, PIPE, MEMBER, CALL, PLACEHOLDER
+        UNARY_ADD, BITWISE, ADD, MUL, COMP, OR, AND, NOT, MEMBER, CALL, PLACEHOLDER
     };
 
     bool reducable(int stack_top, int encounter) {
+        static bool const _(false), O(true);
         static bool const REDUCABLE[][PLACEHOLDER + 1] = {
-           // UNARY_ADD ADD    MUL   COMP     OR   AND     NOT   PIPE MEMBER   CALL HOLDER <TOP vENC
-            { false,  true,  true,  true,  true,  true, false, false,  true,  true, false }, //+-(u)
-            {  true,  true,  true, false, false, false, false, false,  true,  true, false }, //+-(b)
-            {  true, false,  true, false, false, false, false, false,  true,  true, false }, //*/%
-            {  true,  true,  true,  true, false, false, false, false,  true,  true, false }, //<>!=
-            {  true,  true,  true,  true,  true,  true,  true, false,  true,  true, false }, //||
-            {  true,  true,  true,  true, false,  true,  true, false,  true,  true, false }, //&&
-            { false,  true,  true,  true,  true,  true,  true, false,  true,  true, false }, //!
-            {  true,  true,  true,  true,  true,  true,  true,  true,  true,  true, false }, //|:?
-            { false, false, false, false, false, false, false, false,  true,  true, false }, //.
-            { false, false, false, false, false, false, false, false,  true,  true, false }, //a(b)
+            /*
+              U  |  B    !=              C  H
+              ~  ^     *  <     A  N     A  O   < STACK TOP
+              +  &  +  /  >  O  N  O  .  L  L    \
+              - <<  -  %  =  R  D  T     L  D     V ENCOUNTER
+            */
+            { _, O, O, O, O, O, O, _, O, O, _ }, // +-(u)
+            { O, O, O, O, _, _, _, _, O, O, _ }, // |&^~ << >>
+            { O, _, O, O, _, _, _, _, O, O, _ }, // +-(b)
+            { O, _, _, O, _, _, _, _, O, O, _ }, // */%
+            { O, O, O, O, O, _, _, _, O, O, _ }, // <>!=
+            { O, O, O, O, O, O, O, O, O, O, _ }, // ||
+            { O, O, O, O, O, _, O, O, O, O, _ }, // &&
+            { _, O, O, O, O, O, O, O, O, O, _ }, // !
+            { _, _, _, _, _, _, _, _, O, O, _ }, // .
+            { _, _, _, _, _, _, _, _, O, O, _ }, // a(b)
         };
         return REDUCABLE[encounter][stack_top];
     }
 
-    std::map<std::string, int> unaryPriorityMapping()
-    {
-        std::map<std::string, int> map;
-        map["-"] = UNARY_ADD;
-        map["+"] = UNARY_ADD;
-        map["*"] = UNARY_ADD;
-        map["typeof"] = UNARY_ADD;
-        map["!"] = NOT;
-        return map;
-    }
-
-    std::map<std::string, int> binaryPriorityMapping()
-    {
-        std::map<std::string, int> map;
-        map["-"] = ADD;
-        map["+"] = ADD;
-        map["++"] = ADD;
-        map["*"] = MUL;
-        map["/"] = MUL;
-        map["%"] = MUL;
-        map["="] = COMP;
-        map["!="] = COMP;
-        map["<"] = COMP;
-        map["<="] = COMP;
-        map[">"] = COMP;
-        map[">="] = COMP;
-        map["&&"] = AND;
-        map["||"] = OR;
-        map["|:"] = PIPE;
-        map["|?"] = PIPE;
-        map["."] = MEMBER;
-        return map;
-    }
-
-    std::map<std::string, int> UNARY_PRI_MAPPING(unaryPriorityMapping());
-    std::map<std::string, int> BINARY_PRI_MAPPING(binaryPriorityMapping());
+    std::map<std::string, int> const UNARY_PRI_MAPPING{
+        { "-", UNARY_ADD },
+        { "+", UNARY_ADD },
+        { "~", UNARY_ADD },
+        { "*", UNARY_ADD },
+        { "typeof", UNARY_ADD },
+        { "!", NOT },
+    };
+    std::map<std::string, int> const BINARY_PRI_MAPPING{
+        { "^", BITWISE },
+        { "|", BITWISE },
+        { "&", BITWISE },
+        { "<<", BITWISE },
+        { ">>", BITWISE },
+        { ">>>", BITWISE },
+        { "-", ADD },
+        { "+", ADD },
+        { "++", ADD },
+        { "*", MUL },
+        { "/", MUL },
+        { "%", MUL },
+        { "=", COMP },
+        { "!=", COMP },
+        { "<", COMP },
+        { "<=", COMP },
+        { ">", COMP },
+        { ">=", COMP },
+        { "&&", AND },
+        { "||", OR },
+        { ".", MEMBER },
+    };
 
     struct PlaceholderOp
         : ArithAutomation::Operator
@@ -146,7 +248,7 @@ namespace {
         : ArithAutomation::Operator
     {
         PreUnaryOperator(misc::position const& ps, std::string const& o)
-            : ArithAutomation::Operator(UNARY_PRI_MAPPING[o])
+            : ArithAutomation::Operator(UNARY_PRI_MAPPING.find(o)->second)
             , pos(ps)
             , op(o)
         {}
@@ -166,7 +268,7 @@ namespace {
         : ArithAutomation::Operator
     {
         BinaryOperator(misc::position const& ps, std::string const& o)
-            : ArithAutomation::Operator(BINARY_PRI_MAPPING[o])
+            : ArithAutomation::Operator(BINARY_PRI_MAPPING.find(o)->second)
             , pos(ps)
             , op(o)
         {}
@@ -231,12 +333,19 @@ void ArithAutomation::pushOp(AutomationStack& stack, Token const& token)
         return;
     }
     if (BINARY_PRI_MAPPING.find(token.image) != BINARY_PRI_MAPPING.end() && !_need_factor) {
-        _reduceBinaryOrPostfix(BINARY_PRI_MAPPING[token.image]);
+        _reduceBinaryOrPostfix(BINARY_PRI_MAPPING.find(token.image)->second);
         _op_stack.push_back(util::mkptr(new BinaryOperator(token.pos, token.image)));
         _need_factor = true;
         return;
     }
     error::unexpectedToken(token.pos, token.image);
+}
+
+void ArithAutomation::pushPipeSep(AutomationStack& stack, Token const& token)
+{
+    if (_reduceIfPossible(stack, token.pos, token.image)) {
+        stack.top()->pushPipeSep(stack, token);
+    }
 }
 
 void ArithAutomation::pushFactor(
@@ -248,6 +357,16 @@ void ArithAutomation::pushFactor(
         return;
     }
     AutomationBase::pushFactor(stack, std::move(factor), image);
+}
+
+void ArithAutomation::pushThis(AutomationStack& stack, misc::position const& pos)
+{
+    if (!_need_factor) {
+        error::unexpectedToken(pos, "@");
+        return;
+    }
+    _need_factor = false;
+    stack.push(util::mkptr(new ThisPropertyAutomation(pos)));
 }
 
 void ArithAutomation::pushOpenParen(AutomationStack& stack, misc::position const&)
@@ -376,7 +495,7 @@ bool ArithAutomation::_empty() const
 
 void ExprListAutomation::activated(AutomationStack& stack)
 {
-    stack.push(util::mkptr(new ArithAutomation));
+    stack.push(util::mkptr(new PipelineAutomation));
 }
 
 static void checkExprListNotEmpty(std::vector<util::sptr<Expression const>> const& list)
@@ -440,6 +559,12 @@ void NestedOrParamsAutomation::pushOp(AutomationStack& stack, Token const& token
     stack.top()->pushOp(stack, token);
 }
 
+void NestedOrParamsAutomation::pushPipeSep(AutomationStack& stack, Token const& token)
+{
+    _reduceAsNested(stack, token.pos);
+    stack.top()->pushPipeSep(stack, token);
+}
+
 void NestedOrParamsAutomation::pushOpenParen(AutomationStack& stack, misc::position const& pos)
 {
     _reduceAsNested(stack, pos);
@@ -478,7 +603,7 @@ void NestedOrParamsAutomation::pushColon(AutomationStack& stack, misc::position 
         error::unexpectedToken(pos, ":");
     }
     _wait_for_colon = false;
-    stack.push(util::mkptr(new ArithAutomation));
+    stack.push(util::mkptr(new PipelineAutomation));
 }
 
 void NestedOrParamsAutomation::pushComma(AutomationStack& stack, misc::position const& pos)
@@ -493,7 +618,6 @@ void NestedOrParamsAutomation::pushComma(AutomationStack& stack, misc::position 
         _reduceAsNested(stack, pos);
     }
     stack.top()->pushComma(stack, pos);
-    return;
 }
 
 void NestedOrParamsAutomation::_reduceAsLambda(AutomationStack& stack)
@@ -515,11 +639,7 @@ void NestedOrParamsAutomation::_reduceAsLambda(
                 , _list.end()
                 , [&](util::sptr<Expression const> const& p)
                   {
-                      if (!p->isName()) {
-                          error::invalidName(p->pos);
-                      } else {
-                          param_names.push_back(p->reduceAsName());
-                      }
+                      param_names.push_back(p->reduceAsName());
                   });
     stack.reduced(util::mkptr(new Lambda(pos, param_names, std::move(body))));
 }
@@ -600,7 +720,7 @@ void BracketedExprAutomation::matchClosing(AutomationStack& stack, Token const& 
 
 void DictAutomation::activated(AutomationStack& stack)
 {
-    stack.push(util::mkptr(new ArithAutomation));
+    stack.push(util::mkptr(new PipelineAutomation));
 }
 
 void DictAutomation::matchClosing(AutomationStack& stack, Token const& closer)
@@ -622,7 +742,7 @@ void DictAutomation::pushComma(AutomationStack& stack, misc::position const& pos
         return;
     }
     _wait_for_comma = false;
-    stack.push(util::mkptr(new ArithAutomation));
+    stack.push(util::mkptr(new PipelineAutomation));
 }
 
 bool DictAutomation::_pushSeparator(AutomationStack& stack
@@ -634,14 +754,14 @@ bool DictAutomation::_pushSeparator(AutomationStack& stack
         return false;
     }
     _wait_for_colon = false;
-    stack.push(util::mkptr(new ArithAutomation));
+    stack.push(util::mkptr(new PipelineAutomation));
     return true;
 }
 
 void DictAutomation::pushColon(AutomationStack& stack, misc::position const& pos)
 {
     if (_pushSeparator(stack, pos, ":")) {
-        _key_cache.reset(new StringLiteral(_key_cache->pos, _key_cache->reduceAsName()));
+        _key_cache.reset(new StringLiteral(_key_cache->pos, _key_cache->reduceAsProperty()));
     }
 }
 
@@ -669,52 +789,113 @@ void DictAutomation::accepted(AutomationStack&, util::sptr<Expression const> exp
 }
 
 void AsyncPlaceholderAutomation::pushFactor(
-            AutomationStack& stack, util::sptr<Expression const> factor, std::string const&)
+            AutomationStack& stack, util::sptr<Expression const> factor, std::string const& image)
 {
-    if (_wait_for_open_paren) {
-        _params.push_back(factor->reduceAsName());
-        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
-        return;
-    }
-    if (_wait_for_param) {
-        _params.push_back(factor->reduceAsName());
-        _wait_for_param = false;
-    }
+    stack.push(util::mkptr(new PipelineAutomation));
+    stack.top()->pushFactor(stack, std::move(factor), image);
 }
 
-void AsyncPlaceholderAutomation::pushOpenParen(AutomationStack&, misc::position const& pos)
+void AsyncPlaceholderAutomation::pushOpenParen(AutomationStack& stack, misc::position const&)
 {
-    if (!_wait_for_open_paren) {
-        error::unexpectedToken(pos, "(");
-        return;
-    }
-    _wait_for_open_paren = false;
+    stack.push(util::mkptr(new ExprListAutomation));
 }
 
 void AsyncPlaceholderAutomation::matchClosing(AutomationStack& stack, Token const& closer)
 {
-    if (_wait_for_open_paren) {
-        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
-        stack.top()->matchClosing(stack, closer);
-        return;
-    }
-    if (closer.image == ")") {
-        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
-        return;
-    }
-    error::unexpectedToken(closer.pos, closer.image);
+    stack.reduced(util::mkptr(new AsyncPlaceholder(pos, std::vector<std::string>())));
+    stack.top()->matchClosing(stack, closer);
 }
 
 void AsyncPlaceholderAutomation::pushComma(AutomationStack& stack, misc::position const& pos)
 {
-    if (_wait_for_open_paren) {
-        stack.reduced(util::mkptr(new AsyncPlaceholder(pos, _params)));
-        stack.top()->pushComma(stack, pos);
-        return;
-    }
-    if (_wait_for_param) {
-        error::unexpectedToken(pos, ",");
-        return;
-    }
-    _wait_for_param = true;
+    stack.reduced(util::mkptr(new AsyncPlaceholder(pos, std::vector<std::string>())));
+    stack.top()->pushComma(stack, pos);
+}
+
+void AsyncPlaceholderAutomation::accepted(AutomationStack& stack, util::sptr<Expression const> expr)
+{
+    stack.reduced(util::mkptr(new AsyncPlaceholder(pos, std::vector<std::string>({
+                            expr->reduceAsName()
+                        }))));
+}
+
+void AsyncPlaceholderAutomation::accepted(
+                AutomationStack& stack, std::vector<util::sptr<Expression const>> list)
+{
+    stack.reduced(util::mkptr(new AsyncPlaceholder(pos
+                                                 , util::ptrarr<Expression const>(std::move(list))
+                                                                            .mapv(
+                                                     [&](util::sptr<Expression const> const& e, int)
+                                                     {
+                                                         return e->reduceAsName();
+                                                     }))));
+}
+
+void ThisPropertyAutomation::pushOp(AutomationStack& stack, Token const& token)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->pushOp(stack, token);
+}
+
+void ThisPropertyAutomation::pushPipeSep(AutomationStack& stack, Token const& token)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->pushPipeSep(stack, token);
+}
+
+void ThisPropertyAutomation::pushFactor(AutomationStack& stack
+                                      , util::sptr<Expression const> factor
+                                      , std::string const& image)
+{
+    stack.reduced(util::mkptr(new Lookup(util::mkptr(new This(pos))
+                                       , util::mkptr(new StringLiteral(factor->pos, image)))));
+}
+
+void ThisPropertyAutomation::pushOpenParen(AutomationStack& stack, misc::position const& pos)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->pushOpenParen(stack, pos);
+}
+
+void ThisPropertyAutomation::pushOpenBracket(AutomationStack& stack, misc::position const& pos)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->pushOpenBracket(stack, pos);
+}
+
+void ThisPropertyAutomation::matchClosing(AutomationStack& stack, Token const& closer)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->matchClosing(stack, closer);
+}
+
+void ThisPropertyAutomation::pushComma(AutomationStack& stack, misc::position const& pos)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->pushComma(stack, pos);
+}
+
+void ThisPropertyAutomation::pushPropertySeparator(
+                    AutomationStack& stack, misc::position const& pos)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->pushColon(stack, pos);
+}
+
+void ThisPropertyAutomation::pushColon(AutomationStack& stack, misc::position const& pos)
+{
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->pushColon(stack, pos);
+}
+
+bool ThisPropertyAutomation::finishOnBreak(bool) const
+{
+    return _previous->finishOnBreak(false);
+}
+
+void ThisPropertyAutomation::finish(
+                ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos)
+{
+    stack.reduced(util::mkptr(new This(pos)));
+    stack.top()->finish(wrapper, stack, pos);
 }

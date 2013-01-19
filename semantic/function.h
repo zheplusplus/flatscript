@@ -9,7 +9,7 @@ namespace semantic {
         Function(misc::position const& ps
                , std::string const& func_name
                , std::vector<std::string> const& params
-               , util::sptr<Filter const> func_body)
+               , Block func_body)
             : pos(ps)
             , name(func_name)
             , param_names(params)
@@ -21,7 +21,7 @@ namespace semantic {
         misc::position const pos;
         std::string const name;
         std::vector<std::string> const param_names;
-        util::sptr<Filter const> const body;
+        Block const body;
     };
 
 }

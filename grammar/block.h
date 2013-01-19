@@ -5,11 +5,13 @@
 #include <util/arrays.h>
 
 #include "fwd-decl.h"
+#include "reducing-env.h"
 
 namespace grammar {
 
     struct Block {
-        util::sptr<semantic::Filter> compile(util::sptr<semantic::Filter> filter) const;
+        util::sptr<semantic::Filter> compile(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Filter> compile() const;
 
         void addStmt(util::sptr<Statement const> stmt);
         void addFunc(util::sptr<Function const> func);

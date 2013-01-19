@@ -7,8 +7,7 @@
 
 #include "test-common.h"
 #include "../expr-nodes.h"
-#include "../global-filter.h"
-#include "../symbol-def-filter.h"
+#include "../compiling-space.h"
 #include "../function.h"
 
 using namespace test;
@@ -17,24 +16,30 @@ struct FilterTest
     : SemanticTest
 {
     FilterTest()
-        : symbols(nullptr)
+        : _space(nullptr)
     {}
 
     void SetUp()
     {
         SemanticTest::SetUp();
-        symbols.reset(new semantic::SymbolTable);
+        _space = new semantic::CompilingSpace;
+    }
+
+    void TearDown()
+    {
+        delete _space;
+        SemanticTest::TearDown();
     }
 
     util::sref<semantic::SymbolTable> refSym()
     {
-        return *symbols;
+        return _space->sym();
     }
 
-    util::sptr<semantic::SymbolTable> symbols;
+    semantic::CompilingSpace* _space;
 };
 
-TEST_F(FilterTest, GlobalFilter)
+TEST_F(FilterTest, Filter)
 {
     misc::position pos(1);
 
@@ -44,7 +49,7 @@ TEST_F(FilterTest, GlobalFilter)
                                  , "+"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "235.7"))));
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
     refSym()->defName(pos, "kobayakawa");
     refSym()->defName(pos, "yutaka");
     refSym()->defName(pos, "tamura");
@@ -55,12 +60,12 @@ TEST_F(FilterTest, GlobalFilter)
     filter0.defName(pos, "soujirou", std::move(binary));
     filter0.defName(pos, "iwasaki", util::mkptr(new semantic::Reference(pos, "minami")));
 
-    util::sptr<semantic::Filter> filter_consq(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
     misc::position pos_consq(100);
     filter_consq->addArith(pos_consq, util::mkptr(
                                         new semantic::Reference(pos_consq, "kobayakawa")));
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     misc::position pos_alter(101);
     filter_alter->addArith(pos_alter , util::mkptr(new semantic::Reference(pos_alter, "yutaka")));
     filter_alter->addArith(pos_alter , util::mkptr(new semantic::Reference(pos_alter, "hiyori")));
@@ -71,8 +76,7 @@ TEST_F(FilterTest, GlobalFilter)
                     , std::move(filter_alter));
     filter0.addReturnNothing(pos);
 
-    filter0.compile(semantic::CompilingSpace(refSym()))->write(dummyos());
-
+    compile(filter0, refSym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -104,7 +108,7 @@ TEST_F(FilterTest, TerminatedError)
     misc::position pos_error(200);
     misc::position pos_ignored(201);
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
     filter0.defName(pos, "patricia", util::mkptr(new semantic::Reference(pos, "martin")));
     filter0.addReturnNothing(pos);
     filter0.addReturn(pos_error, util::mkptr(new semantic::Reference(pos, "patty")));
@@ -121,13 +125,13 @@ TEST_F(FilterTest, TerminatedWarningIfConsequence)
     misc::position pos(3);
     misc::position pos_warning(300);
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
 
-    util::sptr<semantic::Filter> filter_consq(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
     filter_consq->addArith(pos, util::mkptr(new semantic::Reference(pos, "ayano")));
     filter_consq->addReturnNothing(pos_warning);
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     filter_alter->addArith(pos, util::mkptr(new semantic::BoolLiteral(pos, true)));
 
     filter0.addBranch(pos
@@ -145,12 +149,12 @@ TEST_F(FilterTest, TerminatedWarningIfAlternative)
     misc::position pos(4);
     misc::position pos_warning(400);
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
 
-    util::sptr<semantic::Filter> filter_consq(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
     filter_consq->addArith(pos, util::mkptr(new semantic::IntLiteral(pos, "20110411")));
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     filter_alter->addReturn(pos_warning, util::mkptr(new semantic::Reference(pos, "kogami")));
 
     filter0.addBranch(pos
@@ -169,12 +173,12 @@ TEST_F(FilterTest, TerminatedWarningBothBranches)
     misc::position pos_warning_consq(500);
     misc::position pos_warning_alter(501);
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
 
-    util::sptr<semantic::Filter> filter_consq(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
     filter_consq->addReturn(pos_warning_consq, util::mkptr(new semantic::FloatLiteral(pos, ".1")));
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     filter_alter->addReturn(pos_warning_alter, util::mkptr(new semantic::Reference(pos, "minoru")));
 
     filter0.addBranch(pos
@@ -200,27 +204,28 @@ TEST_F(FilterTest, TwoPathBranchFoldedOnFalse)
                                  , ">"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
 
-    util::sptr<semantic::Filter> filter_consq(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
     misc::position pos_consq(600);
     filter_consq->addArith(pos_consq, util::mkptr(new semantic::Reference(pos_consq, "yui")));
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     misc::position pos_alter(601);
     filter_alter->addArith(pos_alter, util::mkptr(new semantic::Reference(pos_alter, "narumi")));
 
     filter0.addBranch(pos, std::move(binary), std::move(filter_consq), std::move(filter_alter));
     filter0.addReturnNothing(pos);
 
-    filter0.compile(semantic::CompilingSpace(refSym()))->write(dummyos());
-
+    compile(filter0, refSym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
-            (ARITHMETICS)
-                (pos_alter, REFERENCE, "narumi")
+            (SCOPE_BEGIN)
+                (ARITHMETICS)
+                    (pos_alter, REFERENCE, "narumi")
+            (SCOPE_END)
             (RETURN_NOTHING)
         (SCOPE_END)
     ;
@@ -238,27 +243,28 @@ TEST_F(FilterTest, TwoPathBranchFoldedOnTrue)
                                  , "<"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
 
-    util::sptr<semantic::Filter> filter_consq(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
     misc::position pos_consq(700);
     filter_consq->addArith(pos_consq, util::mkptr(new semantic::Reference(pos_consq, "yui")));
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     misc::position pos_alter(701);
     filter_alter->addArith(pos_alter, util::mkptr(new semantic::Reference(pos_alter, "narumi")));
 
     filter0.addBranch(pos, std::move(binary), std::move(filter_consq), std::move(filter_alter));
     filter0.addReturnNothing(pos);
 
-    filter0.compile(semantic::CompilingSpace(refSym()))->write(dummyos());
-
+    compile(filter0, refSym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
+            (SCOPE_BEGIN)
             (ARITHMETICS)
                 (pos_consq, REFERENCE, "yui")
+            (SCOPE_END)
             (RETURN_NOTHING)
         (SCOPE_END)
     ;
@@ -275,23 +281,24 @@ TEST_F(FilterTest, IfNotFoldedOnFalse)
                                  , ">"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     misc::position pos_alter(801);
     filter_alter->addArith(pos_alter, util::mkptr(new semantic::Reference(pos_alter, "narumi")));
 
     filter0.addBranchAlterOnly(pos, std::move(binary), std::move(filter_alter));
     filter0.addReturnNothing(pos);
 
-    filter0.compile(semantic::CompilingSpace(refSym()))->write(dummyos());
-
+    compile(filter0, refSym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
-            (ARITHMETICS)
-                (pos_alter, REFERENCE, "narumi")
+            (SCOPE_BEGIN)
+                (ARITHMETICS)
+                    (pos_alter, REFERENCE, "narumi")
+            (SCOPE_END)
             (RETURN_NOTHING)
         (SCOPE_END)
     ;
@@ -308,21 +315,22 @@ TEST_F(FilterTest, IfNotFoldedOnTrue)
                                  , "<"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::GlobalFilter filter0;
+    semantic::Filter filter0;
 
-    util::sptr<semantic::Filter> filter_alter(new semantic::SymbolDefFilter);
+    util::sptr<semantic::Filter> filter_alter(new semantic::Filter);
     misc::position pos_alter(801);
     filter_alter->addArith(pos_alter, util::mkptr(new semantic::Reference(pos_alter, "narumi")));
 
     filter0.addBranchAlterOnly(pos, std::move(binary), std::move(filter_alter));
     filter0.addReturnNothing(pos);
 
-    filter0.compile(semantic::CompilingSpace(refSym()))->write(dummyos());
-
+    compile(filter0, refSym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
+            (SCOPE_BEGIN)
+            (SCOPE_END)
             (RETURN_NOTHING)
         (SCOPE_END)
     ;

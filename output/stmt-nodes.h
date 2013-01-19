@@ -89,6 +89,7 @@ namespace output {
         {}
 
         void write(std::ostream& os) const;
+        int count() const;
 
         std::vector<std::string> const export_point;
         util::sptr<Expression const> const value;
@@ -106,6 +107,12 @@ namespace output {
 
         util::sptr<Expression const> const set_point;
         util::sptr<Expression const> const value;
+    };
+
+    struct ThisDeclaration
+        : Statement
+    {
+        void write(std::ostream& os) const;
     };
 
 }

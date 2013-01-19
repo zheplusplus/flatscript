@@ -1,31 +1,9 @@
 #ifndef __STEKIN_OUTPUT_LIST_PIPELINE_H__
 #define __STEKIN_OUTPUT_LIST_PIPELINE_H__
 
-#include <misc/const.h>
-
 #include "node-base.h"
 
 namespace output {
-
-    struct Pipeline
-        : Expression
-    {
-        Pipeline(misc::position const& pos
-               , util::sptr<Expression const> ls
-               , util::sptr<Expression const> sec
-               , cons::PipelineType tp)
-            : Expression(pos)
-            , list(std::move(ls))
-            , section(std::move(sec))
-            , pipe_type(tp)
-        {}
-
-        std::string str() const;
-
-        util::sptr<Expression const> const list;
-        util::sptr<Expression const> const section;
-        cons::PipelineType pipe_type;
-    };
 
     struct AsyncPipeResult
         : Expression
@@ -37,27 +15,31 @@ namespace output {
         std::string str() const;
     };
 
-    struct AsyncPipeBody
+    struct PipelineResult
         : Statement
     {
-        AsyncPipeBody(util::sptr<Expression const> e, cons::PipelineType tp)
+        explicit PipelineResult(util::sptr<Expression const> e)
             : expr(std::move(e))
-            , pipe_type(tp)
         {}
 
         void write(std::ostream& os) const;
 
         util::sptr<Expression const> const expr;
-        cons::PipelineType pipe_type;
     };
 
-    struct AsyncPipe
+    struct PipelineNext
+        : Statement
+    {
+        void write(std::ostream& os) const;
+    };
+
+    struct AsyncPipeline
         : Expression
     {
-        AsyncPipe(misc::position const& pos
-                , util::sptr<Expression const> ls
-                , util::sptr<Statement const> r
-                , util::sptr<Statement const> s)
+        AsyncPipeline(misc::position const& pos
+                    , util::sptr<Expression const> ls
+                    , util::sptr<Statement const> r
+                    , util::sptr<Statement const> s)
             : Expression(pos)
             , list(std::move(ls))
             , recursion(std::move(r))
@@ -69,6 +51,23 @@ namespace output {
         util::sptr<Expression const> const list;
         util::sptr<Statement const> const recursion;
         util::sptr<Statement const> const succession;
+    };
+
+    struct SyncPipeline
+        : Expression
+    {
+        SyncPipeline(misc::position const& pos
+                   , util::sptr<Expression const> ls
+                   , util::sptr<Statement const> sec)
+            : Expression(pos)
+            , list(std::move(ls))
+            , section(std::move(sec))
+        {}
+
+        std::string str() const;
+
+        util::sptr<Expression const> const list;
+        util::sptr<Statement const> const section;
     };
 
 }

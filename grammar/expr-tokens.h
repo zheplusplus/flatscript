@@ -15,6 +15,16 @@ namespace grammar {
         void act(AutomationStack& stack);
     };
 
+    struct PipeSepToken
+        : Token
+    {
+        PipeSepToken(misc::position const& pos, std::string const& image)
+            : Token(pos, image)
+        {}
+
+        void act(AutomationStack& stack);
+    };
+
     struct FactorToken
         : Token
     {
@@ -94,6 +104,16 @@ namespace grammar {
         : Token
     {
         explicit CommaToken(misc::position const& pos)
+            : Token(pos, "")
+        {}
+
+        void act(AutomationStack& stack);
+    };
+
+    struct ThisToken
+        : Token
+    {
+        explicit ThisToken(misc::position const& pos)
             : Token(pos, "")
         {}
 

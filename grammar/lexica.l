@@ -66,7 +66,7 @@ export {
 }
 
 typeof {
-    return KW_TYPEOF;
+    return OPERATOR;
 }
 
 true {
@@ -148,35 +148,47 @@ yield {
 }
 
 [+][+] {
-    return LIST_APPEND;
+    return OPERATOR;
+}
+
+[<][<] {
+    return OPERATOR;
+}
+
+[>][>] {
+    return OPERATOR;
+}
+
+[>][>][>] {
+    return OPERATOR;
 }
 
 [<]= {
-    return LE;
+    return OPERATOR;
 }
 
 [>]= {
-    return GE;
+    return OPERATOR;
 }
 
 != {
-    return NE;
+    return OPERATOR;
 }
 
 && {
-    return AND;
+    return OPERATOR;
 }
 
 [\|][\|] {
-    return OR;
+    return OPERATOR;
 }
 
 [\|]: {
-    return PIPE_MAP;
+    return PIPE_SEP;
 }
 
 [\|][?] {
-    return PIPE_FILTER;
+    return PIPE_SEP;
 }
 
 :: {
@@ -195,7 +207,11 @@ yield {
     return PIPE_KEY;
 }
 
-[-+*/%=<>!()\[\],:.\|{}] {
+[-+*/%=<>\|~&^] {
+    return OPERATOR;
+}
+
+[()\[\],:.{}!@] {
     return *yytext;
 }
 

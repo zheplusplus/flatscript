@@ -1,7 +1,7 @@
 #ifndef __STEKIN_GRAMMAR_TEST_TEST_COMMON_H__
 #define __STEKIN_GRAMMAR_TEST_TEST_COMMON_H__
 
-#include <semantic/node-base.h>
+#include <semantic/function.h>
 #include <semantic/filter.h>
 #include <semantic/compiling-space.h>
 #include <output/node-base.h>
@@ -26,7 +26,7 @@ namespace test {
             : grammar::ClauseBase(-1)
             , stmt_or_nul_if_not_set(nullptr)
             , func_or_nul_if_not_set(nullptr)
-            , filter(mkfilter())
+            , filter(nullptr)
         {}
 
         void acceptStmt(util::sptr<grammar::Statement> s)
@@ -41,14 +41,14 @@ namespace test {
 
         void compile()
         {
-            grammar::Block Block;
+            grammar::Block block;
             if (stmt_or_nul_if_not_set.not_nul()) {
-                Block.addStmt(std::move(stmt_or_nul_if_not_set));
+                block.addStmt(std::move(stmt_or_nul_if_not_set));
             }
             if (func_or_nul_if_not_set.not_nul()) {
-                Block.addFunc(std::move(func_or_nul_if_not_set));
+                block.addFunc(std::move(func_or_nul_if_not_set));
             }
-            filter = std::move(Block.compile(std::move(filter)));
+            filter = std::move(block.compile());
         }
 
         util::sptr<grammar::Statement> stmt_or_nul_if_not_set;
@@ -102,22 +102,18 @@ namespace test {
         DataTree& operator()(misc::position const& pos, NodeType const& type, int list_size);
     };
 
-    extern std::string const NAME_DEF_FILTERED;
-    extern std::string const FUNC_DEF_FILTERED;
-
     extern NodeType const BOOLEAN;
     extern NodeType const INTEGER;
     extern NodeType const FLOATING;
     extern NodeType const STRING;
     extern NodeType const IDENTIFIER;
+    extern NodeType const THIS;
     extern NodeType const LIST_BEGIN;
     extern NodeType const LIST_END;
 
     extern NodeType const BINARY_OP;
     extern NodeType const PRE_UNARY_OP;
     extern NodeType const OPERAND;
-    extern NodeType const LIST_PIPELINE_BEGIN;
-    extern NodeType const LIST_PIPELINE_END;
     extern NodeType const PIPE_ELEMENT;
     extern NodeType const PIPE_INDEX;
     extern NodeType const PIPE_KEY;

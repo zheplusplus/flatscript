@@ -5,35 +5,41 @@
 
 #include "stmt-nodes.h"
 #include "function.h"
-#include "filter.h"
 #include "compiling-space.h"
 
 using namespace semantic;
 
-void Arithmetics::compile(CompilingSpace& space) const
+void Arithmetics::compile(BaseCompilingSpace& space) const
 {
     util::sptr<output::Expression const> cexpr(expr->compile(space));
     space.block()->addStmt(util::mkptr(new output::Arithmetics(std::move(cexpr))));
 }
 
-void Branch::compile(CompilingSpace& space) const
+bool Arithmetics::isAsync() const
+{
+    return expr->isAsync();
+}
+
+void Branch::compile(BaseCompilingSpace& space) const
 {
     if (predicate->isLiteral(space.sym())) {
-        CompilingSpace branch_space(space.sym());
-        (predicate->boolValue(space.sym()) ? consequence : alternative).compile(branch_space);
-        space.block()->append(branch_space.deliver());
+        space.block()->addStmt((predicate->boolValue(space.sym()) ? consequence : alternative)
+                                    .compile(SubCompilingSpace(space)));
         return;
     }
     util::sptr<output::Expression const> compiled_pred(predicate->compile(space));
-    CompilingSpace consq_space(space.sym());
-    consequence.compile(consq_space);
-    CompilingSpace alter_space(space.sym());
-    alternative.compile(alter_space);
+    util::sptr<output::Statement const> consq_stmt(consequence.compile(SubCompilingSpace(space)));
+    util::sptr<output::Statement const> alter_stmt(alternative.compile(SubCompilingSpace(space)));
     space.block()->addStmt(util::mkptr(new output::Branch(
-                        std::move(compiled_pred), consq_space.deliver(), alter_space.deliver())));
+                        std::move(compiled_pred), std::move(consq_stmt), std::move(alter_stmt))));
 }
 
-void NameDef::compile(CompilingSpace& space) const
+bool Branch::isAsync() const
+{
+    return predicate->isAsync() || consequence.isAsync() || alternative.isAsync();
+}
+
+void NameDef::compile(BaseCompilingSpace& space) const
 {
     util::sptr<output::Expression const> init_value(init->compile(space));
     if (init->isLiteral(space.sym())) {
@@ -44,18 +50,28 @@ void NameDef::compile(CompilingSpace& space) const
     space.block()->addStmt(util::mkptr(new output::NameDef(name, std::move(init_value))));
 }
 
-void Return::compile(CompilingSpace& space) const
+bool NameDef::isAsync() const
 {
-    util::sptr<output::Expression const> cret(ret_val->compile(space));
-    space.block()->addStmt(util::mkptr(new output::Return(std::move(cret))));
+    return init->isAsync();
 }
 
-void ReturnNothing::compile(CompilingSpace& space) const
+void Return::compile(BaseCompilingSpace& space) const
 {
-    space.block()->addStmt(util::mkptr(new output::ReturnNothing));
+    util::sptr<output::Statement const> ret(space.compileRet(ret_val));
+    space.block()->addStmt(std::move(ret));
 }
 
-void Import::compile(CompilingSpace& space) const
+bool Return::isAsync() const
+{
+    return ret_val->isAsync();
+}
+
+void ReturnNothing::compile(BaseCompilingSpace& space) const
+{
+    space.block()->addStmt(space.compileRet());
+}
+
+void Import::compile(BaseCompilingSpace& space) const
 {
     std::for_each(names.begin()
                 , names.end()
@@ -65,16 +81,26 @@ void Import::compile(CompilingSpace& space) const
                   });
 }
 
-void Export::compile(CompilingSpace& space) const
+void Export::compile(BaseCompilingSpace& space) const
 {
     space.sym()->compileRef(pos, export_point[0]);
     util::sptr<output::Expression const> cval(value->compile(space));
     space.block()->addStmt(util::mkptr(new output::Export(export_point, std::move(cval))));
 }
 
-void AttrSet::compile(CompilingSpace& space) const
+bool Export::isAsync() const
+{
+    return value->isAsync();
+}
+
+void AttrSet::compile(BaseCompilingSpace& space) const
 {
     util::sptr<output::Expression const> csp(set_point->compile(space));
     util::sptr<output::Expression const> cval(value->compile(space));
     space.block()->addStmt(util::mkptr(new output::AttrSet(std::move(csp), std::move(cval))));
+}
+
+bool AttrSet::isAsync() const
+{
+    return set_point->isAsync() || value->isAsync();
 }

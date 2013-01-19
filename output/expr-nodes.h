@@ -321,6 +321,16 @@ namespace output {
         util::id const ref_id;
     };
 
+    struct This
+        : Expression
+    {
+        explicit This(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        std::string str() const;
+    };
+
 }
 
 #endif /* __STEKIN_OUTPUT_EXPRESSION_NODES_H__ */

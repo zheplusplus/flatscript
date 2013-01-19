@@ -12,7 +12,8 @@ namespace grammar {
     struct Statement {
         misc::position const pos;
 
-        virtual void compile(util::sref<semantic::Filter> filter) const = 0;
+        virtual void compile(util::sref<semantic::Filter> filter
+                           , BaseReducingEnv const& env) const = 0;
 
         virtual ~Statement() {}
 
@@ -31,6 +32,7 @@ namespace grammar {
         virtual bool empty() const;
         virtual bool isName() const;
         virtual std::string reduceAsName() const;
+        virtual std::string reduceAsProperty() const;
         virtual util::sptr<semantic::Expression const> reduceAsExpr(
                                                     BaseReducingEnv const& env) const = 0;
         virtual util::sptr<semantic::Expression const> reduceAsLeftValue(

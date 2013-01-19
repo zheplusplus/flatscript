@@ -9,9 +9,6 @@ semantic:$(WORKDIR)/const-fold.h $(WORKDIR)/const-fold.cpp \
          list-pipe.d \
          const-fold.d \
          filter.d \
-         symbol-def-filter.d \
-         func-body-filter.d \
-         global-filter.d \
          block.d \
          compiling-space.d \
          function.d

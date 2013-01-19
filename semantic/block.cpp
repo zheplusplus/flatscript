@@ -19,10 +19,10 @@ void Block::defFunc(misc::position const& pos
                   , std::vector<std::string> const& param_names
                   , util::sptr<Filter> body)
 {
-    _funcs.append(util::mkptr(new Function(pos, name, param_names, std::move(body))));
+    _funcs.append(util::mkptr(new Function(pos, name, param_names, body->deliver())));
 }
 
-void Block::compile(CompilingSpace& space) const
+util::sptr<output::Statement const> Block::compile(BaseCompilingSpace&& space) const
 {
     util::sref<SymbolTable> root_sym(space.sym());
     util::sref<output::Block> root_block(space.block());
@@ -38,6 +38,15 @@ void Block::compile(CompilingSpace& space) const
                 {
                     root_block->addFunc(func->compile(root_sym));
                 });
+    return space.deliver();
+}
+
+bool Block::isAsync() const
+{
+    return _stmts.any([&](util::sptr<Statement const> const& stmt, int)
+                      {
+                          return stmt->isAsync();
+                      });
 }
 
 void Block::append(Block following)

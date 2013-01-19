@@ -4,7 +4,6 @@ using namespace output;
 
 void Block::write(std::ostream& os) const
 {
-    os << "{" << std::endl;
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
                     func->write(os);
@@ -13,7 +12,11 @@ void Block::write(std::ostream& os) const
                 {
                     stmt->write(os);
                 });
-    os << "}" << std::endl;
+}
+
+int Block::count() const
+{
+    return _stmts.size() + _funcs.size();
 }
 
 void Block::addStmt(util::sptr<Statement const> stmt)

@@ -1,75 +1,6 @@
-#include <gtest/gtest.h>
-
-#include <util/string.h>
-#include <misc/const.h>
-#include <test/phony-errors.h>
-
-#include "test-common.h"
-#include "../expr-automations.h"
-#include "../stmt-automations.h"
+#include "test-automations.h"
 
 using namespace test;
-
-struct AutomationTest
-    : GrammarTest
-{
-    AutomationTest()
-        : stack(nullptr)
-    {}
-
-    void SetUp()
-    {
-        stkptr = new grammar::AutomationStack;
-        stack.reset(stkptr);
-        GrammarTest::SetUp();
-    }
-
-    void pushBoolean(misc::position const& pos, bool value)
-    {
-        stack->top()->pushFactor(
-                    *stkptr, util::mkptr(new grammar::BoolLiteral(pos, value)), util::str(value));
-    }
-
-    void pushInteger(misc::position const& pos, std::string const& image)
-    {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::IntLiteral(pos, image)), image);
-    }
-
-    void pushIdent(misc::position const& pos, std::string const& image)
-    {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::Identifier(pos, image)), image);
-    }
-
-    void pushPipeElement(misc::position const& pos)
-    {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::PipeElement(pos)), "$");
-    }
-
-    void finish(misc::position const& pos)
-    {
-        std::vector<util::sptr<grammar::ClauseBase>> clauses;
-        grammar::ClauseStackWrapper wrapper(0, *stkptr, pos, clauses);
-        stack->top()->finish(wrapper, stackref(), pos);
-    }
-
-    grammar::AutomationStack& stackref()
-    {
-        return *stkptr;
-    }
-
-    util::sptr<grammar::AutomationStack> stack;
-    grammar::AutomationStack* stkptr;
-};
-
-struct TestToken
-    : grammar::Token
-{
-    TestToken(misc::position const& pos, std::string const& image)
-        : grammar::Token(pos, image)
-    {}
-
-    void act(grammar::AutomationStack&) {}
-};
 
 TEST_F(AutomationTest, ReduceArithExpression)
 {
@@ -91,7 +22,7 @@ TEST_F(AutomationTest, ReduceArithExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -141,7 +72,7 @@ TEST_F(AutomationTest, ReduceLogicExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -180,11 +111,11 @@ TEST_F(AutomationTest, ReducePipeExpression)
     pushIdent(pos, "kenji");
     stack->top()->pushOp(stackref(), TestToken(pos, "++"));
     pushIdent(pos, "kawai");
-    stack->top()->pushOp(stackref(), TestToken(pos, "|?"));
+    stack->top()->pushPipeSep(stackref(), TestToken(pos, "|?"));
     pushIdent(pos, "kugutu");
     stack->top()->pushOp(stackref(), TestToken(pos, "<"));
     pushIdent(pos, "uta");
-    stack->top()->pushOp(stackref(), TestToken(pos, "|:"));
+    stack->top()->pushPipeSep(stackref(), TestToken(pos, "|:"));
     pushPipeElement(pos);
     stack->top()->pushOp(stackref(), TestToken(pos, "*"));
     pushPipeElement(pos);
@@ -192,16 +123,16 @@ TEST_F(AutomationTest, ReducePipeExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, ARITHMETICS)
-            (pos, BINARY_OP, int(cons::MAP))
+            (pos, BINARY_OP, "[ |: ]")
             (pos, OPERAND)
-                (pos, BINARY_OP, int(cons::FILTER))
+                (pos, BINARY_OP, "[ |? ]")
                 (pos, OPERAND)
                     (pos, BINARY_OP, "[ ++ ]")
                     (pos, OPERAND)
@@ -224,48 +155,55 @@ TEST_F(AutomationTest, ReducePipeExpression)
     ;
 }
 
-TEST_F(AutomationTest, ReduceNameDef)
+TEST_F(AutomationTest, ReduceBitwise)
 {
     misc::position pos(4);
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    pushIdent(pos, "Zzz");
-    stack->top()->pushColon(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "!"));
-    pushIdent(pos, "sasaki");
-    stack->top()->pushOp(stackref(), TestToken(pos, "&&"));
-    pushIdent(pos, "nitijou");
-    stack->top()->pushOp(stackref(), TestToken(pos, "="));
-    pushIdent(pos, "nano");
+    pushIdent(pos, "touma");
     stack->top()->pushOp(stackref(), TestToken(pos, "+"));
-    pushIdent(pos, "mio");
+    pushIdent(pos, "fuyuki");
+    stack->top()->pushOp(stackref(), TestToken(pos, "^"));
+    pushIdent(pos, "makoto");
+    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    pushIdent(pos, "shuuiti");
+    stack->top()->pushOp(stackref(), TestToken(pos, "|"));
+    pushIdent(pos, "yosino");
+    stack->top()->pushOp(stackref(), TestToken(pos, "*"));
+    pushIdent(pos, "fujioka");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
-        (pos, NAME_DEF, "Zzz")
-            (pos, BINARY_OP, "&&")
+        (pos, ARITHMETICS)
+            (pos, BINARY_OP, "|")
             (pos, OPERAND)
-                (pos, PRE_UNARY_OP, "!")
-                (pos, OPERAND)
-                    (pos, IDENTIFIER, "sasaki")
-            (pos, OPERAND)
-                (pos, BINARY_OP, "=")
-                (pos, OPERAND)
-                    (pos, IDENTIFIER, "nitijou")
+                (pos, BINARY_OP, "^")
                 (pos, OPERAND)
                     (pos, BINARY_OP, "+")
                     (pos, OPERAND)
-                        (pos, IDENTIFIER, "nano")
+                        (pos, IDENTIFIER, "touma")
                     (pos, OPERAND)
-                        (pos, IDENTIFIER, "mio")
+                        (pos, IDENTIFIER, "fuyuki")
+                (pos, OPERAND)
+                    (pos, BINARY_OP, "+")
+                    (pos, OPERAND)
+                        (pos, IDENTIFIER, "makoto")
+                    (pos, OPERAND)
+                        (pos, IDENTIFIER, "shuuiti")
+            (pos, OPERAND)
+                (pos, BINARY_OP, "*")
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "yosino")
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "fujioka")
         (BLOCK_END)
     ;
 }
@@ -292,7 +230,7 @@ TEST_F(AutomationTest, ReduceCallExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -342,7 +280,7 @@ TEST_F(AutomationTest, ReduceSubExpression)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -395,7 +333,7 @@ TEST_F(AutomationTest, ReduceAnonyFunc)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -437,7 +375,7 @@ TEST_F(AutomationTest, ReduceDefineAnonyFunc)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -475,7 +413,7 @@ TEST_F(AutomationTest, ReduceLookupSlice)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -516,7 +454,7 @@ TEST_F(AutomationTest, ReduceAnonyFuncAsArg)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -562,7 +500,7 @@ TEST_F(AutomationTest, ReduceListLiteral)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -627,7 +565,7 @@ TEST_F(AutomationTest, ReduceDictionary)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -658,50 +596,116 @@ TEST_F(AutomationTest, ReduceDictionary)
     ;
 }
 
-TEST_F(AutomationTest, ReduceInvalidNameDef)
+TEST_F(AutomationTest, ReduceSingleThis)
 {
     misc::position pos(13);
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    pushIdent(pos, "am1141");
-    stack->top()->pushOp(stackref(), TestToken(pos, "."));
-    stack->top()->pushOpenParen(stackref(), pos);
-    pushInteger(pos, "20121110");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
-    pushIdent(pos, "ohayou");
-    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    stack->top()->pushThis(stackref(), pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    ASSERT_TRUE(error::hasError());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
 
-    std::vector<InvalidNameRec> recs(getInvalidNameRecs());
-    ASSERT_EQ(1, recs.size());
-    ASSERT_EQ(pos, recs[0].pos);
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (pos, ARITHMETICS)
+            (pos, THIS)
+        (BLOCK_END)
+    ;
 }
 
-TEST_F(AutomationTest, ReduceInvalidLeftValue)
+TEST_F(AutomationTest, ReduceThisAndProperty)
 {
     misc::position pos(14);
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    pushInteger(pos, "20121110");
-    stack->top()->pushColon(stackref(), pos);
-    pushIdent(pos, "no_uta");
-    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    stack->top()->pushThis(stackref(), pos);
+    pushIdent(pos, "higurasi");
+    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushThis(stackref(), pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushOpenParen(stackref(), pos);
+    stack->top()->pushThis(stackref(), pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushComma(stackref(), pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushThis(stackref(), pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushOpenBracket(stackref(), pos);
+    stack->top()->pushThis(stackref(), pos);
+    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+
+    stack->top()->pushComma(stackref(), pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushThis(stackref(), pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+
+    stack->top()->pushThis(stackref(), pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+    pushInteger(pos, "20130121");
+    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    ASSERT_TRUE(error::hasError());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
 
-    std::vector<InvalidLeftValueRec> recs(getInvalidLeftValueRecs());
-    ASSERT_EQ(1, recs.size());
-    ASSERT_EQ(pos, recs[0].pos);
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (pos, ARITHMETICS)
+            (pos, BINARY_OP, "+")
+            (pos, OPERAND)
+                (pos, BINARY_OP, "+")
+                (pos, OPERAND)
+                    (pos, BINARY_OP, "[]")
+                    (pos, OPERAND)
+                        (pos, THIS)
+                    (pos, OPERAND)
+                        (pos, STRING, "higurasi")
+                (pos, OPERAND)
+                    (pos, CALL_BEGIN)
+                        (pos, THIS)
+                    (pos, ARGUMENTS)
+                        (pos, THIS)
+                        (pos, BINARY_OP, "[]")
+                        (pos, OPERAND)
+                            (pos, THIS)
+                        (pos, OPERAND)
+                            (pos, THIS)
+                        (pos, THIS)
+                    (pos, CALL_END)
+            (pos, OPERAND)
+                (pos, BINARY_OP, "[]")
+                (pos, OPERAND)
+                    (pos, THIS)
+                (pos, OPERAND)
+                    (pos, STRING, "20130121")
+        (BLOCK_END)
+    ;
 }
 
 TEST_F(AutomationTest, ReduceInvalidLambdaParams)
@@ -858,7 +862,7 @@ TEST_F(AutomationTest, BracketNestedExpressions)
 
     clause.compile();
     ASSERT_FALSE(error::hasError());
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -892,7 +896,7 @@ TEST_F(AutomationTest, ParenNestedExpressions)
 
     clause.compile();
     ASSERT_FALSE(error::hasError());
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -943,7 +947,7 @@ TEST_F(AutomationTest, ReduceAnonyFuncAsOneOfArgs)
     ASSERT_TRUE(stack->empty());
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -1029,7 +1033,7 @@ TEST_F(AutomationTest, ReduceSimpleAsyncPlaceholderInCall)
     finish(pos);
 
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -1132,7 +1136,7 @@ TEST_F(AutomationTest, ReduceParenAsyncPlaceholderInCall)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     clause.compile();
-    clause.filter->compile(semantic::CompilingSpace());
+    clause.filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -1283,4 +1287,29 @@ TEST_F(AutomationTest, ReduceMoreThanOneAsyncPlaceholders)
     std::vector<MoreThanOneAsyncPlaceholderRec> recs(getMoreThanOneAsyncPlaceholderRecs());
     ASSERT_EQ(1, recs.size());
     ASSERT_EQ(pos_b, recs[0].pos);
+}
+
+TEST_F(AutomationTest, EmptyPipeSection)
+{
+    misc::position pos(29);
+    misc::position pos_a(2900);
+    misc::position pos_b(2901);
+    misc::position pos_c(2902);
+    misc::position pos_d(2903);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "sonozaki");
+    stack->top()->pushOpenParen(stackref(), pos_a);
+    stack->top()->pushPipeSep(stackref(), TestToken(pos_b, "|:"));
+    stack->top()->pushComma(stackref(), pos_c);
+    pushBoolean(pos_b, false);
+    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    ASSERT_TRUE(error::hasError());
+
+    ASSERT_EQ(2, getInvalidEmptyExprRecs().size());
+    ASSERT_EQ(pos_b, getInvalidEmptyExprRecs()[0].pos);
+    ASSERT_EQ(pos_c, getInvalidEmptyExprRecs()[1].pos);
 }

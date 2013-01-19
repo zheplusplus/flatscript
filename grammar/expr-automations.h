@@ -6,13 +6,44 @@
 
 namespace grammar {
 
+    struct PipelineAutomation
+        : AutomationBase
+    {
+        PipelineAutomation()
+            : _cache_list(nullptr)
+            , _cache_section(nullptr)
+        {}
+
+        void activated(AutomationStack& stack);
+        void pushPipeSep(AutomationStack& stack, Token const& token);
+        void matchClosing(AutomationStack& stack, Token const& closer);
+        void pushColon(AutomationStack& stack, misc::position const& pos);
+        void pushPropertySeparator(AutomationStack& stack, misc::position const& pos);
+        void pushComma(AutomationStack& stack, misc::position const& pos);
+        void accepted(AutomationStack&, util::sptr<Expression const> expr);
+        void accepted(AutomationStack& stack, misc::position const& pos, Block&& block);
+        bool finishOnBreak(bool sub_empty) const;
+        void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&);
+    private:
+        void _tryReducePipe();
+        void _reduce(AutomationStack& stack);
+        bool _afterOperator(bool sub_empty) const;
+
+        util::sptr<Expression const> _cache_list;
+        util::sptr<Expression const> _cache_section;
+        misc::position _cache_op_pos;
+        std::string _cache_pipe_op;
+    };
+
     struct ArithAutomation
         : AutomationBase
     {
         void pushOp(AutomationStack& stack, Token const& token);
+        void pushPipeSep(AutomationStack& stack, Token const& token);
         void pushFactor(AutomationStack& stack
                       , util::sptr<Expression const> factor
                       , std::string const& image);
+        void pushThis(AutomationStack& stack, misc::position const& pos);
         void pushOpenParen(AutomationStack& stack, misc::position const& pos);
         void pushOpenBracket(AutomationStack& stack, misc::position const& pos);
         void pushOpenBrace(AutomationStack& stack, misc::position const& pos);
@@ -79,6 +110,7 @@ namespace grammar {
         : ExprListAutomation
     {
         void pushOp(AutomationStack& stack, Token const& token);
+        void pushPipeSep(AutomationStack& stack, Token const& token);
         void pushOpenParen(AutomationStack& stack, misc::position const& pos);
         void pushOpenBracket(AutomationStack& stack, misc::position const& pos);
         void matchClosing(AutomationStack&, Token const& closer);
@@ -146,25 +178,45 @@ namespace grammar {
     {
         explicit AsyncPlaceholderAutomation(misc::position const& ps)
             : pos(ps)
-            , _wait_for_open_paren(true)
-            , _wait_for_param(true)
         {}
-
-        misc::position const pos;
 
         void pushFactor(AutomationStack& stack
                       , util::sptr<Expression const> factor
-                      , std::string const&);
-        void pushOpenParen(AutomationStack&, misc::position const& pos);
+                      , std::string const& image);
+        void pushOpenParen(AutomationStack& stack, misc::position const& pos);
         void matchClosing(AutomationStack& stack, Token const& closer);
         void pushComma(AutomationStack& stack, misc::position const& pos);
-        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        void accepted(AutomationStack& stack, util::sptr<Expression const> expr);
+        void accepted(AutomationStack& stack, std::vector<util::sptr<Expression const>> list);
         bool finishOnBreak(bool) const { return false; }
         void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&) {}
-    private:
-        bool _wait_for_open_paren;
-        bool _wait_for_param;
-        std::vector<std::string> _params;
+
+        misc::position const pos;
+    };
+
+    struct ThisPropertyAutomation
+        : AutomationBase
+    {
+        explicit ThisPropertyAutomation(misc::position const& ps)
+            : pos(ps)
+        {}
+
+        void pushOp(AutomationStack& stack, Token const& token);
+        void pushPipeSep(AutomationStack& stack, Token const& token);
+        void pushFactor(AutomationStack& stack
+                      , util::sptr<Expression const> factor
+                      , std::string const& image);
+        void pushOpenParen(AutomationStack& stack, misc::position const& pos);
+        void pushOpenBracket(AutomationStack& stack, misc::position const& pos);
+        void matchClosing(AutomationStack& stack, Token const& closer);
+        void pushComma(AutomationStack& stack, misc::position const& pos);
+        void pushPropertySeparator(AutomationStack& stack, misc::position const& pos);
+        void pushColon(AutomationStack& stack, misc::position const& pos);
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        bool finishOnBreak(bool sub_empty) const;
+        void finish(ClauseStackWrapper& clauses, AutomationStack& stack, misc::position const& pos);
+
+        misc::position const pos;
     };
 
 }

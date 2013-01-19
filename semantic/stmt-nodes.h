@@ -3,9 +3,10 @@
 
 #include <string>
 
+#include <util/pointer.h>
+
 #include "node-base.h"
 #include "block.h"
-#include <util/pointer.h>
 
 namespace semantic {
 
@@ -17,7 +18,8 @@ namespace semantic {
             , expr(std::move(e))
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
 
         util::sptr<Expression const> const expr;
     };
@@ -32,7 +34,8 @@ namespace semantic {
             , alternative(std::move(a))
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
 
         util::sptr<Expression const> const predicate;
         Block const consequence;
@@ -47,7 +50,8 @@ namespace semantic {
             , ret_val(std::move(retval))
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
 
         util::sptr<Expression const> const ret_val;
     };
@@ -59,7 +63,7 @@ namespace semantic {
             : Statement(pos)
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
     };
 
     struct NameDef
@@ -71,7 +75,8 @@ namespace semantic {
             , init(std::move(i))
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
 
         std::string const name;
         util::sptr<Expression const> const init;
@@ -85,7 +90,7 @@ namespace semantic {
             , names(n)
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
 
         std::vector<std::string> const names;
     };
@@ -101,7 +106,8 @@ namespace semantic {
                 , value(std::move(v))
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
 
         std::vector<std::string> const export_point;
         util::sptr<Expression const> const value;
@@ -118,7 +124,8 @@ namespace semantic {
             , value(std::move(v))
         {}
 
-        void compile(CompilingSpace& space) const;
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
 
         util::sptr<Expression const> const set_point;
         util::sptr<Expression const> const value;

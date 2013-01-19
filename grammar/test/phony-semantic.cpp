@@ -1,8 +1,6 @@
 #include <algorithm>
 
-#include <semantic/func-body-filter.h>
-#include <semantic/global-filter.h>
-#include <semantic/symbol-def-filter.h>
+#include <semantic/filter.h>
 #include <semantic/block.h>
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
@@ -33,12 +31,12 @@ namespace {
             , consequence(std::move(c))
         {}
 
-        void compile(CompilingSpace&) const
+        void compile(BaseCompilingSpace&) const
         {
             DataTree::actualOne()(pos, BRANCH_CONSQ_ONLY);
             predicate->compile(nulSpace());
             DataTree::actualOne()(CONSEQUENCE);
-            consequence.compile(nulSpace());
+            consequence.compile(CompilingSpace());
         }
 
         util::sptr<Expression const> const predicate;
@@ -54,12 +52,12 @@ namespace {
             , alternative(std::move(a))
         {}
 
-        void compile(CompilingSpace&) const
+        void compile(BaseCompilingSpace&) const
         {
             DataTree::actualOne()(pos, BRANCH_ALTER_ONLY);
             predicate->compile(nulSpace());
             DataTree::actualOne()(ALTERNATIVE);
-            alternative.compile(nulSpace());
+            alternative.compile(CompilingSpace());
         }
 
         util::sptr<Expression const> const predicate;
@@ -67,12 +65,6 @@ namespace {
     };
 
 }
-
-SymbolTable::SymbolTable(misc::position const&
-                       , util::sref<SymbolTable const>
-                       , std::vector<std::string> const&)
-    : ext_symbols(nullptr)
-{}
 
 util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) const
 {
@@ -83,7 +75,7 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) co
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body->compile(CompilingSpace());
+    body.compile(CompilingSpace());
     return util::sptr<output::Function const>(nullptr);
 }
 
@@ -97,10 +89,10 @@ void Block::defFunc(misc::position const& pos
                   , std::vector<std::string> const& param_names
                   , util::sptr<Filter> body)
 {
-    _funcs.append(util::mkptr(new Function(pos, name, param_names, std::move(body))));
+    _funcs.append(util::mkptr(new Function(pos, name, param_names, body->deliver())));
 }
 
-void Block::compile(CompilingSpace&) const
+util::sptr<output::Statement const> Block::compile(BaseCompilingSpace&&) const
 {
     DataTree::actualOne()(BLOCK_BEGIN);
     _funcs.iter([&](util::sptr<Function const> const& func, int)
@@ -112,6 +104,7 @@ void Block::compile(CompilingSpace&) const
                     stmt->compile(nulSpace());
                 });
     DataTree::actualOne()(BLOCK_END);
+    return util::sptr<output::Statement const>(nullptr);
 }
 
 void Filter::addReturn(misc::position const& pos, util::sptr<Expression const> ret_val)
@@ -175,70 +168,49 @@ void Filter::addBranchAlterOnly(misc::position const& pos
                 new BranchAlternative(pos, std::move(predicate), std::move(alternative->_block))));
 }
 
-util::sptr<output::Statement const> Filter::compile(CompilingSpace) const
+Block Filter::deliver()
 {
-    _block.compile(nulSpace());
-    return util::sptr<output::Statement const>(nullptr);
+    return std::move(_block);
 }
 
-void FuncBodyFilter::defName(misc::position const& pos
-                           , std::string const& name
-                           , util::sptr<Expression const> init)
+void Filter::defName(misc::position const& pos
+                   , std::string const& name
+                   , util::sptr<Expression const> init)
 {
     _block.addStmt(util::mkptr(new NameDef(pos, name, std::move(init))));
 }
 
-void FuncBodyFilter::defFunc(misc::position const& pos
-                           , std::string const& name
-                           , std::vector<std::string> const& param_names
-                           , util::sptr<Filter> body)
+void Filter::defFunc(misc::position const& pos
+                   , std::string const& name
+                   , std::vector<std::string> const& param_names
+                   , util::sptr<Filter> body)
 {
     _block.defFunc(pos, name, param_names, std::move(body));
 }
 
-void SymbolDefFilter::defName(misc::position const& pos
-                            , std::string const& name
-                            , util::sptr<Expression const> init)
-{
-    _block.addStmt(util::mkptr(new NameDef(pos, name + NAME_DEF_FILTERED, std::move(init))));
-}
-
-void SymbolDefFilter::defFunc(misc::position const& pos
-                            , std::string const& name
-                            , std::vector<std::string> const& param_names
-                            , util::sptr<Filter> body)
-{
-    _block.defFunc(pos, name + FUNC_DEF_FILTERED, param_names, std::move(body));
-}
-
-util::sptr<output::Statement const> GlobalFilter::compile(CompilingSpace s) const
-{
-    return Filter::compile(std::move(s));
-}
-
-void Arithmetics::compile(CompilingSpace&) const
+void Arithmetics::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, ARITHMETICS);
     expr->compile(nulSpace());
 }
 
-void Branch::compile(CompilingSpace&) const
+void Branch::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BRANCH);
     predicate->compile(nulSpace());
     DataTree::actualOne()(CONSEQUENCE);
-    consequence.compile(nulSpace());
+    consequence.compile(CompilingSpace());
     DataTree::actualOne()(ALTERNATIVE);
-    alternative.compile(nulSpace());
+    alternative.compile(CompilingSpace());
 }
 
-void NameDef::compile(CompilingSpace&) const
+void NameDef::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, NAME_DEF, name);
     init->compile(nulSpace());
 }
 
-void Export::compile(CompilingSpace&) const
+void Export::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, EXPORT);
     std::for_each(export_point.begin()
@@ -251,7 +223,7 @@ void Export::compile(CompilingSpace&) const
     value->compile(nulSpace());
 }
 
-void Import::compile(CompilingSpace&) const
+void Import::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, IMPORT);
     std::for_each(names.begin()
@@ -262,32 +234,32 @@ void Import::compile(CompilingSpace&) const
                   });
 }
 
-void AttrSet::compile(CompilingSpace&) const
+void AttrSet::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, ATTR_SET);
     set_point->compile(nulSpace());
     value->compile(nulSpace());
 }
 
-void Return::compile(CompilingSpace&) const
+void Return::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, RETURN);
     ret_val->compile(nulSpace());
 }
 
-void ReturnNothing::compile(CompilingSpace&) const
+void ReturnNothing::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, RETURN_NOTHING);
 }
 
-util::sptr<output::Expression const> PreUnaryOp::compile(CompilingSpace&) const
+util::sptr<output::Expression const> PreUnaryOp::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, PRE_UNARY_OP, op_img)(pos, OPERAND);
     rhs->compile(nulSpace());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> BinaryOp::compile(CompilingSpace&) const
+util::sptr<output::Expression const> BinaryOp::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, op_img)(pos, OPERAND);
     lhs->compile(nulSpace());
@@ -296,38 +268,38 @@ util::sptr<output::Expression const> BinaryOp::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> TypeOf::compile(CompilingSpace&) const
+util::sptr<output::Expression const> TypeOf::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, PRE_UNARY_OP, "[ typeof ]")(pos, OPERAND);
     expr->compile(nulSpace());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Reference::compile(CompilingSpace&) const
+util::sptr<output::Expression const> Reference::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, IDENTIFIER, name);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> BoolLiteral::compile(CompilingSpace&) const
+util::sptr<output::Expression const> BoolLiteral::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BOOLEAN, util::str(value));
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> IntLiteral::compile(CompilingSpace&) const
+util::sptr<output::Expression const> IntLiteral::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, INTEGER, util::str(value));
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> FloatLiteral::compile(CompilingSpace&) const
+util::sptr<output::Expression const> FloatLiteral::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, FLOATING, util::str(value));
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> StringLiteral::compile(CompilingSpace&) const
+util::sptr<output::Expression const> StringLiteral::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, STRING, value);
     return nulOutputExpr();
@@ -341,7 +313,7 @@ static void compileList(util::ptrarr<Expression const> const& values)
                 });
 }
 
-util::sptr<output::Expression const> ListLiteral::compile(CompilingSpace&) const
+util::sptr<output::Expression const> ListLiteral::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, LIST_BEGIN);
     compileList(value);
@@ -349,25 +321,25 @@ util::sptr<output::Expression const> ListLiteral::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> PipeElement::compile(CompilingSpace&) const
+util::sptr<output::Expression const> PipeElement::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, PIPE_ELEMENT);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> PipeIndex::compile(CompilingSpace&) const
+util::sptr<output::Expression const> PipeIndex::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, PIPE_INDEX);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> PipeKey::compile(CompilingSpace&) const
+util::sptr<output::Expression const> PipeKey::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, PIPE_KEY);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListAppend::compile(CompilingSpace&) const
+util::sptr<output::Expression const> ListAppend::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ ++ ]")(pos, OPERAND);
     lhs->compile(nulSpace());
@@ -376,7 +348,7 @@ util::sptr<output::Expression const> ListAppend::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Call::compile(CompilingSpace&) const
+util::sptr<output::Expression const> Call::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, CALL_BEGIN);
     callee->compile(nulSpace());
@@ -386,7 +358,7 @@ util::sptr<output::Expression const> Call::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> MemberAccess::compile(CompilingSpace&) const
+util::sptr<output::Expression const> MemberAccess::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ . ]")(pos, OPERAND);
     referee->compile(nulSpace());
@@ -395,7 +367,7 @@ util::sptr<output::Expression const> MemberAccess::compile(CompilingSpace&) cons
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Lookup::compile(CompilingSpace&) const
+util::sptr<output::Expression const> Lookup::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[]")(pos, OPERAND);
     collection->compile(nulSpace());
@@ -404,7 +376,7 @@ util::sptr<output::Expression const> Lookup::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListSlice::compile(CompilingSpace&) const
+util::sptr<output::Expression const> ListSlice::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, LIST_SLICE_BEGIN);
     list->compile(nulSpace());
@@ -415,13 +387,13 @@ util::sptr<output::Expression const> ListSlice::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListSlice::Default::compile(CompilingSpace&) const
+util::sptr<output::Expression const> ListSlice::Default::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, LIST_SLICE_DEFAULT);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Dictionary::compile(CompilingSpace&) const
+util::sptr<output::Expression const> Dictionary::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, DICT_BEGIN);
     items.iter([&](util::ptrkv<Expression const> const& item, int)
@@ -434,7 +406,7 @@ util::sptr<output::Expression const> Dictionary::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Lambda::compile(CompilingSpace&) const
+util::sptr<output::Expression const> Lambda::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, FUNC_DEF);
     std::for_each(param_names.begin()
@@ -443,11 +415,11 @@ util::sptr<output::Expression const> Lambda::compile(CompilingSpace&) const
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body->compile(CompilingSpace());
+    body.compile(CompilingSpace());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> AsyncCall::compile(CompilingSpace&) const
+util::sptr<output::Expression const> AsyncCall::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, ASYNC_CALL);
     DataTree::actualOne()(pos, CALL_BEGIN);
@@ -467,20 +439,67 @@ util::sptr<output::Expression const> AsyncCall::compile(CompilingSpace&) const
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Pipeline::compile(CompilingSpace&) const
+util::sptr<output::Expression const> This::compile(BaseCompilingSpace&) const
 {
-    DataTree::actualOne()(pos, BINARY_OP, int(pipe_type))(pos, OPERAND);
-    list->compile(nulSpace());
-    DataTree::actualOne()(pos, OPERAND);
-    section->compile(nulSpace());
+    DataTree::actualOne()(pos, THIS);
     return nulOutputExpr();
 }
 
-CompilingSpace::CompilingSpace(SymbolTable const&)
-    : _main_block(nullptr)
+util::sptr<output::Expression const> Pipeline::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, BINARY_OP, "[ pipeline ]")(pos, OPERAND);
+    list->compile(nulSpace());
+    DataTree::actualOne()(pos, OPERAND);
+    section.compile(CompilingSpace());
+    return nulOutputExpr();
+}
+
+util::sptr<Expression const> Pipeline::createMapper(misc::position const& pos
+                                                  , util::sptr<semantic::Expression const> list
+                                                  , util::sptr<semantic::Expression const> section)
+{
+    return util::mkptr(new BinaryOp(pos, std::move(list), "[ |: ]", std::move(section)));
+}
+
+util::sptr<Expression const> Pipeline::createFilter(misc::position const& pos
+                                                  , util::sptr<semantic::Expression const> list
+                                                  , util::sptr<semantic::Expression const> section)
+{
+    return util::mkptr(new BinaryOp(pos, std::move(list), "[ |? ]", std::move(section)));
+}
+
+BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable>)
+    : _symbols(nullptr)
+    , _main_block(nullptr)
     , _current_block(nullptr)
 {}
 
+util::sptr<output::Statement const> BaseCompilingSpace::compileRet()
+{
+    return util::sptr<output::Statement const>(nullptr);
+}
+
+util::sptr<output::Statement const> BaseCompilingSpace::compileRet(
+                                            util::sptr<Expression const> const&)
+{
+    return util::sptr<output::Statement const>(nullptr);
+}
+
+util::sptr<output::Block> BaseCompilingSpace::deliver()
+{
+    return util::sptr<output::Block>(nullptr);
+}
+
+CompilingSpace::CompilingSpace()
+    : BaseCompilingSpace(util::sptr<SymbolTable>(nullptr))
+{}
+
+util::sptr<output::Block> CompilingSpace::deliver()
+{
+    return util::sptr<output::Block>(nullptr);
+}
+
+void CompilingSpace::referenceThis() {}
 bool Expression::boolValue(util::sref<SymbolTable const>) const { return false; }
 bool Reference::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Reference::literalType(util::sref<SymbolTable const>) const { return ""; }
@@ -516,3 +535,10 @@ bool MemberAccess::isAsync() const { return false; }
 bool Lookup::isAsync() const { return false; }
 bool ListSlice::isAsync() const { return false; }
 bool Dictionary::isAsync() const { return false; }
+bool Pipeline::isAsync() const { return false; }
+bool Arithmetics::isAsync() const { return false; }
+bool Branch::isAsync() const { return false; }
+bool NameDef::isAsync() const { return false; }
+bool Return::isAsync() const { return false; }
+bool Export::isAsync() const { return false; }
+bool AttrSet::isAsync() const { return false; }

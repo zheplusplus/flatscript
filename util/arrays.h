@@ -94,6 +94,11 @@ namespace util {
             return _array[index];
         }
 
+        value_type const& back() const
+        {
+            return _array.back();
+        }
+
         int size() const
         {
             return int(_array.size());

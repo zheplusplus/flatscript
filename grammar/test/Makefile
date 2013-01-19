@@ -20,16 +20,20 @@ $(TESTDIR)/test-grammar.out:$(TEST_DEP) \
                             test-expr-nodes.dt \
                             test-stmt-nodes.dt \
                             test-clause.dt \
-                            test-automations.dt \
+                            test-expr-automations.dt \
+                            test-stmt-automations.dt \
                             test-clause-builder.dt \
-                            test-anony-funcs.dt
+                            test-anony-funcs.dt \
+                            test-pipeline.dt
 	$(LINK) $(TEST_OBJ) \
 	        $(TESTDIR)/test-expr-nodes.o \
 	        $(TESTDIR)/test-stmt-nodes.o \
 	        $(TESTDIR)/test-clause.o \
-	        $(TESTDIR)/test-automations.o \
+	        $(TESTDIR)/test-expr-automations.o \
+	        $(TESTDIR)/test-stmt-automations.o \
 	        $(TESTDIR)/test-clause-builder.o \
 	        $(TESTDIR)/test-anony-funcs.o \
+	        $(TESTDIR)/test-pipeline.o \
 	        $(TEST_LIBS) \
 	     -o $(TESTDIR)/test-grammar.out
 

@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include <semantic/global-filter.h>
+#include <semantic/filter.h>
 #include <semantic/node-base.h>
 #include <semantic/function.h>
 #include <test/common.h>
@@ -12,7 +12,7 @@ using namespace test;
 
 util::sptr<semantic::Filter> test::mkfilter()
 {
-    return std::move(util::mkptr(new semantic::GlobalFilter));
+    return std::move(util::mkptr(new semantic::Filter));
 }
 
 util::sref<semantic::SymbolTable> test::nulSymbols()
@@ -68,22 +68,18 @@ std::string GrammarData::str() const
     return os.str();
 }
 
-std::string const test::NAME_DEF_FILTERED(" name def filtered");
-std::string const test::FUNC_DEF_FILTERED(" func def filtered");
-
 NodeType const test::BOOLEAN("boolean");
 NodeType const test::INTEGER("integer");
 NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
 NodeType const test::IDENTIFIER("identifier");
+NodeType const test::THIS("this");
 NodeType const test::LIST_BEGIN("list begin");
 NodeType const test::LIST_END("list end");
 
 NodeType const test::BINARY_OP("binary operation");
 NodeType const test::PRE_UNARY_OP("prefix unary operation");
 NodeType const test::OPERAND("operand");
-NodeType const test::LIST_PIPELINE_BEGIN("list pipeline begin");
-NodeType const test::LIST_PIPELINE_END("list pipeline end");
 NodeType const test::PIPE_ELEMENT("pipe element");
 NodeType const test::PIPE_INDEX("pipe index");
 NodeType const test::PIPE_KEY("pipe key");

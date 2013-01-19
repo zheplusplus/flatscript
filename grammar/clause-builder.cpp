@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include <semantic/global-filter.h>
+#include <semantic/filter.h>
 #include <semantic/node-base.h>
 #include <semantic/function.h>
 #include <report/errors.h>
@@ -132,13 +132,13 @@ void ClauseBuilder::addElse(int indent_len, misc::position const& pos)
     }
 }
 
-util::sptr<semantic::Filter> ClauseBuilder::buildAndClear()
+semantic::Block ClauseBuilder::buildAndClear()
 {
     if (!_shrinkTo(0, misc::position())) {
         error::unexpectedEof();
     }
     _clauses[0]->tryFinish(misc::position(), _clauses);
-    return _global.compile(util::mkptr(new semantic::GlobalFilter));
+    return _global.compile()->deliver();
 }
 
 bool ClauseBuilder::_shrinkTo(int level, misc::position const& pos)

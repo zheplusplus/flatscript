@@ -1,48 +1,8 @@
-#include <gtest/gtest.h>
-
-#include <test/phony-errors.h>
-
-#include "test-common.h"
-#include "../clause-builder.h"
-#include "../expr-nodes.h"
-#include "../expr-tokens.h"
-#include "../syntax-types.h"
+#include "test-clauses.h"
 
 using namespace test;
 
-struct AnonymousFunctionTest
-    : GrammarTest
-{
-    grammar::Token* id(misc::position const& pos, std::string const& img)
-    {
-        return new grammar::FactorToken(pos, util::mkptr(new grammar::Identifier(pos, img)), img);
-    }
-
-    grammar::Token* op(misc::position const& pos, std::string const& img)
-    {
-        return new grammar::OpToken(pos, img);
-    }
-
-    grammar::Token* openParen(misc::position const& pos)
-    {
-        return new grammar::OpenParenToken(pos);
-    }
-
-    grammar::Token* close(misc::position const& pos, std::string const& img)
-    {
-        return new grammar::CloserToken(pos, img);
-    }
-
-    grammar::Token* colon(misc::position const& pos)
-    {
-        return new grammar::ColonToken(pos);
-    }
-
-    grammar::Token* comma(misc::position const& pos)
-    {
-        return new grammar::CommaToken(pos);
-    }
-};
+typedef ClausesTest AnonymousFunctionTest;
 
 TEST_F(AnonymousFunctionTest, AsNameDef)
 {
@@ -69,7 +29,7 @@ TEST_F(AnonymousFunctionTest, AsNameDef)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -110,7 +70,7 @@ TEST_F(AnonymousFunctionTest, TerminateByEnd)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -161,7 +121,7 @@ TEST_F(AnonymousFunctionTest, FuncAsArg)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -205,7 +165,7 @@ TEST_F(AnonymousFunctionTest, TerminateByReturn)
                                                      ->deliver());
     builder.addReturn(0, pos_b, (new grammar::TokenSequence(id(pos_b, "souitirou")))->deliver());
 
-    builder.buildAndClear()->compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

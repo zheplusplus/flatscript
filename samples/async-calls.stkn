@@ -16,4 +16,5 @@ func cancelAtFirstTime(timeoutHandle)
     clearTimeout(timeoutHandle)
 
 cancelAtFirstTime(setInterval(%, 1))
-console.log(0)
+
+console.log('End')

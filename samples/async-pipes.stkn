@@ -16,3 +16,24 @@ func g(p, q, cb)
 
 x: list |: g(print($, %), echo(%, $i), %)
 console.log(x)
+
+func asyncSqr(element, cb)
+    setTimeout(%, 1)
+    cb(element * element)
+
+console.log(list |:
+    asyncSqr($, %x)
+    return x
+)
+
+console.log(list |:
+    asyncSqr($, %x)
+    if x % 3 = 1
+        return x
+)
+
+list |:
+    console.log($i + ':' + $)
+    setTimeout(%, 1)
+
+console.log('End')

@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <misc/const.h>
 #include <test/phony-errors.h>
 
 #include "test-common.h"
@@ -15,7 +14,7 @@ TEST_F(ExprNodesTest, Pipeline)
     misc::position pos(1);
     semantic::CompilingSpace space;
 
-    util::sptr<grammar::Expression const> p(new grammar::BinaryOp(
+    util::sptr<grammar::Expression const> p(new grammar::Pipeline(
                 pos
               , util::mkptr(new grammar::Identifier(pos, "x20130109"))
               , "|:"
@@ -24,7 +23,7 @@ TEST_F(ExprNodesTest, Pipeline)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, BINARY_OP, int(cons::MAP))
+        (pos, BINARY_OP, "[ |: ]")
         (pos, OPERAND)
             (pos, IDENTIFIER, "x20130109")
         (pos, OPERAND)
@@ -39,7 +38,7 @@ TEST_F(ExprNodesTest, PipeElementOutOfPipeEnvironment)
     misc::position pos_b(201);
     semantic::CompilingSpace space;
 
-    util::sptr<grammar::Expression const> p(new grammar::BinaryOp(
+    util::sptr<grammar::Expression const> p(new grammar::Pipeline(
                 pos
               , util::mkptr(new grammar::PipeKey(pos_a))
               , "|?"

@@ -64,10 +64,20 @@ void AutomationBase::pushOp(AutomationStack&, Token const& token)
     error::unexpectedToken(token.pos, token.image);
 }
 
+void AutomationBase::pushPipeSep(AutomationStack&, Token const& token)
+{
+    error::unexpectedToken(token.pos, token.image);
+}
+
 void AutomationBase::pushFactor(
                 AutomationStack&, util::sptr<Expression const> factor, std::string const& image)
 {
     error::unexpectedToken(factor->pos, image);
+}
+
+void AutomationBase::pushThis(AutomationStack&, misc::position const& pos)
+{
+    error::unexpectedToken(pos, "@");
 }
 
 void AutomationBase::pushOpenParen(AutomationStack&, misc::position const& pos)

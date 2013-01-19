@@ -120,10 +120,20 @@ void Arithmetics::write(std::ostream&) const
     expr->str();
 }
 
-void AsyncPipeBody::write(std::ostream&) const
+void ThisDeclaration::write(std::ostream&) const
 {
-    DataTree::actualOne()(ASYNC_PIPE_BODY, int(pipe_type));
+    DataTree::actualOne()(DEC_THIS);
+}
+
+void PipelineResult::write(std::ostream&) const
+{
+    DataTree::actualOne()(PIPELINE_RESULT);
     expr->str();
+}
+
+void PipelineNext::write(std::ostream&) const
+{
+    DataTree::actualOne()(PIPELINE_NEXT);
 }
 
 std::string Expression::strAsProp() const
@@ -294,17 +304,15 @@ std::string Lambda::str() const
     return "";
 }
 
-std::string AsyncReference::str() const
+std::string This::str() const
 {
-    DataTree::actualOne()(pos, ASYNC_REFERENCE);
+    DataTree::actualOne()(pos, THIS);
     return "";
 }
 
-std::string Pipeline::str() const
+std::string AsyncReference::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, int(pipe_type));
-    list->str();
-    section->str();
+    DataTree::actualOne()(pos, ASYNC_REFERENCE);
     return "";
 }
 
@@ -314,7 +322,7 @@ std::string AsyncPipeResult::str() const
     return "";
 }
 
-std::string AsyncPipe::str() const
+std::string AsyncPipeline::str() const
 {
     DataTree::actualOne()(pos, ASYNC_PIPELINE);
     list->str();
@@ -322,3 +330,14 @@ std::string AsyncPipe::str() const
     succession->write(dummyos());
     return "";
 }
+
+std::string SyncPipeline::str() const
+{
+    DataTree::actualOne()(pos, SYNC_PIPELINE);
+    list->str();
+    section->write(dummyos());
+    return "";
+}
+
+int Block::count() const { return 0; }
+int Export::count() const { return 0; }

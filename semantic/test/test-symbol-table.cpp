@@ -7,7 +7,6 @@
 #include "test-common.h"
 #include "../compiling-space.h"
 #include "../function.h"
-#include "../func-body-filter.h"
 #include "../stmt-nodes.h"
 #include "../expr-nodes.h"
 
@@ -52,11 +51,11 @@ TEST_F(SymbolTableTest, DefName)
     refSym()->defName(pos, "seele");
     refSym()->defName(pos, "lilith");
     ASSERT_FALSE(error::hasError());
-    semantic::SymbolTable inner_symbols(pos, refSym(), std::vector<std::string>());
-    inner_symbols.defName(pos, "nerv");
-    inner_symbols.defName(pos, "seele");
-    inner_symbols.defName(pos, "adam");
-    inner_symbols.defName(pos, "eve");
+    semantic::CompilingSpace inner_space(pos, refSym(), std::vector<std::string>());
+    inner_space.sym()->defName(pos, "nerv");
+    inner_space.sym()->defName(pos, "seele");
+    inner_space.sym()->defName(pos, "adam");
+    inner_space.sym()->defName(pos, "eve");
     ASSERT_FALSE(error::hasError());
 }
 
@@ -72,16 +71,16 @@ TEST_F(SymbolTableTest, RefLocalName)
     refSym()->compileRef(pos, "lilith")->str();
     ASSERT_FALSE(error::hasError());
 
-    semantic::SymbolTable inner_symbols(pos, refSym(), std::vector<std::string>());
-    inner_symbols.defName(pos, "nerv");
-    inner_symbols.defName(pos, "seele");
-    inner_symbols.defName(pos, "adam");
-    inner_symbols.defName(pos, "eve");
+    semantic::CompilingSpace inner_space(pos, refSym(), std::vector<std::string>());
+    inner_space.sym()->defName(pos, "nerv");
+    inner_space.sym()->defName(pos, "seele");
+    inner_space.sym()->defName(pos, "adam");
+    inner_space.sym()->defName(pos, "eve");
 
-    inner_symbols.compileRef(pos, "nerv")->str();
-    inner_symbols.compileRef(pos, "seele")->str();
-    inner_symbols.compileRef(pos, "adam")->str();
-    inner_symbols.compileRef(pos, "eve")->str();
+    inner_space.sym()->compileRef(pos, "nerv")->str();
+    inner_space.sym()->compileRef(pos, "seele")->str();
+    inner_space.sym()->compileRef(pos, "adam")->str();
+    inner_space.sym()->compileRef(pos, "eve")->str();
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -118,9 +117,9 @@ TEST_F(SymbolTableTest, RedefName)
     ASSERT_EQ("aida", redefs[1].name);
 
     clearErr();
-    semantic::SymbolTable inner_symbols(pos, refSym(), std::vector<std::string>());
-    inner_symbols.defName(pos, "aida");
-    inner_symbols.defName(pos, "suzuhara");
+    semantic::CompilingSpace inner_space(pos, refSym(), std::vector<std::string>());
+    inner_space.sym()->defName(pos, "aida");
+    inner_space.sym()->defName(pos, "suzuhara");
     ASSERT_FALSE(error::hasError());
 }
 
@@ -131,10 +130,10 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     misc::position ref_pos1(601);
     refSym()->defName(pos, "katsuragi");
 
-    semantic::SymbolTable inner_symbols_a(pos, refSym(), std::vector<std::string>());
-    inner_symbols_a.compileRef(ref_pos0, "katsuragi");
-    inner_symbols_a.compileRef(ref_pos1, "katsuragi");
-    inner_symbols_a.defName(pos, "katsuragi");
+    semantic::CompilingSpace inner_space_a(pos, refSym(), std::vector<std::string>());
+    inner_space_a.sym()->compileRef(ref_pos0, "katsuragi");
+    inner_space_a.sym()->compileRef(ref_pos1, "katsuragi");
+    inner_space_a.sym()->defName(pos, "katsuragi");
     ASSERT_TRUE(error::hasError());
     std::vector<NameRefBeforeDefRec> invalid_refs = getNameRefBeforeDefRecs();
     ASSERT_EQ(1, invalid_refs.size());
@@ -148,9 +147,9 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     refSym()->defName(pos, "penpen");
     refSym()->compileRef(pos, "penpen");
 
-    semantic::SymbolTable inner_symbols_b(pos, refSym(), std::vector<std::string>());
-    inner_symbols_b.compileRef(pos, "katsuragi");
-    inner_symbols_b.defName(pos, "penpen");
+    semantic::CompilingSpace inner_space_b(pos, refSym(), std::vector<std::string>());
+    inner_space_b.sym()->compileRef(pos, "katsuragi");
+    inner_space_b.sym()->defName(pos, "penpen");
     ASSERT_FALSE(error::hasError());
 }
 
@@ -227,4 +226,34 @@ TEST_F(SymbolTableTest, CompileRef)
         (pos, INTEGER, "20121115")
         (ref_pos, REFERENCE, "miki")
     ;
+}
+
+TEST_F(SymbolTableTest, ForbidDef)
+{
+    misc::position pos(11);
+    misc::position def_pos_a(1100);
+    misc::position def_pos_b(1101);
+
+    semantic::Filter filter;
+    refSym()->defName(pos, "ryou");
+    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
+    filter_consq->addImport(def_pos_a, std::vector<std::string>({ "nagisa", "fuuko" }));
+    filter_consq->defName(def_pos_b, "tomoya", util::mkptr(new semantic::Reference(pos, "kyou")));
+    filter.addBranch(pos
+                   , util::mkptr(new semantic::Reference(pos, "ryou"))
+                   , std::move(filter_consq)
+                   , util::mkptr(new semantic::Filter));
+
+    compile(filter, refSym());
+
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<ForbidDefNameRec> forbidDefs = getForbidDefNameRecs();
+    ASSERT_EQ(3, forbidDefs.size());
+    ASSERT_EQ(def_pos_a, forbidDefs[0].pos);
+    ASSERT_EQ("nagisa", forbidDefs[0].name);
+    ASSERT_EQ(def_pos_a, forbidDefs[1].pos);
+    ASSERT_EQ("fuuko", forbidDefs[1].name);
+    ASSERT_EQ(def_pos_b, forbidDefs[2].pos);
+    ASSERT_EQ("tomoya", forbidDefs[2].name);
 }

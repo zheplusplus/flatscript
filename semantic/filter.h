@@ -14,8 +14,6 @@ namespace semantic {
 
         Filter(Filter const&) = delete;
 
-        virtual ~Filter() {}
-
         void addReturn(misc::position const& pos, util::sptr<Expression const> ret_val);
         void addReturnNothing(misc::position const& pos);
         void addArith(misc::position const& pos, util::sptr<Expression const> expr);
@@ -40,16 +38,16 @@ namespace semantic {
                               , util::sptr<Expression const> predicate
                               , util::sptr<Filter> alternative);
 
-        virtual void defName(misc::position const& pos
-                           , std::string const& name
-                           , util::sptr<Expression const> init) = 0;
-        virtual void defFunc(misc::position const& pos
-                           , std::string const& name
-                           , std::vector<std::string> const& param_names
-                           , util::sptr<Filter> body) = 0;
+        void defName(misc::position const& pos
+                   , std::string const& name
+                   , util::sptr<Expression const> init);
+        void defFunc(misc::position const& pos
+                   , std::string const& name
+                   , std::vector<std::string> const& param_names
+                   , util::sptr<Filter> body);
 
-        virtual util::sptr<output::Statement const> compile(CompilingSpace space) const;
-    protected:
+        Block deliver();
+    private:
         void _checkBranchesTermination(misc::position const& pos
                                      , util::sptr<Filter> const& consequence
                                      , util::sptr<Filter> const& alternative);

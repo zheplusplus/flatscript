@@ -82,10 +82,25 @@ void Filter::addBranchAlterOnly(misc::position const& pos
                 new Branch(pos, std::move(predicate), Block(), std::move(alternative->_block))));
 }
 
-util::sptr<output::Statement const> Filter::compile(CompilingSpace space) const
+void Filter::defName(misc::position const& pos
+                   , std::string const& name
+                   , util::sptr<Expression const> init)
 {
-    _block.compile(space);
-    return space.deliver();
+    _checkNotTerminated(pos);
+    _block.addStmt(util::mkptr(new NameDef(pos, name, std::move(init))));
+}
+
+void Filter::defFunc(misc::position const& pos
+                   , std::string const& name
+                   , std::vector<std::string> const& param_names
+                   , util::sptr<Filter> body)
+{
+    _block.defFunc(pos, name, param_names, std::move(body));
+}
+
+Block Filter::deliver()
+{
+    return std::move(_block);
 }
 
 void Filter::_checkBranchesTermination(misc::position const& pos

@@ -1,4 +1,4 @@
-#include <semantic/node-base.h>
+#include <semantic/function.h>
 #include <report/errors.h>
 
 #include "clauses.h"

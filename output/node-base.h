@@ -30,6 +30,7 @@ namespace output {
         virtual ~Statement() {}
 
         virtual void write(std::ostream& os) const = 0;
+        virtual int count() const { return 1; };
 
         Statement() = default;
         Statement(Statement const&) = delete;

@@ -1,6 +1,8 @@
 #ifndef __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 #define __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 
+#include <semantic/filter.h>
+#include <semantic/function.h>
 #include <output/node-base.h>
 #include <output/block.h>
 #include <misc/pos-type.h>
@@ -10,6 +12,8 @@
 namespace test {
 
     std::ostream& dummyos();
+    util::sptr<output::Statement const> compile(
+        semantic::Filter& f, util::sref<semantic::SymbolTable> sym);
 
     struct SemanticData {
         misc::position const pos;
@@ -61,6 +65,7 @@ namespace test {
     extern NodeType const FLOATING;
     extern NodeType const STRING;
     extern NodeType const LIST;
+    extern NodeType const THIS;
     extern NodeType const BINARY_OP;
     extern NodeType const PRE_UNARY_OP;
     extern NodeType const REFERENCE;
@@ -72,10 +77,11 @@ namespace test {
     extern NodeType const CALL;
     extern NodeType const ASYNC_REFERENCE;
 
-    extern NodeType const LIST_PIPELINE;
     extern NodeType const ASYNC_PIPE_RESULT;
-    extern NodeType const ASYNC_PIPE_BODY;
     extern NodeType const ASYNC_PIPELINE;
+    extern NodeType const SYNC_PIPELINE;
+    extern NodeType const PIPELINE_RESULT;
+    extern NodeType const PIPELINE_NEXT;
 
     extern NodeType const LIST_SLICE;
     extern NodeType const LIST_SLICE_DEFAULT;
@@ -94,6 +100,7 @@ namespace test {
     extern NodeType const EXPORT;
     extern NodeType const EXPORT_VALUE;
     extern NodeType const ATTR_SET;
+    extern NodeType const DEC_THIS;
 
     extern NodeType const FUNC_DECL;
     extern NodeType const PARAMETER;

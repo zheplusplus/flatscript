@@ -16,3 +16,9 @@ bool position::operator==(position const& rhs) const
 {
     return line == rhs.line;
 }
+
+position& position::operator=(position const& rhs)
+{
+    line = rhs.line;
+    return *this;
+}

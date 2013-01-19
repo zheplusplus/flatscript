@@ -1,3 +1,4 @@
+#include <semantic/function.h>
 #include <report/errors.h>
 
 #include "stmt-automations.h"
@@ -9,13 +10,13 @@ using namespace grammar;
 
 void ExprStmtAutomation::activated(AutomationStack& stack)
 {
-    stack.push(util::mkptr(new ArithAutomation));
+    stack.push(util::mkptr(new PipelineAutomation));
 }
 
 void ExprStmtAutomation::pushColon(AutomationStack& stack, misc::position const& pos)
 {
     if (_exprs.size() < 2) {
-        stack.push(util::mkptr(new ArithAutomation));
+        stack.push(util::mkptr(new PipelineAutomation));
         return;
     }
     error::unexpectedToken(pos, ":");
@@ -51,7 +52,7 @@ util::sptr<Statement> ExprStmtAutomation::_reduceAsStmt()
 
 void ExprReceiver::activated(AutomationStack& stack)
 {
-    stack.push(util::mkptr(new ArithAutomation));
+    stack.push(util::mkptr(new PipelineAutomation));
 }
 
 void ExprReceiver::accepted(AutomationStack&, util::sptr<Expression const> expr)

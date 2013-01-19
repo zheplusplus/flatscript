@@ -339,6 +339,14 @@ std::cerr << "    the expression could not be folded." << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'expr')),
 
+ReportFunc(
+'importReservedWord',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    import reserved word as name: " << name << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
+
 ]
 
 def write_errors_header():

@@ -31,8 +31,8 @@
 
 %token INDENT EOL
 %token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_IMPORT KW_EXPORT KW_RESERVED
-%token LIST_APPEND LE GE NE AND OR PIPE_MAP PIPE_FILTER PROP_SEP
-%token KW_TYPEOF BOOL_TRUE BOOL_FALSE
+%token PROP_SEP OPERATOR PIPE_SEP
+%token BOOL_TRUE BOOL_FALSE
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
 %token IDENT
 %token PIPE_ELEMENT PIPE_INDEX PIPE_KEY
@@ -160,49 +160,14 @@ expr_sequence:
 ;
 
 expr_token:
-    '.'
-    {
-        $$ = new grammar::OpToken(grammar::here(), ".");
-    }
-    |
-    '!'
-    {
-        $$ = new grammar::OpToken(grammar::here(), "!");
-    }
-    |
-    AND
-    {
-        $$ = new grammar::OpToken(grammar::here(), "&&");
-    }
-    |
-    OR
-    {
-        $$ = new grammar::OpToken(grammar::here(), "||");
-    }
-    |
-    KW_TYPEOF
-    {
-        $$ = new grammar::OpToken(grammar::here(), "typeof");
-    }
-    |
     op
     {
         $$ = new grammar::OpToken(grammar::here(), $1->deliver());
     }
     |
-    LIST_APPEND
+    PIPE_SEP
     {
-        $$ = new grammar::OpToken(grammar::here(), "++");
-    }
-    |
-    PIPE_MAP
-    {
-        $$ = new grammar::OpToken(grammar::here(), "|:");
-    }
-    |
-    PIPE_FILTER
-    {
-        $$ = new grammar::OpToken(grammar::here(), "|?");
+        $$ = new grammar::PipeSepToken(grammar::here(), yytext);
     }
     |
     PROP_SEP
@@ -316,6 +281,11 @@ expr_token:
     {
         $$ = new grammar::CommaToken(grammar::here());
     }
+    |
+    '@'
+    {
+        $$ = new grammar::ThisToken(grammar::here());
+    }
 ;
 
 name_list:
@@ -376,57 +346,17 @@ ident:
 ;
 
 op:
-    '<'
+    OPERATOR
     {
         $$ = new grammar::OpImage(yytext);
     }
     |
-    '>'
+    '.'
     {
         $$ = new grammar::OpImage(yytext);
     }
     |
-    GE
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    LE
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    '='
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    NE
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    '+'
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    '-'
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    '*'
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    '/'
-    {
-        $$ = new grammar::OpImage(yytext);
-    }
-    |
-    '%'
+    '!'
     {
         $$ = new grammar::OpImage(yytext);
     }

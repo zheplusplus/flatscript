@@ -1,6 +1,8 @@
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
-#include <semantic/func-body-filter.h>
+#include <semantic/function.h>
+#include <semantic/filter.h>
+#include <util/string.h>
 #include <report/errors.h>
 
 #include "expr-nodes.h"
@@ -36,12 +38,6 @@ util::sptr<semantic::Expression const> BinaryOp::reduceAsExpr(BaseReducingEnv co
         return util::mkptr(new semantic::ListAppend(
                             pos, lhs->reduceAsExpr(env), rhs->reduceAsExpr(env)));
     }
-    if ("|:" == op_img || "|?" == op_img) {
-        return util::mkptr(new semantic::Pipeline(pos
-                                                , lhs->reduceAsExpr(env)
-                                                , rhs->reduceAsExpr(PipeReducingEnv())
-                                                , ':' == op_img[1] ? cons::MAP : cons::FILTER));
-    }
     return util::mkptr(new semantic::BinaryOp(
                             pos, lhs->reduceAsExpr(env), op_img, rhs->reduceAsExpr(env)));
 }
@@ -70,9 +66,19 @@ util::sptr<semantic::Expression const> Identifier::reduceAsExpr(BaseReducingEnv 
     return util::mkptr(new semantic::Reference(pos, name));
 }
 
+std::string BoolLiteral::reduceAsProperty() const
+{
+    return util::str(value);
+}
+
 util::sptr<semantic::Expression const> BoolLiteral::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::BoolLiteral(pos, value));
+}
+
+std::string IntLiteral::reduceAsProperty() const
+{
+    return util::str(value);
 }
 
 util::sptr<semantic::Expression const> IntLiteral::reduceAsExpr(BaseReducingEnv const&) const
@@ -80,9 +86,19 @@ util::sptr<semantic::Expression const> IntLiteral::reduceAsExpr(BaseReducingEnv 
     return util::mkptr(new semantic::IntLiteral(pos, value));
 }
 
+std::string FloatLiteral::reduceAsProperty() const
+{
+    return util::str(value);
+}
+
 util::sptr<semantic::Expression const> FloatLiteral::reduceAsExpr(BaseReducingEnv const&) const
 {
     return util::mkptr(new semantic::FloatLiteral(pos, value));
+}
+
+std::string StringLiteral::reduceAsProperty() const
+{
+    return value;
 }
 
 util::sptr<semantic::Expression const> StringLiteral::reduceAsExpr(BaseReducingEnv const&) const
@@ -174,10 +190,9 @@ util::sptr<semantic::Expression const> Dictionary::reduceAsExpr(BaseReducingEnv 
               })));
 }
 
-util::sptr<semantic::Expression const> Lambda::reduceAsExpr(BaseReducingEnv const&) const
+util::sptr<semantic::Expression const> Lambda::reduceAsExpr(BaseReducingEnv const& env) const
 {
-    return util::mkptr(new semantic::Lambda(pos, param_names, body.compile(
-                                    util::mkptr(new semantic::FuncBodyFilter(pos, param_names)))));
+    return util::mkptr(new semantic::Lambda(pos, param_names, body.compile(env)->deliver()));
 }
 
 util::sptr<semantic::Expression const> AsyncPlaceholder::reduceAsExpr(BaseReducingEnv const&) const
@@ -191,4 +206,25 @@ util::sptr<semantic::Expression const> AsyncPlaceholder::reduceAsArg(
 {
     env.setAsync(pos, index, param_names);
     return util::sptr<semantic::Expression const>(nullptr);
+}
+
+util::sptr<semantic::Expression const> This::reduceAsExpr(BaseReducingEnv const&) const
+{
+    return util::mkptr(new semantic::This(pos));
+}
+
+util::sptr<semantic::Expression const> Pipeline::reduceAsExpr(BaseReducingEnv const& env) const
+{
+    if ("|:" == op_img) {
+        return semantic::Pipeline::createMapper(
+                        pos, lhs->reduceAsExpr(env), rhs->reduceAsExpr(PipeReducingEnv()));
+    }
+    return semantic::Pipeline::createFilter(
+                    pos, lhs->reduceAsExpr(env), rhs->reduceAsExpr(PipeReducingEnv()));
+}
+
+util::sptr<semantic::Expression const> BlockPipeline::reduceAsExpr(BaseReducingEnv const& env) const
+{
+    return util::mkptr(new semantic::Pipeline(
+                    pos, list->reduceAsExpr(env), section.compile(PipeReducingEnv())->deliver()));
 }

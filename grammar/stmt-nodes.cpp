@@ -1,69 +1,60 @@
 #include <semantic/node-base.h>
-#include <semantic/symbol-def-filter.h>
+#include <semantic/function.h>
 
 #include "stmt-nodes.h"
 #include "function.h"
 
 using namespace grammar;
 
-static util::sptr<semantic::Filter> mkSymDefFilter()
+void Arithmetics::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
-    return util::mkptr(new semantic::SymbolDefFilter);
+    filter->addArith(pos, expr->reduceAsExpr(env));
 }
 
-void Arithmetics::compile(util::sref<semantic::Filter> filter) const
-{
-    filter->addArith(pos, expr->reduceAsExpr(ExprReducingEnv()));
-}
-
-void Branch::compile(util::sref<semantic::Filter> filter) const
+void Branch::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
     filter->addBranch(pos
-                    , predicate->reduceAsExpr(ExprReducingEnv())
-                    , consequence.compile(mkSymDefFilter())
-                    , alternative.compile(mkSymDefFilter()));
+                    , predicate->reduceAsExpr(env)
+                    , consequence.compile(env)
+                    , alternative.compile(env));
 }
 
-void BranchConsqOnly::compile(util::sref<semantic::Filter> filter) const
+void BranchConsqOnly::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
-    filter->addBranch(
-            pos, predicate->reduceAsExpr(ExprReducingEnv()), consequence.compile(mkSymDefFilter()));
+    filter->addBranch(pos, predicate->reduceAsExpr(env), consequence.compile(env));
 }
 
-void BranchAlterOnly::compile(util::sref<semantic::Filter> filter) const
+void BranchAlterOnly::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
-    filter->addBranchAlterOnly(
-            pos, predicate->reduceAsExpr(ExprReducingEnv()), alternative.compile(mkSymDefFilter()));
+    filter->addBranchAlterOnly(pos, predicate->reduceAsExpr(env), alternative.compile(env));
 }
 
-void Return::compile(util::sref<semantic::Filter> filter) const
+void Return::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
-    filter->addReturn(pos, ret_val->reduceAsExpr(ExprReducingEnv()));
+    filter->addReturn(pos, ret_val->reduceAsExpr(env));
 }
 
-void ReturnNothing::compile(util::sref<semantic::Filter> filter) const
+void ReturnNothing::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const&) const
 {
     filter->addReturnNothing(pos);
 }
 
-void NameDef::compile(util::sref<semantic::Filter> filter) const
+void NameDef::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
-    filter->defName(pos, name, init->reduceAsExpr(ExprReducingEnv()));
+    filter->defName(pos, name, init->reduceAsExpr(env));
 }
 
-void Import::compile(util::sref<semantic::Filter> filter) const
+void Import::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const&) const
 {
     filter->addImport(pos, names);
 }
 
-void Export::compile(util::sref<semantic::Filter> filter) const
+void Export::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
-    filter->addExport(pos, export_point, value->reduceAsExpr(ExprReducingEnv()));
+    filter->addExport(pos, export_point, value->reduceAsExpr(env));
 }
 
-void AttrSet::compile(util::sref<semantic::Filter> filter) const
+void AttrSet::compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const
 {
-    filter->addAttrSet(pos
-                     , set_point->reduceAsLeftValue(ExprReducingEnv())
-                     , value->reduceAsExpr(ExprReducingEnv()));
+    filter->addAttrSet(pos, set_point->reduceAsLeftValue(env), value->reduceAsExpr(env));
 }

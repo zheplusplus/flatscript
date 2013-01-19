@@ -1,5 +1,5 @@
 #include <semantic/expr-nodes.h>
-#include <semantic/filter.h>
+#include <semantic/function.h>
 #include <report/errors.h>
 
 #include "node-base.h"
@@ -20,6 +20,11 @@ std::string Expression::reduceAsName() const
 {
     error::invalidName(pos);
     return "";
+}
+
+std::string Expression::reduceAsProperty() const
+{
+    return reduceAsName();
 }
 
 util::sptr<semantic::Expression const> Expression::reduceAsLeftValue(BaseReducingEnv const&) const

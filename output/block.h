@@ -17,6 +17,7 @@ namespace output {
         Block(Block const&) = delete;
 
         void write(std::ostream& os) const;
+        int count() const;
         void addStmt(util::sptr<Statement const> stmt);
         void addFunc(util::sptr<Function const> func);
         void append(util::sptr<Block> b);

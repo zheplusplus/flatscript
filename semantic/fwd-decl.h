@@ -10,6 +10,7 @@ namespace semantic {
     struct Block;
     struct Function;
     struct SymbolTable;
+    struct BaseCompilingSpace;
     struct CompilingSpace;
 
 }

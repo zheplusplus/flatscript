@@ -17,9 +17,9 @@ TEST_F(StmtNodesTest, Arithmetics)
     util::sptr<semantic::Filter> filter(std::move(mkfilter()));
     grammar::Arithmetics arith0(pos, util::mkptr(new grammar::IntLiteral(pos, "1840")));
     grammar::Arithmetics arith1(pos, util::mkptr(new grammar::BoolLiteral(pos, false)));
-    arith0.compile(*filter);
-    arith1.compile(*filter);
-    filter->compile(semantic::CompilingSpace());
+    arith0.compile(*filter, grammar::ExprReducingEnv());
+    arith1.compile(*filter, grammar::ExprReducingEnv());
+    filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -38,9 +38,9 @@ TEST_F(StmtNodesTest, NameDef)
     util::sptr<semantic::Filter> filter(std::move(mkfilter()));
     grammar::NameDef def0(pos, "Shinji", util::mkptr(new grammar::FloatLiteral(pos, "18.47")));
     grammar::NameDef def1(pos, "Asuka", util::mkptr(new grammar::Identifier(pos, "tsundere")));
-    def0.compile(*filter);
-    def1.compile(*filter);
-    filter->compile(semantic::CompilingSpace());
+    def0.compile(*filter, grammar::ExprReducingEnv());
+    def1.compile(*filter, grammar::ExprReducingEnv());
+    filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -59,9 +59,9 @@ TEST_F(StmtNodesTest, Returns)
     util::sptr<semantic::Filter> filter(std::move(mkfilter()));
     grammar::Return ret0(pos, util::mkptr(new grammar::Identifier(pos, "KaworuNagisa")));
     grammar::ReturnNothing ret1(pos);
-    ret0.compile(*filter);
-    ret1.compile(*filter);
-    filter->compile(semantic::CompilingSpace());
+    ret0.compile(*filter, grammar::ExprReducingEnv());
+    ret1.compile(*filter, grammar::ExprReducingEnv());
+    filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -76,12 +76,11 @@ TEST_F(StmtNodesTest, Returns)
 TEST_F(StmtNodesTest, Block)
 {
     misc::position pos(4);
-    util::sptr<semantic::Filter> filter(std::move(mkfilter()));
     grammar::Block block;
     block.addStmt(util::mkptr(new grammar::NameDef(
                     pos, "Misato", util::mkptr(new grammar::Identifier(pos, "Katsuragi")))));
     block.addStmt(util::mkptr(new grammar::ReturnNothing(pos)));
-    block.compile(std::move(filter))->compile(semantic::CompilingSpace());
+    block.compile()->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -101,7 +100,7 @@ TEST_F(StmtNodesTest, Branch)
                   , util::mkptr(new grammar::BoolLiteral(pos, true))
                   , std::move(grammar::Block())
                   , std::move(grammar::Block()))
-        .compile(*filter);
+        .compile(*filter, grammar::ExprReducingEnv());
 
     grammar::Block block0;
     block0.addStmt(util::mkptr(new grammar::Arithmetics(
@@ -109,7 +108,7 @@ TEST_F(StmtNodesTest, Branch)
     block0.addStmt(util::mkptr(new grammar::ReturnNothing(pos)));
     grammar::BranchConsqOnly(
                 pos, util::mkptr(new grammar::BoolLiteral(pos, false)), std::move(block0))
-        .compile(*filter);
+        .compile(*filter, grammar::ExprReducingEnv());
 
     grammar::Block block1;
     block1.addStmt(util::mkptr(new grammar::Arithmetics(
@@ -117,7 +116,7 @@ TEST_F(StmtNodesTest, Branch)
     block1.addStmt(util::mkptr(new grammar::ReturnNothing(pos)));
     grammar::BranchAlterOnly(
                 pos, util::mkptr(new grammar::BoolLiteral(pos, true)), std::move(block1))
-        .compile(*filter);
+        .compile(*filter, grammar::ExprReducingEnv());
 
     grammar::Block block2;
     block2.addStmt(util::mkptr(new grammar::Arithmetics(
@@ -130,8 +129,8 @@ TEST_F(StmtNodesTest, Branch)
                   , util::mkptr(new grammar::BoolLiteral(pos, false))
                   , std::move(block2)
                   , std::move(block3))
-        .compile(*filter);
-    filter->compile(semantic::CompilingSpace());
+        .compile(*filter, grammar::ExprReducingEnv());
+    filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -196,7 +195,7 @@ TEST_F(StmtNodesTest, Functions)
                           , std::vector<std::string>({ "Konata", "Kagami", "Tsukasa", "Miyuki" })
                           , std::move(body));
     func1.compile(*filter);
-    filter->compile(semantic::CompilingSpace());
+    filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -243,7 +242,7 @@ TEST_F(StmtNodesTest, Mixed)
                          , std::vector<std::string>({ "Suzumiya", "Koizumi", "Nagato", "Asahina" })
                          , std::move(body));
     func.compile(*filter);
-    filter->compile(semantic::CompilingSpace());
+    filter->deliver().compile(semantic::CompilingSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

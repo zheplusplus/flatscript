@@ -50,3 +50,4 @@ verify lambda
 verify set-timeout
 verify async-calls
 verify async-pipes
+verify ref-this

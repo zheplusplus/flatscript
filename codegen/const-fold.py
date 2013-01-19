@@ -14,7 +14,7 @@ def type_mapping(t):
     }
     return mapper[t] if t in mapper else t
 
-PRE_UNARY_OPS = ['+', '-', '!', '*']
+PRE_UNARY_OPS = ['+', '-', '!', '*', '~']
 
 def pre_unary_op_map(op):
     mapper = {
@@ -26,14 +26,17 @@ PRE_UNARY_OPERATIONS = {
     ('!', 'bool'): 'bool',
     ('+', 'int'): 'int',
     ('-', 'int'): 'int',
+    ('~', 'int'): 'int',
     ('+', 'float'): 'float',
     ('-', 'float'): 'float',
 }
 
-BINARY_OPS = ['+', '-', '*', '/', '%', '=', '!=', '<', '>', '<=', '>=', '||', '&&']
+BINARY_OPS = ['+', '-', '*', '/', '%', '=', '!=', '<', '>', '<=', '>=', '||', '&&',
+              '^', '|', '&', '<<', '>>', '>>>']
 def binary_op_map(op):
     mapper = {
         '=': '==',
+        '>>>': '>>',
     }
     return mapper[op] if op in mapper else op
 
@@ -51,6 +54,12 @@ BINARY_OP_NAMES = {
     '>=': 'ge',
     '||': 'or',
     '&&': 'and',
+    '^': 'bitwise_xor',
+    '|': 'bitwise_or',
+    '&': 'bitwise_and',
+    '<<': 'bitwise_shl',
+    '>>': 'bitwise_shr',
+    '>>>': 'bitwise_ushr',
 }
 
 def gen_binary_operations():
@@ -74,6 +83,8 @@ def gen_binary_operations():
     op[('!=', 'bool', 'bool')] = 'bool'
     op[('||', 'bool', 'bool')] = 'bool'
     op[('&&', 'bool', 'bool')] = 'bool'
+    for o in ['^', '|', '&', '<<', '>>', '>>>']:
+        op[(o, 'int', 'int')] = 'int'
     return op
 
 BINARY_OPERATIONS = gen_binary_operations()
@@ -131,7 +142,7 @@ IMPL_BEGIN = lineno() + '''
 #include <report/errors.h>
 
 #include "const-fold.h"
-#include "filter.h"
+#include "function.h"
 #include "expr-nodes.h"
 
 using namespace semantic;
@@ -276,6 +287,26 @@ def build_op_funcs():
                     return lhs % rhs;
                 )$
             '''.format(rt=type_mapping(tp), tp=tp, rtp=type_mapping(rhs_type)))
+    op_funcs.append(lineno() + '''
+        mpz_class int_bitwise_shl_operate(
+                misc::position const&, mpz_class const& lhs, mpz_class const& rhs)
+        $(
+            return mpz_class(lhs.get_si() << rhs.get_si());
+        )$
+
+        mpz_class int_bitwise_shr_operate(
+                misc::position const&, mpz_class const& lhs, mpz_class const& rhs)
+        $(
+            return mpz_class(lhs.get_si() >> rhs.get_si());
+        )$
+
+        mpz_class int_bitwise_ushr_operate(
+                misc::position const&, mpz_class const& lhs, mpz_class const& rhs)
+        $(
+            typedef unsigned long ulong;
+            return mpz_class(ulong(lhs.get_si()) >> rhs.get_si());
+        )$
+    ''')
     return ''.join(op_funcs)
 
 def build_type_map_impl():

@@ -81,6 +81,7 @@ namespace grammar {
             , value(v)
         {}
 
+        std::string reduceAsProperty() const;
         util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
 
         bool const value;
@@ -94,6 +95,7 @@ namespace grammar {
             , value(v)
         {}
 
+        std::string reduceAsProperty() const;
         util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
 
         mpz_class const value;
@@ -107,6 +109,7 @@ namespace grammar {
             , value(v)
         {}
 
+        std::string reduceAsProperty() const;
         util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
 
         mpf_class const value;
@@ -120,6 +123,7 @@ namespace grammar {
             , value(v)
         {}
 
+        std::string reduceAsProperty() const;
         util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
 
         std::string const value;
@@ -258,7 +262,7 @@ namespace grammar {
             , body(std::move(b))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
 
         std::vector<std::string> const param_names;
         Block const body;
@@ -276,6 +280,44 @@ namespace grammar {
         util::sptr<semantic::Expression const> reduceAsArg(ArgReducingEnv& env, int index) const;
 
         std::vector<std::string> const param_names;
+    };
+
+    struct This
+        : Expression
+    {
+        explicit This(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+    };
+
+    struct Pipeline
+        : BinaryOp
+    {
+        Pipeline(misc::position const& pos
+               , util::sptr<Expression const> lhs
+               , std::string const& op
+               , util::sptr<Expression const> rhs)
+            : BinaryOp(pos, std::move(lhs), op, std::move(rhs))
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+    };
+
+    struct BlockPipeline
+        : Expression
+    {
+        BlockPipeline(misc::position const& pos, util::sptr<Expression const> ls, Block sec)
+            : Expression(pos)
+            , list(std::move(ls))
+            , section(std::move(sec))
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+
+        util::sptr<Expression const> const list;
+        Block const section;
     };
 
 }
