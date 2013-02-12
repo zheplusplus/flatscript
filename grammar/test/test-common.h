@@ -5,6 +5,7 @@
 #include <semantic/filter.h>
 #include <semantic/compiling-space.h>
 #include <output/node-base.h>
+#include <output/function.h>
 #include <misc/pos-type.h>
 #include <test/data-node.h>
 #include <test/data-trees.h>
@@ -15,6 +16,8 @@
 
 namespace test {
 
+    extern std::map<std::string, grammar::TokenType> const IMAGE_TYPE_MAP;
+
     util::sptr<semantic::Filter> mkfilter();
     util::sref<semantic::SymbolTable> nulSymbols();
     semantic::CompilingSpace& nulSpace();
@@ -24,35 +27,14 @@ namespace test {
     {
         TestClause()
             : grammar::ClauseBase(-1)
-            , stmt_or_nul_if_not_set(nullptr)
-            , func_or_nul_if_not_set(nullptr)
             , filter(nullptr)
         {}
 
-        void acceptStmt(util::sptr<grammar::Statement> s)
-        {
-            stmt_or_nul_if_not_set = std::move(s);
-        }
-
-        void acceptFunc(util::sptr<grammar::Function const> f)
-        {
-            func_or_nul_if_not_set = std::move(f);
-        }
-
         void compile()
         {
-            grammar::Block block;
-            if (stmt_or_nul_if_not_set.not_nul()) {
-                block.addStmt(std::move(stmt_or_nul_if_not_set));
-            }
-            if (func_or_nul_if_not_set.not_nul()) {
-                block.addFunc(std::move(func_or_nul_if_not_set));
-            }
-            filter = std::move(block.compile());
+            filter = std::move(_block.compile());
         }
 
-        util::sptr<grammar::Statement> stmt_or_nul_if_not_set;
-        util::sptr<grammar::Function const> func_or_nul_if_not_set;
         util::sptr<semantic::Filter> filter;
 
         void deliver() {}
@@ -111,12 +93,15 @@ namespace test {
     extern NodeType const LIST_BEGIN;
     extern NodeType const LIST_END;
 
-    extern NodeType const BINARY_OP;
+    extern NodeType const UNDEFINED;
     extern NodeType const PRE_UNARY_OP;
+    extern NodeType const BINARY_OP;
+    extern NodeType const CONDITIONAL;
     extern NodeType const OPERAND;
     extern NodeType const PIPE_ELEMENT;
     extern NodeType const PIPE_INDEX;
     extern NodeType const PIPE_KEY;
+    extern NodeType const PIPE_RESULT;
 
     extern NodeType const CALL_BEGIN;
     extern NodeType const CALL_END;
@@ -127,7 +112,6 @@ namespace test {
 
     extern NodeType const LIST_SLICE_BEGIN;
     extern NodeType const LIST_SLICE_END;
-    extern NodeType const LIST_SLICE_DEFAULT;
 
     extern NodeType const DICT_BEGIN;
     extern NodeType const DICT_END;
@@ -142,6 +126,7 @@ namespace test {
     extern NodeType const EXPORT_VALUE;
     extern NodeType const ATTR_SET;
 
+    extern NodeType const REGULAR_ASYNC_PARAM_INDEX;
     extern NodeType const FUNC_DEF;
     extern NodeType const PARAMETER;
 

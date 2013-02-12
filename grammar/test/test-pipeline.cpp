@@ -102,3 +102,65 @@ TEST_F(PipelineTest, MultiLinesPipelineSeparatedByFilterBlock)
     ASSERT_EQ(1, recs.size());
     EXPECT_EQ(pos_b, recs[0].pos);
 }
+
+TEST_F(PipelineTest, FirstSectionEmpty)
+{
+    misc::position pos(4);
+    misc::position pos_a(400);
+    misc::position pos_b(401);
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "batora")))
+                                                   ->add(colon(pos))
+                                                   ->add(pipeSep(pos_a, "|:"))
+                                                   ->add(pipeElement(pos_b))
+                                                   ->deliver());
+    builder.buildAndClear();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<InvalidEmptyExprRec> recs(getInvalidEmptyExprRecs());
+    ASSERT_EQ(1, recs.size());
+    EXPECT_EQ(pos_a, recs[0].pos);
+}
+
+TEST_F(PipelineTest, SectionSectionEmpty)
+{
+    misc::position pos(5);
+    misc::position pos_a(500);
+    misc::position pos_b(501);
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "kanon")))
+                                                   ->add(colon(pos))
+                                                   ->add(id(pos, "jesika"))
+                                                   ->add(pipeSep(pos_a, "|:"))
+                                                   ->add(pipeSep(pos_b, "|:"))
+                                                   ->add(pipeElement(pos))
+                                                   ->deliver());
+    builder.buildAndClear();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<InvalidEmptyExprRec> recs(getInvalidEmptyExprRecs());
+    ASSERT_EQ(1, recs.size());
+    EXPECT_EQ(pos_b, recs[0].pos);
+}
+
+TEST_F(PipelineTest, FirstSectionEmptyOnBlockPipeline)
+{
+    misc::position pos(6);
+    misc::position pos_a(600);
+    misc::position pos_b(601);
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "ronoue")))
+                                                   ->add(colon(pos_a))
+                                                   ->add(pipeSep(pos_b, "|:"))
+                                                   ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(id(pos, "kinzou")))
+                                                   ->add(colon(pos))
+                                                   ->add(pipeElement(pos))
+                                                   ->deliver());
+    builder.buildAndClear();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<InvalidEmptyExprRec> recs(getInvalidEmptyExprRecs());
+    ASSERT_EQ(1, recs.size());
+    EXPECT_EQ(pos_b, recs[0].pos);
+}

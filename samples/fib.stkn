@@ -1,9 +1,7 @@
 func fib_0(x)
     func fib_add()
         return fib_0(x - 1) + fib_0(x - 2)
-    if x < 2
-        return 1
-    return fib_add()
+    return 1 if x < 2 else fib_add()
 
 console.log(fib_0(0))
 console.log(fib_0(1))

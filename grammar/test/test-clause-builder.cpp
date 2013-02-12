@@ -1,18 +1,10 @@
-#include <gtest/gtest.h>
-
-#include <test/phony-errors.h>
-
-#include "test-common.h"
-#include "../clause-builder.h"
+#include "test-clauses.h"
 #include "../function.h"
 #include "../stmt-nodes.h"
-#include "../expr-nodes.h"
-#include "../expr-tokens.h"
-#include "../syntax-types.h"
 
 using namespace test;
 
-typedef GrammarTest ClauseBuilderTest;
+typedef ClausesTest ClauseBuilderTest;
 
 TEST_F(ClauseBuilderTest, Empty)
 {
@@ -33,10 +25,11 @@ TEST_F(ClauseBuilderTest, IfBranch)
     misc::position pos(2);
 
     grammar::ClauseBuilder builder;
-    builder.addIf(0, pos, (new grammar::TokenSequence(
-              new grammar::FactorToken(
-                        pos, util::mkptr(new grammar::Identifier(pos, "kaeri")), "kaeri")))
-        ->add(new grammar::OpToken(pos, "+"))
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+              new grammar::TypedToken(pos, "if", grammar::IF)))
+        ->add(new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "kaeri")), "kaeri"))
+        ->add(op(pos, "+"))
         ->deliver());
     builder.addArith(2, pos, (new grammar::TokenSequence(
               new grammar::FactorToken(
@@ -74,24 +67,30 @@ TEST_F(ClauseBuilderTest, IfBranchErrorElseAlreadyMatched)
     misc::position else_pos_b(301);
 
     grammar::ClauseBuilder builder;
-    builder.addIf(0, pos, (new grammar::TokenSequence(
-              new grammar::FactorToken(
-                            pos, util::mkptr(new grammar::Identifier(pos, "yes")), "yes")))
-                                  ->deliver());
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(pos, "if", grammar::IF)))
+              ->add(new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "yes")), "yes"))
+              ->deliver());
     builder.addArith(1, pos, (new grammar::TokenSequence(
               new grammar::FactorToken(
                             pos, util::mkptr(new grammar::Identifier(pos, "i")), "i")))
                                   ->deliver());
-    builder.addElse(0, else_pos_a);
+    builder.addArith(0, else_pos_a, (new grammar::TokenSequence(
+                    new grammar::TypedToken(else_pos_a, "else", grammar::ELSE)))
+                                                ->deliver());
     builder.addArith(1, pos, (new grammar::TokenSequence(
               new grammar::FactorToken(
                             pos, util::mkptr(new grammar::Identifier(pos, "will")), "will")))
                                   ->deliver());
-    builder.addElse(0, else_pos_b);
+    builder.addArith(0, else_pos_b, (new grammar::TokenSequence(
+                    new grammar::TypedToken(else_pos_b, "else", grammar::ELSE)))
+                  ->deliver());
     builder.addArith(1, pos, (new grammar::TokenSequence(
               new grammar::FactorToken(
                             pos, util::mkptr(new grammar::Identifier(pos, "nadia")), "nadia")))
                                   ->deliver());
+    builder.buildAndClear();
 
     ASSERT_TRUE(error::hasError());
     ASSERT_EQ(1, getIfAlreadyMatchElseRecs().size());
@@ -106,14 +105,15 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
     misc::position item_pos2(6);
 
     grammar::ClauseBuilder builder0;
-    builder0.addIf(0, item_pos0, (new grammar::TokenSequence(
-            new grammar::FactorToken(
-                      item_pos0, util::mkptr(new grammar::BoolLiteral(item_pos0, true)), "true")))
-                                      ->deliver());
+    builder0.addArith(0, item_pos0, (new grammar::TokenSequence(
+                  new grammar::TypedToken(item_pos0, "if", grammar::IF)))
+            ->add(new grammar::FactorToken(
+                      item_pos0, util::mkptr(new grammar::BoolLiteral(item_pos0, true)), "true"))
+            ->deliver());
         builder0.addArith(1, item_pos1, (new grammar::TokenSequence(
                 new grammar::FactorToken(item_pos1, util::mkptr(
                                 new grammar::Identifier(item_pos1, "wind_force")), "wind_force")))
-          ->add(new grammar::ColonToken(item_pos1))
+          ->add(new grammar::TypedToken(item_pos1, ":", grammar::COLON))
           ->add(new grammar::FactorToken(
                       item_pos1, util::mkptr(new grammar::IntLiteral(item_pos1, "13571")), "13571"))
           ->deliver());
@@ -126,7 +126,9 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
                                 new grammar::FloatLiteral(item_pos0, "0.000123")), "0.000123")))
                                                     ->deliver());
         builder0.addReturn(1, item_pos1, std::vector<util::sptr<grammar::Token>>());
-    builder0.addElse(0, item_pos2);
+    builder0.addArith(0, item_pos2, (new grammar::TokenSequence(
+                    new grammar::TypedToken(item_pos2, "else", grammar::ELSE)))
+                  ->deliver());
         builder0.addIfnot(1, item_pos2, (new grammar::TokenSequence(
                 new grammar::FactorToken(item_pos2, util::mkptr(
                                 new grammar::Identifier(item_pos2, "cliffkiller")), "cliffkiller")))
@@ -135,10 +137,19 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
                 new grammar::FactorToken(item_pos0, util::mkptr(
                                 new grammar::Identifier(item_pos0, "skystrike")), "skystrike")))
                                               ->deliver());
-    builder0.addFunction(0
-                       , item_pos1
-                       , "goldenstrike_arch"
-                       , std::vector<std::string>({ "amn", "tir" }));
+    builder0.addArith(0, item_pos1, (new grammar::TokenSequence(
+                    new grammar::TypedToken(item_pos1, "func", grammar::FUNC)))
+                  ->add(new grammar::FactorToken(item_pos1, util::mkptr(
+                                new grammar::Identifier(item_pos1, "goldenstrike_arch"))
+                          , "goldenstrike_arch"))
+                  ->add(open(item_pos1, "("))
+                  ->add(new grammar::FactorToken(item_pos1, util::mkptr(
+                                new grammar::Identifier(item_pos1, "amn")), "amn"))
+                  ->add(comma(item_pos1))
+                  ->add(new grammar::FactorToken(item_pos1, util::mkptr(
+                                new grammar::Identifier(item_pos1, "tir")), "tir"))
+                  ->add(close(item_pos1, ")"))
+                  ->deliver());
         builder0.addArith(1, item_pos1, (new grammar::TokenSequence(
                 new grammar::FactorToken(item_pos1, util::mkptr(
                                 new grammar::Identifier(item_pos1, "widowmaker")), "widowmaker")))
@@ -199,7 +210,7 @@ TEST_F(ClauseBuilderTest, PushExprSequence)
     builder.addArith(0, pos, (new grammar::TokenSequence(
                 new grammar::FactorToken(
                             pos, util::mkptr(new grammar::Identifier(pos, "sunako")), "sunako")))
-          ->add(new grammar::OpToken(pos, "+"))
+          ->add(op(pos, "+"))
           ->add(new grammar::FactorToken(
                             pos, util::mkptr(new grammar::Identifier(pos, "kirisiki")), "kirisiki"))
           ->deliver());
@@ -233,7 +244,10 @@ TEST_F(ClauseBuilderTest, IfnotBranchErrorMatchElse)
               new grammar::FactorToken(
                         pos, util::mkptr(new grammar::Identifier(pos, "miho")), "miho")))
                                   ->deliver());
-    builder.addElse(0, else_pos);
+    builder.addArith(0, else_pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(else_pos, "else", grammar::ELSE)))
+                  ->deliver());
+    builder.buildAndClear();
 
     ASSERT_TRUE(error::hasError());
     ASSERT_EQ(1, getElseNotMatchIfRecs().size());
@@ -246,15 +260,19 @@ TEST_F(ClauseBuilderTest, ErrorElseNotMatched)
     misc::position else_pos(700);
 
     grammar::ClauseBuilder builder;
-    builder.addIf(0, pos, (new grammar::TokenSequence(
-                new grammar::FactorToken(
-                            pos, util::mkptr(new grammar::Identifier(pos, "asabina")), "mikuru")))
-                                  ->deliver());
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+                      new grammar::TypedToken(pos, "if", grammar::IF)))
+                ->add(new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::Identifier(pos, "asabina")), "mikuru"))
+                ->deliver());
     builder.addArith(1, pos, (new grammar::TokenSequence(
                 new grammar::FactorToken(
                             pos, util::mkptr(new grammar::Identifier(pos, "mikuru")), "mikuru")))
                                   ->deliver());
-    builder.addElse(1, else_pos);
+    builder.addArith(1, else_pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(else_pos, "else", grammar::ELSE)))
+                  ->deliver());
+    builder.buildAndClear();
 
     ASSERT_TRUE(error::hasError());
     ASSERT_EQ(1, getElseNotMatchIfRecs().size());
@@ -269,7 +287,7 @@ TEST_F(ClauseBuilderTest, UnterminatedExprInGlobalScope)
     builder.addArith(0, pos, (new grammar::TokenSequence(
               new grammar::FactorToken(
                           pos, util::mkptr(new grammar::IntLiteral(pos, "20121111")), "20121111")))
-        ->add(new grammar::OpToken(pos, "+"))
+        ->add(op(pos, "+"))
         ->deliver());
 
     builder.buildAndClear();
@@ -282,12 +300,13 @@ TEST_F(ClauseBuilderTest, UnterminatedExprInBranch)
     misc::position pos(9);
 
     grammar::ClauseBuilder builder;
-    builder.addIf(0, pos, (new grammar::TokenSequence(
-              new grammar::FactorToken(
-                            pos, util::mkptr(new grammar::BoolLiteral(pos, false)), "false")))
-                                  ->deliver());
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(pos, "if", grammar::IF)))
+              ->add(new grammar::FactorToken(
+                            pos, util::mkptr(new grammar::BoolLiteral(pos, false)), "false"))
+              ->deliver());
     builder.addArith(1, pos, (new grammar::TokenSequence(
-                                        new grammar::OpenParenToken(pos)))
+                                    new grammar::TypedToken(pos, "(", grammar::OPEN_PAREN)))
                                   ->deliver());
 
     builder.buildAndClear();
@@ -301,20 +320,86 @@ TEST_F(ClauseBuilderTest, IfReducedElseNotMatched)
     misc::position item_pos1(1000);
     misc::position item_pos2(1001);
 
-    grammar::ClauseBuilder builder1;
-    builder1.addIf(0, item_pos0, (new grammar::TokenSequence(
-                new grammar::FactorToken(item_pos0, util::mkptr(
-                                new grammar::BoolLiteral(item_pos0, true)), "true")))
-                                      ->deliver());
-    builder1.addArith(0, item_pos1, (new grammar::TokenSequence(
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, item_pos0, (new grammar::TokenSequence(
+                      new grammar::TypedToken(item_pos0, "if", grammar::IF)))
+                ->add(new grammar::FactorToken(item_pos0, util::mkptr(
+                                new grammar::BoolLiteral(item_pos0, true)), "true"))
+                ->deliver());
+    builder.addArith(0, item_pos1, (new grammar::TokenSequence(
                 new grammar::FactorToken(item_pos1, util::mkptr(
                                 new grammar::Identifier(item_pos1, "wind_force")), "wind_force")))
-          ->add(new grammar::ColonToken(item_pos1))
+          ->add(new grammar::TypedToken(item_pos1, ":", grammar::COLON))
           ->add(new grammar::FactorToken(item_pos1, util::mkptr(
                                 new grammar::Identifier(item_pos1, "13571")), "13571"))
           ->deliver());
-    builder1.addElse(0, item_pos2);
+    builder.addArith(0, item_pos2, (new grammar::TokenSequence(
+                    new grammar::TypedToken(item_pos2, "else", grammar::ELSE)))
+                  ->deliver());
+    builder.buildAndClear();
+
     ASSERT_TRUE(error::hasError());
     ASSERT_EQ(1, getElseNotMatchIfRecs().size());
     ASSERT_EQ(item_pos2, getElseNotMatchIfRecs()[0].else_pos);
+}
+
+TEST_F(ClauseBuilderTest, RegularAsyncFunc)
+{
+    misc::position pos(11);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+              new grammar::TypedToken(pos, "func", grammar::FUNC)))
+        ->add(id(pos, "sakura"))
+        ->add(open(pos, "("))
+        ->add(id(pos, "xiaolang"))
+        ->add(comma(pos))
+        ->add(regularAsyncParam(pos))
+        ->add(comma(pos))
+        ->add(id(pos, "tukisiro"))
+        ->add(close(pos, ")"))
+        ->deliver());
+    builder.addReturn(1, pos, (new grammar::TokenSequence(id(pos, "meiling")))->deliver());
+
+    builder.buildAndClear().compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+            (pos, REGULAR_ASYNC_PARAM_INDEX, 1)
+            (pos, FUNC_DEF, "sakura")
+                (pos, PARAMETER, "xiaolang")
+                (pos, PARAMETER, "tukisiro")
+                (BLOCK_BEGIN)
+                    (pos, RETURN)
+                        (pos, IDENTIFIER, "meiling")
+                (BLOCK_END)
+        (BLOCK_END)
+    ;
+}
+
+TEST_F(ClauseBuilderTest, RegularAsyncParamOccurMoreThanOnce)
+{
+    misc::position pos(12);
+    misc::position pos_a(1200);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+              new grammar::TypedToken(pos, "func", grammar::FUNC)))
+        ->add(id(pos, "sion"))
+        ->add(open(pos, "("))
+        ->add(id(pos, "mion"))
+        ->add(comma(pos))
+        ->add(regularAsyncParam(pos))
+        ->add(comma(pos))
+        ->add(regularAsyncParam(pos_a))
+        ->add(close(pos, ")"))
+        ->deliver());
+    builder.addReturn(1, pos, (new grammar::TokenSequence(id(pos, "sonozaki")))->deliver());
+
+    builder.buildAndClear();
+    ASSERT_TRUE(error::hasError());
+
+    ASSERT_EQ(1, getMoreThanOneAsyncPlaceholderRecs().size());
+    ASSERT_EQ(pos_a, getMoreThanOneAsyncPlaceholderRecs()[0].pos);
 }

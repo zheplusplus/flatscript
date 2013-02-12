@@ -11,8 +11,8 @@
 
 #include "syntax-types.h"
 #include "yy-misc.h"
-#include "expr-automations.h"
+#include "automation-base.h"
 #include "expr-nodes.h"
-#include "expr-tokens.h"
+#include "tokens.h"
 
 #endif /* __STEKIN_GRAMMAR_SYN_INCLUDE_H__ */

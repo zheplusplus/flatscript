@@ -64,6 +64,19 @@ namespace {
         Block const alternative;
     };
 
+    struct ReturnNothing
+        : Statement
+    {
+        explicit ReturnNothing(misc::position const& pos)
+            : Statement(pos)
+        {}
+
+        void compile(BaseCompilingSpace&) const
+        {
+            DataTree::actualOne()(pos, RETURN_NOTHING);
+        }
+    };
+
 }
 
 util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) const
@@ -79,17 +92,20 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) co
     return util::sptr<output::Function const>(nullptr);
 }
 
+util::sptr<output::Function const> RegularAsyncFunction::compile(util::sref<SymbolTable>) const
+{
+    DataTree::actualOne()(pos, REGULAR_ASYNC_PARAM_INDEX, async_param_index);
+    return Function::compile(nulSymbols());
+}
+
 void Block::addStmt(util::sptr<Statement const> stmt)
 {
     _stmts.append(std::move(stmt));
 }
 
-void Block::defFunc(misc::position const& pos
-                  , std::string const& name
-                  , std::vector<std::string> const& param_names
-                  , util::sptr<Filter> body)
+void Block::addFunc(util::sptr<Function const> func)
 {
-    _funcs.append(util::mkptr(new Function(pos, name, param_names, body->deliver())));
+    _funcs.append(std::move(func));
 }
 
 util::sptr<output::Statement const> Block::compile(BaseCompilingSpace&&) const
@@ -180,12 +196,9 @@ void Filter::defName(misc::position const& pos
     _block.addStmt(util::mkptr(new NameDef(pos, name, std::move(init))));
 }
 
-void Filter::defFunc(misc::position const& pos
-                   , std::string const& name
-                   , std::vector<std::string> const& param_names
-                   , util::sptr<Filter> body)
+void Filter::defFunc(util::sptr<Function const> func)
 {
-    _block.defFunc(pos, name, param_names, std::move(body));
+    _block.addFunc(std::move(func));
 }
 
 void Arithmetics::compile(BaseCompilingSpace&) const
@@ -245,11 +258,6 @@ void Return::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, RETURN);
     ret_val->compile(nulSpace());
-}
-
-void ReturnNothing::compile(BaseCompilingSpace&) const
-{
-    DataTree::actualOne()(pos, RETURN_NOTHING);
 }
 
 util::sptr<output::Expression const> PreUnaryOp::compile(BaseCompilingSpace&) const
@@ -339,6 +347,12 @@ util::sptr<output::Expression const> PipeKey::compile(BaseCompilingSpace&) const
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> PipeResult::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, PIPE_RESULT);
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> ListAppend::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ ++ ]")(pos, OPERAND);
@@ -387,9 +401,9 @@ util::sptr<output::Expression const> ListSlice::compile(BaseCompilingSpace&) con
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListSlice::Default::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Undefined::compile(BaseCompilingSpace&) const
 {
-    DataTree::actualOne()(pos, LIST_SLICE_DEFAULT);
+    DataTree::actualOne()(pos, UNDEFINED);
     return nulOutputExpr();
 }
 
@@ -419,6 +433,24 @@ util::sptr<output::Expression const> Lambda::compile(BaseCompilingSpace&) const
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> RegularAsyncLambda::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, REGULAR_ASYNC_PARAM_INDEX, async_param_index);
+    return Lambda::compile(nulSpace());
+}
+
+util::sptr<output::Expression const> RegularAsyncCall::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, ASYNC_CALL, former_args.size());
+    DataTree::actualOne()(pos, CALL_BEGIN);
+    callee->compile(nulSpace());
+    DataTree::actualOne()(pos, ARGUMENTS);
+    compileList(former_args);
+    compileList(latter_args);
+    DataTree::actualOne()(pos, CALL_END);
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> AsyncCall::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, ASYNC_CALL);
@@ -442,6 +474,17 @@ util::sptr<output::Expression const> AsyncCall::compile(BaseCompilingSpace&) con
 util::sptr<output::Expression const> This::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, THIS);
+    return nulOutputExpr();
+}
+
+util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, CONDITIONAL)(pos, OPERAND);
+    predicate->compile(nulSpace());
+    DataTree::actualOne()(pos, OPERAND);
+    consequence->compile(nulSpace());
+    DataTree::actualOne()(pos, OPERAND);
+    alternative->compile(nulSpace());
     return nulOutputExpr();
 }
 
@@ -474,15 +517,14 @@ BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable>)
     , _current_block(nullptr)
 {}
 
-util::sptr<output::Statement const> BaseCompilingSpace::compileRet()
+util::sptr<output::Expression const> BaseCompilingSpace::ret(util::sref<Expression const>)
 {
-    return util::sptr<output::Statement const>(nullptr);
+    return nulOutputExpr();
 }
 
-util::sptr<output::Statement const> BaseCompilingSpace::compileRet(
-                                            util::sptr<Expression const> const&)
+output::Method BaseCompilingSpace::raiseMethod() const
 {
-    return util::sptr<output::Statement const>(nullptr);
+    return output::Method(nullptr);
 }
 
 util::sptr<output::Block> BaseCompilingSpace::deliver()
@@ -542,3 +584,10 @@ bool NameDef::isAsync() const { return false; }
 bool Return::isAsync() const { return false; }
 bool Export::isAsync() const { return false; }
 bool AttrSet::isAsync() const { return false; }
+bool Conditional::isLiteral(util::sref<SymbolTable const>) const { return false; }
+std::string Conditional::literalType(util::sref<SymbolTable const>) const { return ""; }
+bool Conditional::boolValue(util::sref<SymbolTable const>) const { return false; }
+mpz_class Conditional::intValue(util::sref<SymbolTable const>) const { return 0; }
+mpf_class Conditional::floatValue(util::sref<SymbolTable const>) const { return 0; }
+std::string Conditional::stringValue(util::sref<SymbolTable const>) const { return ""; }
+bool Conditional::isAsync() const { return false; }

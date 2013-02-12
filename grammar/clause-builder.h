@@ -1,13 +1,6 @@
 #ifndef __STEKIN_GRAMMAR_CLAUSE_BUILDER_H__
 #define __STEKIN_GRAMMAR_CLAUSE_BUILDER_H__
 
-#include <vector>
-#include <string>
-
-#include <semantic/fwd-decl.h>
-#include <util/pointer.h>
-#include <misc/pos-type.h>
-
 #include "automation-base.h"
 #include "block.h"
 
@@ -31,18 +24,9 @@ namespace grammar {
                      , misc::position const& pos
                      , std::vector<std::string> const& names
                      , std::vector<util::sptr<Token>> const& sequence);
-
-        void addFunction(int indent_len
-                       , misc::position const& pos
-                       , std::string const& name
-                       , std::vector<std::string> const& params);
-        void addIf(int indent_len
-                 , misc::position const& pos
-                 , std::vector<util::sptr<Token>> const& sequence);
         void addIfnot(int indent_len
                     , misc::position const& pos
                     , std::vector<util::sptr<Token>> const& sequence);
-        void addElse(int indent_len, misc::position const& pos);
 
         semantic::Block buildAndClear();
     private:
@@ -51,7 +35,7 @@ namespace grammar {
         void _pushSequence(misc::position const& pos
                          , std::vector<util::sptr<Token>> const& sequence);
 
-        Block _global;
+        Block* _global;
         std::vector<util::sptr<ClauseBase>> _clauses;
     };
 

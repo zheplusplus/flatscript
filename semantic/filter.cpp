@@ -1,9 +1,11 @@
 #include <output/block.h>
+#include <output/function.h>
 #include <report/errors.h>
 #include <report/warnings.h>
 
 #include "filter.h"
 #include "stmt-nodes.h"
+#include "expr-nodes.h"
 #include "function.h"
 #include "compiling-space.h"
 
@@ -20,7 +22,7 @@ void Filter::addReturnNothing(misc::position const& pos)
 {
     _checkNotTerminated(pos);
     _setTerminated(pos);
-    _block.addStmt(util::mkptr(new ReturnNothing(pos)));
+    _block.addStmt(util::mkptr(new Return(pos, util::mkptr(new Undefined(pos)))));
 }
 
 void Filter::addArith(misc::position const& pos, util::sptr<Expression const> expr)
@@ -90,12 +92,9 @@ void Filter::defName(misc::position const& pos
     _block.addStmt(util::mkptr(new NameDef(pos, name, std::move(init))));
 }
 
-void Filter::defFunc(misc::position const& pos
-                   , std::string const& name
-                   , std::vector<std::string> const& param_names
-                   , util::sptr<Filter> body)
+void Filter::defFunc(util::sptr<Function const> func)
 {
-    _block.defFunc(pos, name, param_names, std::move(body));
+    _block.addFunc(std::move(func));
 }
 
 Block Filter::deliver()

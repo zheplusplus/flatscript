@@ -31,6 +31,46 @@ namespace semantic {
                                                        , util::sptr<Expression const> sec);
     };
 
+    struct PipeElement
+        : Expression
+    {
+        explicit PipeElement(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    };
+
+    struct PipeIndex
+        : Expression
+    {
+        explicit PipeIndex(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    };
+
+    struct PipeKey
+        : Expression
+    {
+        explicit PipeKey(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    };
+
+    struct PipeResult
+        : Expression
+    {
+        explicit PipeResult(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    };
+
 }
 
 #endif /* __STEKIN_SEMANTIC_LIST_PIPELINE_H__ */

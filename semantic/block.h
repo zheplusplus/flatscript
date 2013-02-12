@@ -26,10 +26,7 @@ namespace semantic {
         bool isAsync() const;
 
         void addStmt(util::sptr<Statement const> stmt);
-        void defFunc(misc::position const& pos
-                   , std::string const& name
-                   , std::vector<std::string> const& param_names
-                   , util::sptr<Filter> body);
+        void addFunc(util::sptr<Function const> func);
         void append(Block following);
     private:
         util::ptrarr<Statement const> _stmts;

@@ -9,14 +9,14 @@ TEST_F(AutomationTest, ReduceArithExpression)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushInteger(pos, "20121104");
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
-    stack->top()->pushOp(stackref(), TestToken(pos, "-"));
+    pushOp(pos, "+");
+    pushOp(pos, "-");
     pushInteger(pos, "1349");
-    stack->top()->pushOp(stackref(), TestToken(pos, "*"));
+    pushOp(pos, "*");
     pushIdent(pos, "modokasii");
-    stack->top()->pushOp(stackref(), TestToken(pos, ">"));
+    pushOp(pos, ">");
     pushIdent(pos, "seikaino");
-    stack->top()->pushOp(stackref(), TestToken(pos, "-"));
+    pushOp(pos, "-");
     pushIdent(pos, "uede");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -59,14 +59,14 @@ TEST_F(AutomationTest, ReduceLogicExpression)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "starlight");
-    stack->top()->pushOp(stackref(), TestToken(pos, "<"));
-    stack->top()->pushOp(stackref(), TestToken(pos, "!"));
+    pushOp(pos, "<");
+    pushOp(pos, "!");
     pushBoolean(pos, false);
-    stack->top()->pushOp(stackref(), TestToken(pos, "&&"));
+    pushOp(pos, "&&");
     pushIdent(pos, "vision");
-    stack->top()->pushOp(stackref(), TestToken(pos, ">"));
+    pushOp(pos, ">");
     pushIdent(pos, "eternal");
-    stack->top()->pushOp(stackref(), TestToken(pos, "||"));
+    pushOp(pos, "||");
     pushIdent(pos, "rite");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -79,9 +79,9 @@ TEST_F(AutomationTest, ReduceLogicExpression)
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, ARITHMETICS)
-            (pos, BINARY_OP, "||")
+            (pos, CONDITIONAL)
             (pos, OPERAND)
-                (pos, BINARY_OP, "&&")
+                (pos, CONDITIONAL)
                 (pos, OPERAND)
                     (pos, BINARY_OP, "<")
                     (pos, OPERAND)
@@ -96,6 +96,10 @@ TEST_F(AutomationTest, ReduceLogicExpression)
                         (pos, IDENTIFIER, "vision")
                     (pos, OPERAND)
                         (pos, IDENTIFIER, "eternal")
+                (pos, OPERAND)
+                    (pos, BOOLEAN, "false")
+            (pos, OPERAND)
+                (pos, BOOLEAN, "true")
             (pos, OPERAND)
                 (pos, IDENTIFIER, "rite")
         (BLOCK_END)
@@ -109,15 +113,15 @@ TEST_F(AutomationTest, ReducePipeExpression)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "kenji");
-    stack->top()->pushOp(stackref(), TestToken(pos, "++"));
+    pushOp(pos, "++");
     pushIdent(pos, "kawai");
-    stack->top()->pushPipeSep(stackref(), TestToken(pos, "|?"));
+    pushPipeSep(pos, "|?");
     pushIdent(pos, "kugutu");
-    stack->top()->pushOp(stackref(), TestToken(pos, "<"));
+    pushOp(pos, "<");
     pushIdent(pos, "uta");
-    stack->top()->pushPipeSep(stackref(), TestToken(pos, "|:"));
+    pushPipeSep(pos, "|:");
     pushPipeElement(pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "*"));
+    pushOp(pos, "*");
     pushPipeElement(pos);
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -162,15 +166,15 @@ TEST_F(AutomationTest, ReduceBitwise)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "touma");
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    pushOp(pos, "+");
     pushIdent(pos, "fuyuki");
-    stack->top()->pushOp(stackref(), TestToken(pos, "^"));
+    pushOp(pos, "^");
     pushIdent(pos, "makoto");
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    pushOp(pos, "+");
     pushIdent(pos, "shuuiti");
-    stack->top()->pushOp(stackref(), TestToken(pos, "|"));
+    pushOp(pos, "|");
     pushIdent(pos, "yosino");
-    stack->top()->pushOp(stackref(), TestToken(pos, "*"));
+    pushOp(pos, "*");
     pushIdent(pos, "fujioka");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -215,17 +219,17 @@ TEST_F(AutomationTest, ReduceCallExpression)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "masayosi");
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    pushOp(pos, "+");
     pushIdent(pos, "yamazaki");
-    stack->top()->pushOp(stackref(), TestToken(pos, "."));
+    pushOp(pos, ".");
     pushIdent(pos, "one");
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
     pushIdent(pos, "more");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "time");
-    stack->top()->pushOp(stackref(), TestToken(pos, "&&"));
+    pushOp(pos, "&&");
     pushIdent(pos, "chance");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
@@ -249,11 +253,13 @@ TEST_F(AutomationTest, ReduceCallExpression)
                         (pos, IDENTIFIER, "one")
                 (pos, ARGUMENTS)
                     (pos, IDENTIFIER, "more")
-                    (pos, BINARY_OP, "&&")
+                    (pos, CONDITIONAL)
                     (pos, OPERAND)
                         (pos, IDENTIFIER, "time")
                     (pos, OPERAND)
                         (pos, IDENTIFIER, "chance")
+                    (pos, OPERAND)
+                        (pos, BOOLEAN, "false")
                 (pos, CALL_END)
         (BLOCK_END)
     ;
@@ -266,15 +272,15 @@ TEST_F(AutomationTest, ReduceSubExpression)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "sasahara");
-    stack->top()->pushOp(stackref(), TestToken(pos, "*"));
-    stack->top()->pushOpenParen(stackref(), pos);
+    pushOp(pos, "*");
+    open(pos, "(");
     pushIdent(pos, "naganohara");
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    pushOp(pos, "+");
     pushIdent(pos, "sinonome");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushOp(stackref(), TestToken(pos, "."));
+    close(pos, ")");
+    open(pos, "(");
+    close(pos, ")");
+    pushOp(pos, ".");
     pushIdent(pos, "sakamoto");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -313,21 +319,21 @@ TEST_F(AutomationTest, ReduceAnonyFunc)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
+    open(pos, "(");
     pushIdent(pos, "aioi");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "minokami");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushColon(stackref(), pos);
+    close(pos, ")");
+    pushColon(pos);
     pushIdent(pos, "aioi");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushOpenParen(stackref(), pos);
+    close(pos, ")");
+    open(pos, "(");
     pushBoolean(pos, false);
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushInteger(pos, "20121106");
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    pushComma(pos);
+    close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -362,13 +368,13 @@ TEST_F(AutomationTest, ReduceDefineAnonyFunc)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "nakanojou");
-    stack->top()->pushColon(stackref(), pos);
-    stack->top()->pushOpenParen(stackref(), pos);
+    pushColon(pos);
+    open(pos, "(");
     pushIdent(pos, "nakamura");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "takasaki");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushColon(stackref(), pos);
+    close(pos, ")");
+    pushColon(pos);
     pushIdent(pos, "sakurai");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -399,15 +405,15 @@ TEST_F(AutomationTest, ReduceLookupSlice)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "hakase");
-    stack->top()->pushOpenBracket(stackref(), pos);
+    open(pos, "[");
     pushIdent(pos, "minokami");
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
+    pushComma(pos);
     pushIdent(pos, "aioi");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
-    stack->top()->pushOpenBracket(stackref(), pos);
+    close(pos, "]");
+    open(pos, "[");
     pushIdent(pos, "naganohara");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+    close(pos, "]");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -424,7 +430,7 @@ TEST_F(AutomationTest, ReduceLookupSlice)
                 (pos, LIST_SLICE_BEGIN)
                     (pos, IDENTIFIER, "hakase")
                     (pos, IDENTIFIER, "minokami")
-                    (pos, LIST_SLICE_DEFAULT)
+                    (pos, UNDEFINED)
                     (pos, IDENTIFIER, "aioi")
                 (pos, LIST_SLICE_END)
             (pos, OPERAND)
@@ -440,15 +446,15 @@ TEST_F(AutomationTest, ReduceAnonyFuncAsArg)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "tanaka");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
+    open(pos, "(");
     pushIdent(pos, "annaka");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "tatibana");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushColon(stackref(), pos);
+    close(pos, ")");
+    pushColon(pos);
     pushIdent(pos, "fechan");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -481,20 +487,20 @@ TEST_F(AutomationTest, ReduceListLiteral)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOpenBracket(stackref(), pos);
+    open(pos, "[");
     pushIdent(pos, "daiku");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "sekiguti");
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
-    stack->top()->pushOp(stackref(), TestToken(pos, "++"));
+    pushComma(pos);
+    close(pos, "]");
+    pushOp(pos, "++");
     ASSERT_FALSE(stack->top()->finishOnBreak(true));
-    stack->top()->pushOpenBracket(stackref(), pos);
+    open(pos, "[");
     pushIdent(pos, "ogi");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
-    stack->top()->pushOpenBracket(stackref(), pos);
+    close(pos, "]");
+    open(pos, "[");
     pushIdent(pos, "sakurai");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+    close(pos, "]");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -531,35 +537,35 @@ TEST_F(AutomationTest, ReduceDictionary)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "hikari");
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
     ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushOpenBrace(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, "}"));
-    stack->top()->pushComma(stackref(), pos);
+    open(pos, "{");
+    close(pos, "}");
+    pushComma(pos);
     ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushOpenBrace(stackref(), pos);
+    open(pos, "{");
     pushIdent(pos, "no");
-    stack->top()->pushPropertySeparator(stackref(), pos);
-    stack->top()->pushOpenParen(stackref(), pos);
+    pushPropSep(pos);
+    open(pos, "(");
     pushIdent(pos, "miyako");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushColon(stackref(), pos);
+    close(pos, ")");
+    pushColon(pos);
     pushIdent(pos, "miyako");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "}"));
-    stack->top()->pushComma(stackref(), pos);
+    close(pos, "}");
+    pushComma(pos);
     ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushOpenBrace(stackref(), pos);
+    open(pos, "{");
     pushIdent(pos, "stella");
-    stack->top()->pushColon(stackref(), pos);
+    pushColon(pos);
     pushIdent(pos, "musica");
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, "}"));
+    pushComma(pos);
+    close(pos, "}");
     ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -602,8 +608,8 @@ TEST_F(AutomationTest, ReduceSingleThis)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushThis(stackref(), pos);
-    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+    pushThis(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
 
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -626,46 +632,46 @@ TEST_F(AutomationTest, ReduceThisAndProperty)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushThis(stackref(), pos);
+    pushThis(pos);
     pushIdent(pos, "higurasi");
-    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
-    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+    pushOp(pos, "+");
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushThis(stackref(), pos);
-    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+    pushThis(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushThis(stackref(), pos);
-    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+    open(pos, "(");
+    pushThis(pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushComma(stackref(), pos);
-    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+    pushComma(pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushThis(stackref(), pos);
-    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+    pushThis(pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushOpenBracket(stackref(), pos);
-    stack->top()->pushThis(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+    open(pos, "[");
+    pushThis(pos);
+    close(pos, "]");
 
-    stack->top()->pushComma(stackref(), pos);
-    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+    pushComma(pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushThis(stackref(), pos);
-    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+    pushThis(pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+    close(pos, ")");
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
-    ASSERT_FALSE(stack->top()->finishOnBreak(false));
+    pushOp(pos, "+");
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    stack->top()->pushThis(stackref(), pos);
-    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+    pushThis(pos);
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
     pushInteger(pos, "20130121");
-    ASSERT_TRUE(stack->top()->finishOnBreak(false));
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
 
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -714,10 +720,10 @@ TEST_F(AutomationTest, ReduceInvalidLambdaParams)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
     pushInteger(pos, "20121110");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushColon(stackref(), pos);
+    close(pos, ")");
+    pushColon(pos);
     pushIdent(pos, "no_uta");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -737,7 +743,7 @@ TEST_F(AutomationTest, UnexpectedBinaryOp)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "."));
+    pushOp(pos, ".");
     pushInteger(pos, "1300");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -759,7 +765,7 @@ TEST_F(AutomationTest, UnexpectedPreUnaryOp)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushInteger(pos, "1300");
-    stack->top()->pushOp(stackref(), TestToken(pos, "!"));
+    pushOp(pos, "!");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -782,16 +788,16 @@ TEST_F(AutomationTest, UnexpectedDictionaryFinished)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOpenBrace(stackref(), pos);
+    open(pos, "{");
     pushInteger(pos, "1300");
-    stack->top()->matchClosing(stackref(), TestToken(pos_a, "}"));
+    close(pos_a, "}");
 
-    stack->top()->pushOpenBracket(stackref(), pos);
-    stack->top()->pushOpenBrace(stackref(), pos);
+    open(pos, "[");
+    open(pos, "{");
     pushInteger(pos, "1300");
-    stack->top()->pushComma(stackref(), pos_b);
-    stack->top()->matchClosing(stackref(), TestToken(pos_c, "}"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+    pushComma(pos_b);
+    close(pos_c, "}");
+    close(pos, "]");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -820,10 +826,10 @@ TEST_F(AutomationTest, UnexpectedSliceSeperator)
 
     pushIdent(pos, "kuurei");
 
-    stack->top()->pushOpenBracket(stackref(), pos);
-    stack->top()->pushColon(stackref(), pos_a);
+    open(pos, "[");
+    pushColon(pos_a);
     pushInteger(pos_b, "1300");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+    close(pos, "]");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -851,10 +857,10 @@ TEST_F(AutomationTest, BracketNestedExpressions)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "am0942");
-    stack->top()->pushOp(stackref(), TestToken(pos, "++"));
-    stack->top()->pushOpenBracket(stackref(), pos);
+    pushOp(pos, "++");
+    open(pos, "[");
     pushInteger(pos, "20121113");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+    close(pos, "]");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -885,10 +891,10 @@ TEST_F(AutomationTest, ParenNestedExpressions)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "am0945");
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
-    stack->top()->pushOpenParen(stackref(), pos);
+    pushOp(pos, "+");
+    open(pos, "(");
     pushInteger(pos, "20121113");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -916,32 +922,32 @@ TEST_F(AutomationTest, ReduceAnonyFuncAsOneOfArgs)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
     pushIdent(pos, "nozomu");
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    pushOp(pos, "+");
     pushIdent(pos, "inoti");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOpenParen(stackref(), pos);
+    close(pos, ")");
+    open(pos, "(");
+    open(pos, "(");
     pushIdent(pos, "kafuka");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "maria");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushColon(stackref(), pos);
+    close(pos, ")");
+    pushColon(pos);
     pushIdent(pos, "meru");
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->pushOpenParen(stackref(), pos);
+    pushComma(pos);
+    open(pos, "(");
     pushIdent(pos, "tiri");
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    pushOp(pos, "%");
     pushIdent(pos, "abiru");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->pushOpenParen(stackref(), pos);
+    close(pos, ")");
+    pushComma(pos);
+    open(pos, "(");
     pushIdent(pos, "kiri");
-    stack->top()->pushOp(stackref(), TestToken(pos, "/"));
+    pushOp(pos, "/");
     pushIdent(pos, "matoi");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
+    close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -988,8 +994,8 @@ TEST_F(AutomationTest, EmptyNested)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    open(pos, "(");
+    close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
@@ -1007,28 +1013,28 @@ TEST_F(AutomationTest, ReduceSimpleAsyncPlaceholderInCall)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "motoharu");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    open(pos, "(");
+    pushOp(pos, "%");
+    close(pos, ")");
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "+"));
+    pushOp(pos, "+");
 
     pushIdent(pos, "tadakuni");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->pushComma(stackref(), pos);
+    open(pos, "(");
+    pushOp(pos, "%");
+    pushComma(pos);
     pushInteger(pos, "20130102");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "*"));
+    pushOp(pos, "*");
 
     pushIdent(pos, "hidenori");
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
     pushInteger(pos, "1056");
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    pushComma(pos);
+    pushOp(pos, "%");
     pushIdent(pos, "yositake");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
@@ -1081,57 +1087,57 @@ TEST_F(AutomationTest, ReduceParenAsyncPlaceholderInCall)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "tosiyuki");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    open(pos, "(");
+    pushOp(pos, "%");
+    open(pos, "(");
+    close(pos, ")");
+    close(pos, ")");
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "<"));
+    pushOp(pos, "<");
 
     pushIdent(pos, "mituo");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushComma(stackref(), pos);
+    open(pos, "(");
+    pushOp(pos, "%");
+    open(pos, "(");
+    close(pos, ")");
+    pushComma(pos);
     pushIdent(pos, "JanSecond");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "-"));
+    pushOp(pos, "-");
 
     pushIdent(pos, "yuusuke");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
+    pushOp(pos, "%");
+    open(pos, "(");
     pushIdent(pos, "ringochan");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->pushComma(stackref(), pos);
+    close(pos, ")");
+    pushComma(pos);
     pushInteger(pos, "1106");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
+    pushOp(pos, "%");
 
     pushIdent(pos, "otoha");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
+    pushOp(pos, "%");
+    open(pos, "(");
     pushIdent(pos, "yurine");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "homura");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
+    close(pos, ")");
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "/"));
+    pushOp(pos, "/");
 
     pushIdent(pos, "ekou");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
+    pushOp(pos, "%");
+    open(pos, "(");
     pushIdent(pos, "kabba");
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    pushComma(pos);
+    close(pos, ")");
+    close(pos, ")");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -1208,18 +1214,18 @@ TEST_F(AutomationTest, ReduceAsyncPlaceholderNotInCall)
     TestClause clause;
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
-    stack->top()->pushOpenBracket(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos_a, "%"));
+    open(pos, "[");
+    pushOp(pos_a, "%");
     pushIdent(pos, "nue");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushIdent(pos, "narumi");
-    stack->top()->matchClosing(stackref(), TestToken(pos, "]"));
+    close(pos, "]");
 
-    stack->top()->pushOp(stackref(), TestToken(pos, "++"));
+    pushOp(pos, "++");
 
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos_b, "%"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    open(pos, "(");
+    pushOp(pos_b, "%");
+    close(pos, ")");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -1241,14 +1247,14 @@ TEST_F(AutomationTest, ReduceAsyncPlaceholderNotNames)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "hinaru");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos, "%"));
-    stack->top()->pushOpenParen(stackref(), pos);
+    open(pos, "(");
+    pushOp(pos, "%");
+    open(pos, "(");
     pushInteger(pos_a, "1129");
-    stack->top()->pushComma(stackref(), pos);
+    pushComma(pos);
     pushBoolean(pos_b, false);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
+    close(pos, ")");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -1270,14 +1276,14 @@ TEST_F(AutomationTest, ReduceMoreThanOneAsyncPlaceholders)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "wanyuudou");
-    stack->top()->pushOpenParen(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos_a, "%"));
-    stack->top()->pushComma(stackref(), pos);
+    open(pos, "(");
+    pushOp(pos_a, "%");
+    pushComma(pos);
     pushBoolean(pos_b, false);
-    stack->top()->pushComma(stackref(), pos);
-    stack->top()->pushOp(stackref(), TestToken(pos_b, "%"));
+    pushComma(pos);
+    pushOp(pos_b, "%");
     pushIdent(pos, "tutigumo");
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
@@ -1300,11 +1306,11 @@ TEST_F(AutomationTest, EmptyPipeSection)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushIdent(pos, "sonozaki");
-    stack->top()->pushOpenParen(stackref(), pos_a);
-    stack->top()->pushPipeSep(stackref(), TestToken(pos_b, "|:"));
-    stack->top()->pushComma(stackref(), pos_c);
+    open(pos_a, "(");
+    pushPipeSep(pos_b, "|:");
+    pushComma(pos_c);
     pushBoolean(pos_b, false);
-    stack->top()->matchClosing(stackref(), TestToken(pos, ")"));
+    close(pos, ")");
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     ASSERT_TRUE(error::hasError());
@@ -1312,4 +1318,250 @@ TEST_F(AutomationTest, EmptyPipeSection)
     ASSERT_EQ(2, getInvalidEmptyExprRecs().size());
     ASSERT_EQ(pos_b, getInvalidEmptyExprRecs()[0].pos);
     ASSERT_EQ(pos_c, getInvalidEmptyExprRecs()[1].pos);
+}
+
+TEST_F(AutomationTest, Conditional)
+{
+    misc::position pos(30);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "teru");
+
+    pushIf(pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
+
+    pushIdent(pos, "saki");
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
+
+    pushElse(pos);
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
+
+    pushOp(pos, "+");
+    ASSERT_FALSE(stack->top()->finishOnBreak(true));
+
+    pushIdent(pos, "kyotarou");
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+
+    clause.compile();
+    clause.filter->deliver().compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
+    ASSERT_TRUE(stack->empty());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (pos, ARITHMETICS)
+            (pos, CONDITIONAL)
+            (pos, OPERAND)
+                (pos, IDENTIFIER, "saki")
+            (pos, OPERAND)
+                (pos, IDENTIFIER, "teru")
+            (pos, OPERAND)
+                (pos, PRE_UNARY_OP, "+")
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "kyotarou")
+        (BLOCK_END)
+    ;
+}
+
+TEST_F(AutomationTest, ConditionalTerminatedAfterIf)
+{
+    misc::position pos(31);
+    misc::position pos_a(3100);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "kataoka");
+    open(pos, "(");
+
+    pushIdent(pos, "haramura");
+    pushIf(pos);
+    pushIdent(pos_a, "someya");
+    close(pos, ")");
+
+    finish(pos);
+    clause.compile();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<IncompleteConditionalRec> recs(getIncompleteConditionalRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+}
+
+TEST_F(AutomationTest, ConditionalWithEmptyPredicate)
+{
+    misc::position pos(32);
+    misc::position pos_a(3200);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "ueno");
+    open(pos, "(");
+
+    pushIdent(pos, "kakei");
+    pushIf(pos);
+    pushElse(pos_a);
+    pushIdent(pos, "fukuji");
+    close(pos, ")");
+
+    finish(pos);
+    clause.compile();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<InvalidEmptyExprRec> recs(getInvalidEmptyExprRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+}
+
+TEST_F(AutomationTest, ConditionalEncounterElseBeforeIf)
+{
+    misc::position pos(33);
+    misc::position pos_a(3300);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "hisa");
+    pushElse(pos);
+    pushIdent(pos, "mihoko");
+    pushElse(pos_a);
+
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<UnexpectedTokenRec> recs(getUnexpectedTokenRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+    ASSERT_EQ("else", recs[0].image);
+}
+
+TEST_F(AutomationTest, ConditionalEncounterDuplateIf)
+{
+    misc::position pos(34);
+    misc::position pos_a(3400);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "yuki");
+    pushIf(pos);
+    pushIdent(pos, "kyoutarou");
+    pushIf(pos_a);
+
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<UnexpectedTokenRec> recs(getUnexpectedTokenRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+    ASSERT_EQ("if", recs[0].image);
+}
+
+TEST_F(AutomationTest, ParenMismatch)
+{
+    misc::position pos(35);
+    misc::position pos_a(3500);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+    pushIdent(pos, "nagi");
+    open(pos, "[");
+    close(pos_a, ")");
+
+    ASSERT_TRUE(error::hasError());
+    std::vector<UnexpectedTokenRec> recs(getUnexpectedTokenRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
+    ASSERT_EQ(")", recs[0].image);
+}
+
+TEST_F(AutomationTest, ReduceRegularAsyncCall)
+{
+    misc::position pos(36);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "yosino");
+    open(pos, "(");
+    pushIdent(pos, "saori");
+    pushComma(pos);
+    pushRegularAsyncParam(pos);
+    pushComma(pos);
+    pushIdent(pos, "kanako");
+    open(pos, "(");
+    pushRegularAsyncParam(pos);
+    pushComma(pos);
+    pushIdent(pos, "makoto");
+    close(pos, ")");
+    pushComma(pos);
+    close(pos, ")");
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+
+    clause.compile();
+    clause.filter->deliver().compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
+    ASSERT_TRUE(stack->empty());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (pos, ARITHMETICS)
+            (pos, ASYNC_CALL, 1)
+            (pos, CALL_BEGIN)
+                (pos, IDENTIFIER, "yosino")
+            (pos, ARGUMENTS)
+                (pos, IDENTIFIER, "saori")
+                (pos, ASYNC_CALL, 0)
+                (pos, CALL_BEGIN)
+                    (pos, IDENTIFIER, "kanako")
+                (pos, ARGUMENTS)
+                    (pos, IDENTIFIER, "makoto")
+                (pos, CALL_END)
+            (pos, CALL_END)
+        (BLOCK_END)
+    ;
+}
+
+TEST_F(AutomationTest, ConditionalNested)
+{
+    misc::position pos(37);
+    TestClause clause;
+    stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
+
+    pushIdent(pos, "kataoka");
+    pushIf(pos);
+
+    open(pos, "(");
+    pushIdent(pos, "takei");
+    pushIf(pos);
+    pushIdent(pos, "someya");
+    pushElse(pos);
+    pushIdent(pos, "haramura");
+    close(pos, ")");
+
+    pushElse(pos);
+    pushIdent(pos, "miyanaga");
+
+    ASSERT_TRUE(stack->top()->finishOnBreak(true));
+    finish(pos);
+
+    clause.compile();
+    clause.filter->deliver().compile(semantic::CompilingSpace());
+    ASSERT_FALSE(error::hasError());
+    ASSERT_TRUE(stack->empty());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (pos, ARITHMETICS)
+            (pos, CONDITIONAL)
+            (pos, OPERAND)
+                (pos, CONDITIONAL)
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "someya")
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "takei")
+                (pos, OPERAND)
+                    (pos, IDENTIFIER, "haramura")
+            (pos, OPERAND)
+                (pos, IDENTIFIER, "kataoka")
+            (pos, OPERAND)
+                (pos, IDENTIFIER, "miyanaga")
+        (BLOCK_END)
+    ;
 }

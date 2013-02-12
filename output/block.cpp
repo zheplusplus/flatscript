@@ -1,9 +1,18 @@
+#include <util/string.h>
+
+#include "name-mangler.h"
 #include "block.h"
+#include "function.h"
 
 using namespace output;
 
 void Block::write(std::ostream& os) const
 {
+    if (!_local_decls.empty()) {
+        os << "var " << util::join(",", formNames(std::vector<std::string>(_local_decls.begin()
+                                                                         , _local_decls.end())))
+           << ";" << std::endl;
+    }
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
                     func->write(os);
@@ -33,4 +42,9 @@ void Block::append(util::sptr<Block> b)
 {
     _stmts.append(std::move(b->_stmts));
     _funcs.append(std::move(b->_funcs));
+}
+
+void Block::setLocalDecls(std::set<std::string> const& decls)
+{
+    _local_decls = decls;
 }

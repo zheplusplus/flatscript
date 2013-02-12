@@ -45,6 +45,63 @@ struct AutomationTest
         stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::PipeElement(pos)), "$");
     }
 
+    void pushOp(misc::position const& pos, std::string const& op)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, op, grammar::OPERATOR));
+    }
+
+    void pushRegularAsyncParam(misc::position const& pos)
+    {
+        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::RegularAsyncParam(pos)), "%%");
+    }
+
+    void pushPipeSep(misc::position const& pos, std::string const& op)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, op, grammar::PIPE_SEP));
+    }
+
+    void pushColon(misc::position const& pos)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, ":", grammar::COLON));
+    }
+
+    void pushPropSep(misc::position const& pos)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, "::", grammar::PROP_SEP));
+    }
+
+    void pushComma(misc::position const& pos)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, ",", grammar::COMMA));
+    }
+
+    void pushThis(misc::position const& pos)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, "this", grammar::THIS));
+    }
+
+    void pushIf(misc::position const& pos)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, "if", grammar::IF));
+    }
+
+    void pushElse(misc::position const& pos)
+    {
+        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, "else", grammar::ELSE));
+    }
+
+    void open(misc::position const& pos, std::string const& image)
+    {
+        stack->top()->nextToken(
+                *stkptr, grammar::TypedToken(pos, image, test::IMAGE_TYPE_MAP.find(image)->second));
+    }
+
+    void close(misc::position const& pos, std::string const& image)
+    {
+        stack->top()->nextToken(
+                *stkptr, grammar::TypedToken(pos, image, test::IMAGE_TYPE_MAP.find(image)->second));
+    }
+
     void finish(misc::position const& pos)
     {
         std::vector<util::sptr<grammar::ClauseBase>> clauses;

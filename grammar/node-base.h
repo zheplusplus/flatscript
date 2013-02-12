@@ -6,14 +6,15 @@
 #include <misc/pos-type.h>
 
 #include "reducing-env.h"
+#include "fwd-decl.h"
 
 namespace grammar {
 
     struct Statement {
         misc::position const pos;
 
-        virtual void compile(util::sref<semantic::Filter> filter
-                           , BaseReducingEnv const& env) const = 0;
+        virtual void compile(util::sref<semantic::Filter> filter) const = 0;
+        virtual void acceptElse(misc::position const& else_pos, Block&& block);
 
         virtual ~Statement() {}
 
@@ -31,12 +32,11 @@ namespace grammar {
 
         virtual bool empty() const;
         virtual bool isName() const;
+        virtual void reduceAsParam(ParamReducingEnv& env, int index) const;
         virtual std::string reduceAsName() const;
         virtual std::string reduceAsProperty() const;
-        virtual util::sptr<semantic::Expression const> reduceAsExpr(
-                                                    BaseReducingEnv const& env) const = 0;
-        virtual util::sptr<semantic::Expression const> reduceAsLeftValue(
-                                                    BaseReducingEnv const& env) const;
+        virtual util::sptr<semantic::Expression const> reduceAsExpr() const = 0;
+        virtual util::sptr<semantic::Expression const> reduceAsLeftValue() const;
         virtual util::sptr<semantic::Expression const> reduceAsArg(
                                                     ArgReducingEnv& env, int index) const;
 

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <sstream>
 #include <map>
 #include <set>
@@ -12,6 +13,11 @@
 #include "block.h"
 
 using namespace output;
+
+std::string Undefined::str() const
+{
+    return "undefined";
+}
 
 static bool isReserved(std::string const& name)
 {
@@ -67,21 +73,6 @@ std::string ListLiteral::str() const
     return "[" + util::join(",", strList(value)) + "]";
 }
 
-std::string PipeElement::str() const
-{
-    return "$element";
-}
-
-std::string PipeIndex::str() const
-{
-    return "$index";
-}
-
-std::string PipeKey::str() const
-{
-    return "$key";
-}
-
 std::string Reference::str() const
 {
     return formName(name);
@@ -98,6 +89,11 @@ std::string ImportedName::str() const
 std::string Call::str() const
 {
     return callee->str() + "(" + util::join(",", strList(args)) + ")";
+}
+
+std::string FunctionInvocation::str() const
+{
+    return func->mangledName() + "(" + util::join(",", strList(args)) + ")";
 }
 
 std::string MemberAccess::str() const
@@ -124,14 +120,14 @@ static std::string const LIST_SLICE(
 "    step = step || 1;\n"
 "    if (step > 0) {\n"
 "        begin = round(begin || 0);\n"
-"        end = (end === null) ? list.length : round(end);\n"
+"        end = (end === undefined) ? list.length : round(end);\n"
 "        for (; begin < end; begin += step) {\n"
 "            r.push(list[begin]);\n"
 "        }\n"
 "        return r;\n"
 "    }\n"
-"    begin = (begin === null) ? list.length - 1 : round(begin);\n"
-"    end = (end === null) ? -1 : round(end)\n"
+"    begin = (begin === undefined) ? list.length - 1 : round(begin);\n"
+"    end = (end === undefined) ? -1 : round(end)\n"
 "    for (; begin > end; begin += step) {\n"
 "        r.push(list[begin]);\n"
 "    }\n"
@@ -152,11 +148,6 @@ std::string ListSlice::str() const
                 , "$END", end->str())
                 , "$STEP", step->str())
         ;
-}
-
-std::string ListSlice::Default::str() const
-{
-    return "null";
 }
 
 std::string Dictionary::str() const
@@ -187,6 +178,11 @@ static std::string strBinaryOperator(std::string const& op_img)
     return r->second;
 }
 
+std::string Assignment::str() const
+{
+    return "(" + lhs->str() + "=" + rhs->str() + ")";
+}
+
 std::string BinaryOp::str() const
 {
     return "(" + lhs->str() + strBinaryOperator(op) + rhs->str() + ")";
@@ -213,12 +209,40 @@ std::string Lambda::str() const
 {
     std::ostringstream body_os;
     body->write(body_os);
+    std::string copy_decls_str;
+    auto form_func(formNames);
+    if (copy_decls) {
+        form_func = formTransientParams;
+        std::for_each(param_names.begin()
+                    , param_names.end()
+                    , [&](std::string const& p)
+                      {
+                          copy_decls_str += (formName(p) + "=" + formTransientParam(p) + ";");
+                      });
+    }
     return
         util::replace_all(
         util::replace_all(
-            "(function($PARAMETERS) { $BODY })"
-                , "$PARAMETERS", util::join(",", formNames(param_names)))
-                , "$BODY", body_os.str())
+        util::replace_all(
+            "(function(#PARAMETERS) { #COPY_DECLS#BODY })"
+                , "#PARAMETERS", util::join(",", form_func(param_names)))
+                , "#COPY_DECLS", copy_decls_str)
+                , "#BODY", body_os.str())
+        ;
+}
+
+std::string RegularAsyncLambda::str() const
+{
+    std::ostringstream body_os;
+    body->write(body_os);
+    std::vector<std::string> params(param_names);
+    params.insert(params.begin() + async_param_index, term::regularAsyncCallback());
+    return
+        util::replace_all(
+        util::replace_all(
+            "(function(#PARAMETERS) { #BODY })"
+                , "#PARAMETERS", util::join(",", formNames(params)))
+                , "#BODY", body_os.str())
         ;
 }
 
@@ -227,7 +251,30 @@ std::string AsyncReference::str() const
     return formAsyncRef(ref_id);
 }
 
+std::string RegularAsyncCallbackArg::str() const
+{
+    std::ostringstream body_os;
+    body->write(body_os);
+    return
+        util::replace_all(
+        util::replace_all(
+        util::replace_all(
+            "(function($cb_err, #CALLBACK_RESULT) {\n"
+            "    if ($cb_err) #RAISE_EXC\n"
+            "#BODY\n"
+            "})"
+                , "#CALLBACK_RESULT", formAsyncRef(util::id(this)))
+                , "#RAISE_EXC", raiser("$cb_err"))
+                , "#BODY", body_os.str())
+        ;
+}
+
 std::string This::str() const
 {
     return "$this";
+}
+
+std::string Conditional::str() const
+{
+    return "(" + predicate->str() + "?" + consequence->str() + ":" + alternative->str() + ")";
 }

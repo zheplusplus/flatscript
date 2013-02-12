@@ -6,7 +6,8 @@ test:sample-tests unittest
 sample-tests:unittest \
              test-ok-empty test-err-tab-as-ind test-err-inv-chars test-err-bad-indent \
              test-err-slice test-err-reserved-words \
-             test-ok-mix test-ok-callable test-ok-slice test-ok-break test-ok-multi-level-lambdas
+             test-ok-callable test-ok-slice test-ok-break test-ok-multi-level-lambdas \
+             test-ok-block-pipe test-ok-mix
 
 unittest:$(TESTDIR)/test-grammar.out
 	$(CHKMEM) $(TESTDIR)/test-grammar.out

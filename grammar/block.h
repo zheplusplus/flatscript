@@ -5,16 +5,15 @@
 #include <util/arrays.h>
 
 #include "fwd-decl.h"
-#include "reducing-env.h"
 
 namespace grammar {
 
     struct Block {
-        util::sptr<semantic::Filter> compile(BaseReducingEnv const& env) const;
         util::sptr<semantic::Filter> compile() const;
 
-        void addStmt(util::sptr<Statement const> stmt);
+        void addStmt(util::sptr<Statement> stmt);
         void addFunc(util::sptr<Function const> func);
+        void acceptElse(misc::position const& else_pos, Block&& block);
 
         Block() = default;
 
@@ -25,7 +24,7 @@ namespace grammar {
             , _funcs(std::move(rhs._funcs))
         {}
     private:
-        util::ptrarr<Statement const> _stmts;
+        util::ptrarr<Statement> _stmts;
         util::ptrarr<Function const> _funcs;
     };
 

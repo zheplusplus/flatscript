@@ -2,7 +2,6 @@
 #define __STEKIN_SEMANTIC_NODE_BASE_H__
 
 #include <string>
-#include <vector>
 #include <utility>
 #include <gmpxx.h>
 

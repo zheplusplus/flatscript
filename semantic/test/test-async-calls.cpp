@@ -6,6 +6,7 @@
 
 #include "test-common.h"
 #include "../expr-nodes.h"
+#include "../stmt-nodes.h"
 #include "../list-pipe.h"
 #include "../compiling-space.h"
 
@@ -64,10 +65,13 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
+            (FWD_DECL, "content")
+            (FWD_DECL, "err")
             (ASYNC_RESULT_DEF)
                 (pos, CALL, 2)
                     (pos, REFERENCE, "setTimeout")
-                    (pos, FUNC_DECL, 0)
+                    (pos, FUNCTION, 0)
+                        (COPY_PARAM_DECL)
                         (SCOPE_BEGIN)
                             (ARITHMETICS)
                                 (pos, ASYNC_REFERENCE)
@@ -78,8 +82,9 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
                                 (pos, CALL, 2)
                                     (pos, REFERENCE, "readLine")
                                     (pos, STRING, "config.ini")
-                                    (pos, FUNC_DECL, 1)
+                                    (pos, FUNCTION, 1)
                                         (PARAMETER, "content")
+                                        (COPY_PARAM_DECL)
                                         (SCOPE_BEGIN)
                                             (ARITHMETICS)
                                                 (pos, ASYNC_REFERENCE)
@@ -87,8 +92,9 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
                                                 (pos, CALL, 3)
                                                     (pos, REFERENCE, "writeLine")
                                                     (pos, INTEGER, "200")
-                                                    (pos, FUNC_DECL, 1)
+                                                    (pos, FUNCTION, 1)
                                                         (PARAMETER, "err")
+                                                        (COPY_PARAM_DECL)
                                                         (SCOPE_BEGIN)
                                                             (ARITHMETICS)
                                                                 (pos, ASYNC_REFERENCE)
@@ -148,8 +154,9 @@ TEST_F(AsyncCallsTest, InBranch)
                 (ASYNC_RESULT_DEF)
                     (pos, CALL, 2)
                         (pos, REFERENCE, "read")
-                        (pos, FUNC_DECL, 1)
+                        (pos, FUNCTION, 1)
                             (PARAMETER, "content")
+                            (COPY_PARAM_DECL)
                             (SCOPE_BEGIN)
                                 (ARITHMETICS)
                                     (pos, ASYNC_REFERENCE)
@@ -203,11 +210,13 @@ TEST_F(AsyncCallsTest, AsBranchPredicate)
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
+            (FWD_DECL, "err")
             (ASYNC_RESULT_DEF)
                 (pos, CALL, 2)
                     (pos, REFERENCE, "write")
-                    (pos, FUNC_DECL, 1)
+                    (pos, FUNCTION, 1)
                         (PARAMETER, "err")
+                        (COPY_PARAM_DECL)
                         (SCOPE_BEGIN)
                             (BRANCH)
                                 (pos, ASYNC_REFERENCE)
@@ -308,22 +317,26 @@ TEST_F(AsyncCallsTest, NestedAsyncArgs)
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
+            (FWD_DECL, "x")
             (ASYNC_RESULT_DEF)
                 (pos, CALL, 1)
                     (pos, REFERENCE, "g")
-                    (pos, FUNC_DECL, 0)
+                    (pos, FUNCTION, 0)
+                        (COPY_PARAM_DECL)
                         (SCOPE_BEGIN)
                             (ASYNC_RESULT_DEF)
                                 (pos, CALL, 1)
                                     (pos, REFERENCE, "h")
-                                    (pos, FUNC_DECL, 0)
+                                    (pos, FUNCTION, 0)
+                                        (COPY_PARAM_DECL)
                                         (SCOPE_BEGIN)
                                             (ASYNC_RESULT_DEF)
                                                 (pos, CALL, 3)
                                                     (pos, REFERENCE, "f")
                                                     (pos, ASYNC_REFERENCE)
-                                                    (pos, FUNC_DECL, 1)
+                                                    (pos, FUNCTION, 1)
                                                         (PARAMETER, "x")
+                                                        (COPY_PARAM_DECL)
                                                         (SCOPE_BEGIN)
                                                             (ARITHMETICS)
                                                                 (pos, ASYNC_REFERENCE)
@@ -333,6 +346,124 @@ TEST_F(AsyncCallsTest, NestedAsyncArgs)
                                                         (SCOPE_END)
                                                     (pos, ASYNC_REFERENCE)
                                         (SCOPE_END)
+                        (SCOPE_END)
+        (SCOPE_END)
+    ;
+}
+
+TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
+{
+    misc::position pos(16);
+    semantic::CompilingSpace space;
+    semantic::Filter filter;
+
+    space.sym()->defName(pos, "suzuha");
+    space.sym()->defName(pos, "yuki");
+    space.sym()->defName(pos, "rintarou");
+    space.sym()->defName(pos, "mayuri");
+
+    util::ptrarr<semantic::Expression const> args;
+    util::ptrarr<semantic::Expression const> fargs;
+    util::ptrarr<semantic::Expression const> largs;
+
+    largs.append(util::mkptr(new semantic::IntLiteral(pos, 1559)));
+
+    args.append(util::mkptr(new semantic::AsyncCall(
+                pos
+              , util::mkptr(new semantic::Reference(pos, "suzuha"))
+              , std::move(fargs)
+              , std::vector<std::string>({ "itaru" })
+              , std::move(largs))));
+    util::sptr<semantic::Expression const> call(new semantic::Call(
+                pos, util::mkptr(new semantic::Reference(pos, "yuki")), std::move(args)));
+
+    filter.defName(pos, "ruka", util::mkptr(new semantic::Conditional(pos
+                            , util::mkptr(new semantic::Reference(pos, "rintarou"))
+                            , std::move(call)
+                            , util::mkptr(new semantic::BoolLiteral(pos, false)))));
+    args.append(util::mkptr(new semantic::Reference(pos, "ruka")));
+    filter.addArith(pos, util::mkptr(new semantic::Call(
+                    pos, util::mkptr(new semantic::Reference(pos, "mayuri")), std::move(args))));
+
+    compile(filter, space.sym())->write(dummyos());
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (SCOPE_BEGIN)
+            (FWD_DECL, "ruka")
+            (FUNCTION, "# ConditionalCallback", 1)
+                (PARAMETER, "ConditionalCallback # Parameter")
+                (SCOPE_BEGIN)
+                    (ARITHMETICS)
+                        (pos, BINARY_OP, "[=]")
+                            (pos, REFERENCE, "ruka")
+                            (pos, REFERENCE, "ConditionalCallback # Parameter")
+                    (ARITHMETICS)
+                        (pos, CALL, 1)
+                            (pos, REFERENCE, "mayuri")
+                            (pos, REFERENCE, "ruka")
+                (SCOPE_END)
+            (BRANCH)
+                (pos, REFERENCE, "rintarou")
+                (SCOPE_BEGIN)
+                    (ASYNC_RESULT_DEF)
+                        (pos, CALL, 2)
+                            (pos, REFERENCE, "suzuha")
+                            (pos, FUNCTION, 1)
+                                (PARAMETER, "itaru")
+                                (COPY_PARAM_DECL)
+                                (SCOPE_BEGIN)
+                                    (ARITHMETICS)
+                                        (pos, FUNC_INVOKE, 1)
+                                            (pos, CALL, 1)
+                                                (pos, REFERENCE, "yuki")
+                                                (pos, ASYNC_REFERENCE)
+                                (SCOPE_END)
+                            (pos, INTEGER, "1559")
+                (SCOPE_END)
+                (SCOPE_BEGIN)
+                    (ARITHMETICS)
+                        (pos, FUNC_INVOKE, 1)
+                            (pos, BOOLEAN, "false")
+                (SCOPE_END)
+        (SCOPE_END)
+    ;
+}
+
+TEST_F(AsyncCallsTest, RegularAsyncCall)
+{
+    misc::position pos(17);
+    semantic::CompilingSpace space;
+    util::ptrarr<semantic::Expression const> fargs;
+    util::ptrarr<semantic::Expression const> largs;
+    semantic::Block body;
+
+    space.sym()->defName(pos, "yurine");
+
+    fargs.append(util::mkptr(new semantic::StringLiteral(pos, "karas")));
+    body.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                        new semantic::RegularAsyncCall(
+                                        pos
+                                      , util::mkptr(new semantic::Reference(pos, "yurine"))
+                                      , std::move(fargs)
+                                      , std::move(largs))))));
+
+    body.compile(std::move(space))->write(dummyos());
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (SCOPE_BEGIN)
+            (FWD_DECL, "yurine")
+            (ARITHMETICS)
+                (pos, CALL, 2)
+                    (pos, REFERENCE, "yurine")
+                    (pos, STRING, "karas")
+                    (pos, FUNCTION)
+                        (PARAMETER, "# RegularAsyncCallbackParameters")
+                        (EXC_THROW)
+                        (SCOPE_BEGIN)
+                            (ARITHMETICS)
+                                (pos, ASYNC_REFERENCE)
                         (SCOPE_END)
         (SCOPE_END)
     ;

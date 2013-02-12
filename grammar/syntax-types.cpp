@@ -3,13 +3,6 @@
 
 using namespace grammar;
 
-std::string OpImage::deliver()
-{
-    std::string img(std::move(_img));
-    delete this;
-    return std::move(img);
-}
-
 std::string Ident::deliver()
 {
     std::string id(std::move(_id));

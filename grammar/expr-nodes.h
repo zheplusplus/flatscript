@@ -19,7 +19,7 @@ namespace grammar {
         {}
 
         bool empty() const;
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
     struct PreUnaryOp
@@ -31,7 +31,7 @@ namespace grammar {
             , rhs(std::move(r))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         std::string const op_img;
         util::sptr<Expression const> const rhs;
@@ -50,8 +50,8 @@ namespace grammar {
             , rhs(std::move(r))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
-        util::sptr<semantic::Expression const> reduceAsLeftValue(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+        util::sptr<semantic::Expression const> reduceAsLeftValue() const;
 
         util::sptr<Expression const> const lhs;
         std::string const op_img;
@@ -68,7 +68,7 @@ namespace grammar {
 
         bool isName() const;
         std::string reduceAsName() const;
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         std::string const name;
     };
@@ -82,7 +82,7 @@ namespace grammar {
         {}
 
         std::string reduceAsProperty() const;
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         bool const value;
     };
@@ -96,7 +96,7 @@ namespace grammar {
         {}
 
         std::string reduceAsProperty() const;
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         mpz_class const value;
     };
@@ -110,7 +110,7 @@ namespace grammar {
         {}
 
         std::string reduceAsProperty() const;
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         mpf_class const value;
     };
@@ -124,7 +124,7 @@ namespace grammar {
         {}
 
         std::string reduceAsProperty() const;
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         std::string const value;
     };
@@ -137,7 +137,7 @@ namespace grammar {
             , value(std::move(v))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         util::ptrarr<Expression const> const value;
     };
@@ -149,7 +149,7 @@ namespace grammar {
             : Expression(pos)
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
     struct PipeIndex
@@ -159,7 +159,7 @@ namespace grammar {
             : Expression(pos)
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
     struct PipeKey
@@ -169,7 +169,17 @@ namespace grammar {
             : Expression(pos)
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+    };
+
+    struct PipeResult
+        : Expression
+    {
+        explicit PipeResult(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
     struct Call
@@ -181,7 +191,7 @@ namespace grammar {
             , args(std::move(a))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         util::sptr<Expression const> const callee;
         util::ptrarr<Expression const> const args;
@@ -196,8 +206,8 @@ namespace grammar {
             , key(std::move(k))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
-        util::sptr<semantic::Expression const> reduceAsLeftValue(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+        util::sptr<semantic::Expression const> reduceAsLeftValue() const;
 
         util::sptr<Expression const> const collection;
         util::sptr<Expression const> const key;
@@ -206,33 +216,18 @@ namespace grammar {
     struct ListSlice
         : Expression
     {
-        struct Default
-            : Expression
-        {
-            explicit Default(misc::position const& pos)
-                : Expression(pos)
-            {}
-
-            util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
-
-            static util::sptr<Expression const> create(misc::position const& pos)
-            {
-                return util::mkptr(new Default(pos));
-            }
-        };
-
         ListSlice(util::sptr<Expression const> ls
                 , util::sptr<Expression const> b
                 , util::sptr<Expression const> e
                 , util::sptr<Expression const> s)
             : Expression(ls->pos)
             , list(std::move(ls))
-            , begin(b->empty() ? Default::create(pos) : std::move(b))
-            , end(e->empty() ? Default::create(pos) : std::move(e))
-            , step(s->empty() ? Default::create(pos) : std::move(s))
+            , begin(std::move(b))
+            , end(std::move(e))
+            , step(std::move(s))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         util::sptr<Expression const> const list;
         util::sptr<Expression const> const begin;
@@ -248,7 +243,7 @@ namespace grammar {
             , items(std::move(i))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         util::ptrkvarr<Expression const> const items;
     };
@@ -262,10 +257,26 @@ namespace grammar {
             , body(std::move(b))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         std::vector<std::string> const param_names;
         Block const body;
+    };
+
+    struct RegularAsyncLambda
+        : Lambda
+    {
+        RegularAsyncLambda(misc::position const& pos
+                         , std::vector<std::string> const& params
+                         , int async_param_idx
+                         , Block body)
+            : Lambda(pos, params, std::move(body))
+            , async_param_index(async_param_idx)
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+
+        int const async_param_index;
     };
 
     struct AsyncPlaceholder
@@ -276,7 +287,7 @@ namespace grammar {
             , param_names(p)
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
         util::sptr<semantic::Expression const> reduceAsArg(ArgReducingEnv& env, int index) const;
 
         std::vector<std::string> const param_names;
@@ -289,7 +300,7 @@ namespace grammar {
             : Expression(pos)
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const&) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
     struct Pipeline
@@ -302,7 +313,7 @@ namespace grammar {
             : BinaryOp(pos, std::move(lhs), op, std::move(rhs))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
     struct BlockPipeline
@@ -314,10 +325,42 @@ namespace grammar {
             , section(std::move(sec))
         {}
 
-        util::sptr<semantic::Expression const> reduceAsExpr(BaseReducingEnv const& env) const;
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         util::sptr<Expression const> const list;
         Block const section;
+    };
+
+    struct Conditional
+        : Expression
+    {
+        Conditional(misc::position const& pos
+                  , util::sptr<Expression const> p
+                  , util::sptr<Expression const> c
+                  , util::sptr<Expression const> a)
+            : Expression(pos)
+            , predicate(std::move(p))
+            , consequence(std::move(c))
+            , alternative(std::move(a))
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+
+        util::sptr<Expression const> const predicate;
+        util::sptr<Expression const> const consequence;
+        util::sptr<Expression const> const alternative;
+    };
+
+    struct RegularAsyncParam
+        : Expression
+    {
+        explicit RegularAsyncParam(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+        void reduceAsParam(ParamReducingEnv& env, int index) const;
+        util::sptr<semantic::Expression const> reduceAsArg(ArgReducingEnv& env, int index) const;
     };
 
 }

@@ -19,7 +19,7 @@ TEST_F(ExprNodesTest, Pipeline)
               , util::mkptr(new grammar::Identifier(pos, "x20130109"))
               , "|:"
               , util::mkptr(new grammar::PipeElement(pos))));
-    p->reduceAsExpr(grammar::ExprReducingEnv())->compile(space);
+    p->reduceAsExpr()->compile(space);
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -31,21 +31,20 @@ TEST_F(ExprNodesTest, Pipeline)
     ;
 }
 
-TEST_F(ExprNodesTest, PipeElementOutOfPipeEnvironment)
+TEST_F(ExprNodesTest, RegularAsyncParamAsExpr)
 {
     misc::position pos(2);
     misc::position pos_a(200);
-    misc::position pos_b(201);
-    semantic::CompilingSpace space;
 
     util::sptr<grammar::Expression const> p(new grammar::Pipeline(
                 pos
-              , util::mkptr(new grammar::PipeKey(pos_a))
-              , "|?"
-              , util::mkptr(new grammar::PipeElement(pos_b))));
-    p->reduceAsExpr(grammar::ExprReducingEnv());
+              , util::mkptr(new grammar::Identifier(pos, "x20130306"))
+              , "|:"
+              , util::mkptr(new grammar::RegularAsyncParam(pos_a))));
+    p->reduceAsExpr();
     ASSERT_TRUE(error::hasError());
 
-    ASSERT_EQ(1, getPipeReferenceNotInListContextRecs().size());
-    ASSERT_EQ(pos_a, getPipeReferenceNotInListContextRecs()[0].pos);
+    std::vector<AsyncParamNotExprRec> recs(getAsyncParamNotExprRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos_a, recs[0].pos);
 }

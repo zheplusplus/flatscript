@@ -6,6 +6,11 @@
 
 using namespace grammar;
 
+void Statement::acceptElse(misc::position const& else_pos, Block&&)
+{
+    error::elseNotMatchIf(else_pos);
+}
+
 bool Expression::empty() const
 {
     return false;
@@ -22,18 +27,23 @@ std::string Expression::reduceAsName() const
     return "";
 }
 
+void Expression::reduceAsParam(ParamReducingEnv& env, int) const
+{
+    return env.addParam(reduceAsName());
+}
+
 std::string Expression::reduceAsProperty() const
 {
     return reduceAsName();
 }
 
-util::sptr<semantic::Expression const> Expression::reduceAsLeftValue(BaseReducingEnv const&) const
+util::sptr<semantic::Expression const> Expression::reduceAsLeftValue() const
 {
     error::invalidLeftValue(pos);
-    return util::mkptr(new semantic::ListSlice::Default(pos));
+    return util::mkptr(new semantic::Undefined(pos));
 }
 
-util::sptr<semantic::Expression const> Expression::reduceAsArg(ArgReducingEnv& env, int) const
+util::sptr<semantic::Expression const> Expression::reduceAsArg(ArgReducingEnv&, int) const
 {
-    return reduceAsExpr(env);
+    return reduceAsExpr();
 }

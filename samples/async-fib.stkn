@@ -1,0 +1,16 @@
+func less(x, y, %%)
+    setTimeout(%, 1)
+    return x < y
+
+func fib(n, %%)
+    setTimeout(%, 1)
+    return 1 if less(n, 2, %%) else fib(n - 1, %%) + fib(n - 2, %%)
+
+func print(n, %%)
+    console.log(fib(n, %%))
+
+print(0, %%)
+print(1, %%)
+print(2, %%)
+print(3, %%)
+print(4, %%)

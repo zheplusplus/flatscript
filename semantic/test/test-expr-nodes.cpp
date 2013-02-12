@@ -7,6 +7,7 @@
 
 #include "test-common.h"
 #include "../expr-nodes.h"
+#include "../list-pipe.h"
 #include "../compiling-space.h"
 #include "../filter.h"
 
@@ -400,4 +401,106 @@ TEST_F(ExprNodesTest, FoldUnsupported)
     ASSERT_EQ(">>", recs[1].op_img);
     ASSERT_EQ("int", recs[1].lhst_name);
     ASSERT_EQ("float", recs[1].rhst_name);
+}
+
+TEST_F(ExprNodesTest, PipeElementOutOfPipeEnvironment)
+{
+    misc::position pos(12);
+    misc::position pos_a(1200);
+    misc::position pos_b(1201);
+    semantic::CompilingSpace space;
+
+    util::sptr<semantic::Expression const> p(semantic::Pipeline::createMapper(
+                pos
+              , util::mkptr(new semantic::PipeKey(pos_a))
+              , util::mkptr(new semantic::PipeElement(pos_b))));
+    p->compile(space);
+    ASSERT_TRUE(error::hasError());
+
+    ASSERT_EQ(1, getPipeReferenceNotInListContextRecs().size());
+    ASSERT_EQ(pos_a, getPipeReferenceNotInListContextRecs()[0].pos);
+}
+
+TEST_F(ExprNodesTest, SyncConditional)
+{
+    misc::position pos(13);
+    semantic::CompilingSpace space;
+    space.sym()->defName(pos, "shanon");
+    space.sym()->defName(pos, "kanon");
+    space.sym()->defName(pos, "beatoriche");
+
+    util::sptr<semantic::Expression const> c(new semantic::Conditional(
+                pos
+              , util::mkptr(new semantic::Reference(pos, "shanon"))
+              , util::mkptr(new semantic::Reference(pos, "kanon"))
+              , util::mkptr(new semantic::Reference(pos, "beatoriche"))));
+    c->compile(space)->str();
+
+    EXPECT_FALSE(c->isLiteral(space.sym()));
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (pos, CONDITIONAL)
+            (pos, REFERENCE, "shanon")
+            (pos, REFERENCE, "kanon")
+            (pos, REFERENCE, "beatoriche")
+    ;
+
+    util::sptr<semantic::Expression const> ca(new semantic::Conditional(
+                pos
+              , util::mkptr(new semantic::Reference(pos, "shanon"))
+              , util::mkptr(new semantic::IntLiteral(pos, 20130225))
+              , util::mkptr(new semantic::Reference(pos, "beatoriche"))));
+    EXPECT_FALSE(ca->isLiteral(space.sym()));
+
+    util::sptr<semantic::Expression const> cb(new semantic::Conditional(
+                pos
+              , util::mkptr(new semantic::Reference(pos, "shanon"))
+              , util::mkptr(new semantic::IntLiteral(pos, 1452))
+              , util::mkptr(new semantic::BoolLiteral(pos, false))));
+    EXPECT_FALSE(ca->isLiteral(space.sym()));
+}
+
+TEST_F(ExprNodesTest, SyncConditionalFoldOnLiteralPredicate)
+{
+    misc::position pos(14);
+    semantic::CompilingSpace space;
+    space.sym()->defName(pos, "shanon");
+    space.sym()->defName(pos, "kanon");
+    space.sym()->defName(pos, "beatoriche");
+
+    util::sptr<semantic::Expression const> c(new semantic::Conditional(
+                pos
+              , util::mkptr(new semantic::BoolLiteral(pos, false))
+              , util::mkptr(new semantic::Reference(pos, "kanon"))
+              , util::mkptr(new semantic::Reference(pos, "beatoriche"))));
+    c->compile(space)->str();
+
+    EXPECT_FALSE(c->isLiteral(space.sym()));
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (pos, REFERENCE, "beatoriche")
+    ;
+}
+
+TEST_F(ExprNodesTest, SyncConditionalLiteral)
+{
+    misc::position pos(15);
+    semantic::CompilingSpace space;
+
+    util::sptr<semantic::Expression const> c(new semantic::Conditional(
+                pos
+              , util::mkptr(new semantic::BoolLiteral(pos, true))
+              , util::mkptr(new semantic::StringLiteral(pos, "kirie"))
+              , util::mkptr(new semantic::Reference(pos, "eba"))));
+    c->compile(space)->str();
+
+    EXPECT_TRUE(c->isLiteral(space.sym()));
+    EXPECT_EQ("string", c->literalType(space.sym()));
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (pos, STRING, "kirie")
+    ;
 }

@@ -1,27 +1,11 @@
 #ifndef __STEKIN_GRAMMAR_SYNTAX_TYPE_H__
 #define __STEKIN_GRAMMAR_SYNTAX_TYPE_H__
 
-#include <string>
 #include <vector>
 
-#include <semantic/fwd-decl.h>
-#include <report/errors.h>
-#include <util/pointer.h>
-#include <misc/pos-type.h>
-
-#include "expr-tokens.h"
+#include "tokens.h"
 
 namespace grammar {
-
-    struct OpImage {
-        explicit OpImage(char const* image)
-            : _img(image)
-        {}
-
-        std::string deliver();
-    private:
-        std::string const _img;
-    };
 
     struct Ident {
         misc::position const pos;

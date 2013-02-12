@@ -1,8 +1,8 @@
-#include <algorithm>
 #include <map>
 
 #include <output/expr-nodes.h>
 #include <output/stmt-nodes.h>
+#include <output/function.h>
 #include <util/string.h>
 #include <report/errors.h>
 
@@ -232,21 +232,6 @@ bool ListLiteral::isAsync() const
     return isListAsync(value);
 }
 
-util::sptr<output::Expression const> PipeElement::compile(BaseCompilingSpace&) const
-{
-    return util::mkptr(new output::PipeElement(pos));
-}
-
-util::sptr<output::Expression const> PipeIndex::compile(BaseCompilingSpace&) const
-{
-    return util::mkptr(new output::PipeIndex(pos));
-}
-
-util::sptr<output::Expression const> PipeKey::compile(BaseCompilingSpace&) const
-{
-    return util::mkptr(new output::PipeKey(pos));
-}
-
 util::sptr<output::Expression const> ListAppend::compile(BaseCompilingSpace& space) const
 {
     util::sptr<output::Expression const> clhs(lhs->compile(space));
@@ -304,9 +289,9 @@ bool ListSlice::isAsync() const
     return list->isAsync() || begin->isAsync() || end->isAsync() || step->isAsync();
 }
 
-util::sptr<output::Expression const> ListSlice::Default::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Undefined::compile(BaseCompilingSpace&) const
 {
-    return util::mkptr(new output::ListSlice::Default(pos));
+    return util::mkptr(new output::Undefined(pos));
 }
 
 util::sptr<output::Expression const> Dictionary::compile(BaseCompilingSpace& space) const
@@ -330,7 +315,34 @@ bool Dictionary::isAsync() const
 util::sptr<output::Expression const> Lambda::compile(BaseCompilingSpace& space) const
 {
     return util::mkptr(new output::Lambda(
-                    pos, param_names, body.compile(CompilingSpace(pos, space.sym(), param_names))));
+            pos, param_names, body.compile(CompilingSpace(pos, space.sym(), param_names)), false));
+}
+
+util::sptr<output::Expression const> RegularAsyncLambda::compile(BaseCompilingSpace& space) const
+{
+    return util::mkptr(new output::RegularAsyncLambda(
+            pos, param_names, async_param_index, body.compile(
+                                    RegularAsyncCompilingSpace(pos, space.sym(), param_names))));
+}
+
+util::sptr<output::Expression const> RegularAsyncCall::compile(BaseCompilingSpace& space) const
+{
+    util::sptr<output::Expression const> compl_callee(callee->compile(space));
+    util::ptrarr<output::Expression const> compl_fargs(compileList(former_args, space));
+    util::ptrarr<output::Expression const> compl_largs(compileList(latter_args, space));
+
+    util::sref<output::Block> current_flow(space.block());
+    util::sptr<output::Block> async_flow(new output::Block);
+    space.setAsyncSpace(pos, std::vector<std::string>(), *async_flow);
+
+    util::sptr<output::Expression const> callback(new output::RegularAsyncCallbackArg(
+                                            pos, std::move(async_flow), space.raiseMethod()));
+    util::id compl_call_id(callback.id());
+    compl_fargs.append(std::move(callback)).append(std::move(compl_largs));
+
+    current_flow->addStmt(util::mkptr(new output::Arithmetics(util::mkptr(
+                        new output::Call(pos, std::move(compl_callee), std::move(compl_fargs))))));
+    return util::mkptr(new output::AsyncReference(pos, compl_call_id));
 }
 
 util::sptr<output::Expression const> AsyncCall::compile(BaseCompilingSpace& space) const
@@ -343,8 +355,8 @@ util::sptr<output::Expression const> AsyncCall::compile(BaseCompilingSpace& spac
     util::sptr<output::Block> async_flow(new output::Block);
     space.setAsyncSpace(pos, async_params, *async_flow);
 
-    compl_fargs.append(util::mkptr(new output::Lambda(pos, async_params, std::move(async_flow))))
-               .append(std::move(compl_largs));
+    compl_fargs.append(util::mkptr(new output::Lambda(
+                  pos, async_params, std::move(async_flow), true))).append(std::move(compl_largs));
 
     util::sptr<output::Expression const> compl_call(util::mkptr(
                         new output::Call(pos, std::move(compl_callee), std::move(compl_fargs))));
@@ -357,4 +369,100 @@ util::sptr<output::Expression const> This::compile(BaseCompilingSpace& space) co
 {
     space.referenceThis();
     return util::mkptr(new output::This(pos));
+}
+
+util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace& space) const
+{
+    if (predicate->isLiteral(space.sym())) {
+        return _equivVal(space.sym())->compile(space);
+    }
+    if (consequence->isAsync() || alternative->isAsync()) {
+        return _compileAsync(space);
+    }
+    return _compileSync(space);
+}
+
+bool Conditional::isLiteral(util::sref<SymbolTable const> sym) const
+{
+    return predicate->isLiteral(sym) && _equivVal(sym)->isLiteral(sym);
+}
+
+std::string Conditional::literalType(util::sref<SymbolTable const> sym) const
+{
+    return _equivVal(sym)->literalType(sym);
+}
+
+bool Conditional::boolValue(util::sref<SymbolTable const> sym) const
+{
+    return _equivVal(sym)->boolValue(sym);
+}
+
+mpz_class Conditional::intValue(util::sref<SymbolTable const> sym) const
+{
+    return _equivVal(sym)->intValue(sym);
+}
+
+mpf_class Conditional::floatValue(util::sref<SymbolTable const> sym) const
+{
+    return _equivVal(sym)->floatValue(sym);
+}
+
+std::string Conditional::stringValue(util::sref<SymbolTable const> sym) const
+{
+    return _equivVal(sym)->stringValue(sym);
+}
+
+bool Conditional::isAsync() const
+{
+    return predicate->isAsync() || consequence->isAsync() || alternative->isAsync();
+}
+
+util::sref<Expression const> Conditional::_equivVal(util::sref<SymbolTable const> sym) const
+{
+    if (predicate->isLiteral(sym)) {
+        return *(predicate->boolValue(sym) ? consequence : alternative);
+    }
+    return util::mkref(*this);
+}
+
+util::sptr<output::Expression const> Conditional::_compileSync(BaseCompilingSpace& space) const
+{
+    util::sptr<output::Expression const> compl_pred(predicate->compile(space));
+    SubCompilingSpace consq_space(space);
+    SubCompilingSpace alter_space(space);
+    return util::mkptr(new output::Conditional(pos
+                                             , std::move(compl_pred)
+                                             , consequence->compile(consq_space)
+                                             , alternative->compile(alter_space)));
+}
+
+static util::sptr<output::Block const> compileConditionalBranch(
+            BaseCompilingSpace& space
+          , util::sref<Expression const> expr
+          , util::sref<output::ConditionalCallback const> cb)
+{
+    util::ptrarr<output::Expression const> args;
+    SubCompilingSpace sub_space(space);
+    args.append(expr->compile(sub_space));
+    sub_space.block()->addStmt(util::mkptr(new output::Arithmetics(util::mkptr(
+                        new output::FunctionInvocation(expr->pos, cb, std::move(args))))));
+    return sub_space.deliver();
+}
+
+util::sptr<output::Expression const> Conditional::_compileAsync(BaseCompilingSpace& space) const
+{
+    util::sptr<output::Expression const> compl_pred(predicate->compile(space));
+
+    util::sptr<output::ConditionalCallback> cb(new output::ConditionalCallback);
+    std::string param_name(cb->parameters()[0]);
+
+    util::sptr<output::Block const> consq_flow(compileConditionalBranch(space, *consequence, *cb));
+    util::sptr<output::Block const> alter_flow(compileConditionalBranch(space, *alternative, *cb));
+
+    util::sref<output::Block> cb_body_flow(cb->bodyFlow());
+    space.block()->addFunc(std::move(cb));
+    space.block()->addStmt(util::mkptr(new output::Branch(
+                        std::move(compl_pred), std::move(consq_flow), std::move(alter_flow))));
+    space.setAsyncSpace(cb_body_flow);
+    return util::mkptr(new output::Reference(pos, param_name));
 }

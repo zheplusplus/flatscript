@@ -12,19 +12,19 @@ TEST_F(AnonymousFunctionTest, AsNameDef)
     grammar::ClauseBuilder builder;
     builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "nami")))
                                                    ->add(colon(pos))
-                                                   ->add(openParen(pos))
+                                                   ->add(open(pos, "("))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
     builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "mayo")))
                                                      ->add(colon(pos_a))
-                                                     ->add(openParen(pos_a))
+                                                     ->add(open(pos_a, "("))
                                                      ->add(id(pos_a, "kanako"))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
     builder.addArith(0, pos_b, (new grammar::TokenSequence(id(pos_b, "tarou")))
                                                      ->add(colon(pos_b))
-                                                     ->add(openParen(pos_b))
+                                                     ->add(open(pos_b, "("))
                                                      ->add(id(pos_b, "kaere"))
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
@@ -54,18 +54,18 @@ TEST_F(AnonymousFunctionTest, TerminateByEnd)
     grammar::ClauseBuilder builder;
     builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "itosiki")))
                                                    ->add(colon(pos))
-                                                   ->add(openParen(pos))
+                                                   ->add(open(pos, "("))
                                                    ->add(id(pos_a, "fuura"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
     builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "sekiuti")))
-                                                     ->add(openParen(pos_a))
+                                                     ->add(open(pos_a, "("))
                                                      ->add(id(pos_a, "mitama"))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
     builder.addArith(1, pos_b, (new grammar::TokenSequence(id(pos_b, "fujiyosi")))
-                                                     ->add(openParen(pos_b))
+                                                     ->add(open(pos_b, "("))
                                                      ->add(id(pos_b, "hitou"))
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
@@ -103,19 +103,19 @@ TEST_F(AnonymousFunctionTest, FuncAsArg)
     misc::position pos_b(301);
     grammar::ClauseBuilder builder;
     builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "ookusa")))
-                                                   ->add(openParen(pos))
-                                                   ->add(openParen(pos))
+                                                   ->add(open(pos, "("))
+                                                   ->add(open(pos, "("))
                                                    ->add(id(pos_a, "otonasi"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
     builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "kaga")))
-                                                     ->add(openParen(pos_a))
+                                                     ->add(open(pos_a, "("))
                                                      ->add(id(pos_a, "kitu"))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
     builder.addArith(0, pos_b, (new grammar::TokenSequence(comma(pos_b)))
-                                                     ->add(openParen(pos_b))
+                                                     ->add(open(pos_b, "("))
                                                      ->add(id(pos_b, "kimura"))
                                                      ->add(close(pos_b, ")"))
                                                      ->add(close(pos_b, ")"))
@@ -154,13 +154,13 @@ TEST_F(AnonymousFunctionTest, TerminateByReturn)
     grammar::ClauseBuilder builder;
     builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "kanji")))
                                                    ->add(colon(pos))
-                                                   ->add(openParen(pos))
+                                                   ->add(open(pos, "("))
                                                    ->add(id(pos_a, "makoto"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
     builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "harunobu")))
-                                                     ->add(openParen(pos_a))
+                                                     ->add(open(pos_a, "("))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
     builder.addReturn(0, pos_b, (new grammar::TokenSequence(id(pos_b, "souitirou")))->deliver());
@@ -193,14 +193,14 @@ TEST_F(AnonymousFunctionTest, TerminateByReturnIncompleted)
     misc::position pos_b(501);
     grammar::ClauseBuilder builder;
     builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "saki")))
-                                                   ->add(openParen(pos))
-                                                   ->add(openParen(pos))
+                                                   ->add(open(pos, "("))
+                                                   ->add(open(pos, "("))
                                                    ->add(id(pos_a, "tika"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
     builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "kanako")))
-                                                     ->add(openParen(pos_a))
+                                                     ->add(open(pos_a, "("))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
     builder.addReturn(0, pos_b, (new grammar::TokenSequence(id(pos_b, "keiko")))->deliver());

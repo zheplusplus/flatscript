@@ -12,9 +12,26 @@ console.log(text)
 console.log(asyncTextGen(text, %moreText))
 console.log(moreText)
 
+regularAsyncTextGen: (input, %%):
+    setTimeout(%, 1)
+    return input + (' is quite short' if input.length < 4 else ' is quite long')
+
+console.log(regularAsyncTextGen('cat', %%))
+console.log(regularAsyncTextGen('raven', %%))
+
 func cancelAtFirstTime(timeoutHandle)
     clearTimeout(timeoutHandle)
 
 cancelAtFirstTime(setInterval(%, 1))
+
+func asyncRaiseError(callback)
+    setTimeout(%, 1)
+    callback('error message')
+
+((%%):
+    asyncRaiseError(%%)
+)((error, result):
+    console.log(error)
+)
 
 console.log('End')

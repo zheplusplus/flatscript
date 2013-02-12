@@ -7,9 +7,19 @@
 #include <util/arrays.h>
 
 #include "node-base.h"
-#include "fwd-decl.h"
+#include "methods.h"
 
 namespace output {
+
+    struct Undefined
+        : Expression
+    {
+        explicit Undefined(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        std::string str() const;
+    };
 
     struct PropertyNameExpr
         : Expression
@@ -86,36 +96,6 @@ namespace output {
         util::ptrarr<Expression const> const value;
     };
 
-    struct PipeElement
-        : Expression
-    {
-        explicit PipeElement(misc::position const& pos)
-            : Expression(pos)
-        {}
-
-        std::string str() const;
-    };
-
-    struct PipeIndex
-        : Expression
-    {
-        explicit PipeIndex(misc::position const& pos)
-            : Expression(pos)
-        {}
-
-        std::string str() const;
-    };
-
-    struct PipeKey
-        : Expression
-    {
-        explicit PipeKey(misc::position const& pos)
-            : Expression(pos)
-        {}
-
-        std::string str() const;
-    };
-
     struct Reference
         : PropertyNameExpr
     {
@@ -159,6 +139,23 @@ namespace output {
         util::ptrarr<Expression const> const args;
     };
 
+    struct FunctionInvocation
+        : Expression
+    {
+        FunctionInvocation(misc::position const& pos
+                         , util::sref<Function const> f
+                         , util::ptrarr<Expression const> a)
+            : Expression(pos)
+            , func(f)
+            , args(std::move(a))
+        {}
+
+        std::string str() const;
+
+        util::sref<Function const> const func;
+        util::ptrarr<Expression const> const args;
+    };
+
     struct MemberAccess
         : Expression
     {
@@ -196,16 +193,6 @@ namespace output {
     struct ListSlice
         : Expression
     {
-        struct Default
-            : Expression
-        {
-            explicit Default(misc::position const& pos)
-                : Expression(pos)
-            {}
-
-            std::string str() const;
-        };
-
         ListSlice(misc::position const& pos
                 , util::sptr<Expression const> ls
                 , util::sptr<Expression const> b
@@ -256,13 +243,30 @@ namespace output {
         util::sptr<Expression const> const rhs;
     };
 
+    struct Assignment
+        : Expression
+    {
+        Assignment(misc::position const& pos
+                 , util::sptr<Expression const> l
+                 , util::sptr<Expression const> r)
+            : Expression(pos)
+            , lhs(std::move(l))
+            , rhs(std::move(r))
+        {}
+
+        std::string str() const;
+
+        util::sptr<Expression const> const lhs;
+        util::sptr<Expression const> const rhs;
+    };
+
     struct BinaryOp
         : Expression
     {
         BinaryOp(misc::position const& pos
-                , util::sptr<Expression const> l
-                , std::string const& o
-                , util::sptr<Expression const> r)
+               , util::sptr<Expression const> l
+               , std::string const& o
+               , util::sptr<Expression const> r)
             : Expression(pos)
             , lhs(std::move(l))
             , op(o)
@@ -296,15 +300,38 @@ namespace output {
     {
         Lambda(misc::position const& pos
              , std::vector<std::string> const& p
-             , util::sptr<Statement const> b)
+             , util::sptr<Statement const> b
+             , bool cp_decls)
                 : Expression(pos)
                 , param_names(p)
                 , body(std::move(b))
+                , copy_decls(cp_decls)
         {}
 
         std::string str() const;
 
         std::vector<std::string> const param_names;
+        util::sptr<Statement const> const body;
+        bool const copy_decls;
+    };
+
+    struct RegularAsyncLambda
+        : Expression
+    {
+        RegularAsyncLambda(misc::position const& pos
+                         , std::vector<std::string> const& p
+                         , int async_param_idx
+                         , util::sptr<Statement const> b)
+            : Expression(pos)
+            , param_names(p)
+            , async_param_index(async_param_idx)
+            , body(std::move(b))
+        {}
+
+        std::string str() const;
+
+        std::vector<std::string> const param_names;
+        int const async_param_index;
         util::sptr<Statement const> const body;
     };
 
@@ -321,6 +348,23 @@ namespace output {
         util::id const ref_id;
     };
 
+    struct RegularAsyncCallbackArg
+        : Expression
+    {
+        RegularAsyncCallbackArg(misc::position const& pos
+                              , util::sptr<Statement const> b
+                              , Method const& r)
+            : Expression(pos)
+            , body(std::move(b))
+            , raiser(r)
+        {}
+
+        std::string str() const;
+
+        util::sptr<Statement const> const body;
+        Method const raiser;
+    };
+
     struct This
         : Expression
     {
@@ -329,6 +373,26 @@ namespace output {
         {}
 
         std::string str() const;
+    };
+
+    struct Conditional
+        : Expression
+    {
+        Conditional(misc::position const& pos
+                  , util::sptr<Expression const> p
+                  , util::sptr<Expression const> c
+                  , util::sptr<Expression const> a)
+            : Expression(pos)
+            , predicate(std::move(p))
+            , consequence(std::move(c))
+            , alternative(std::move(a))
+        {}
+
+        std::string str() const;
+
+        util::sptr<Expression const> const predicate;
+        util::sptr<Expression const> const consequence;
+        util::sptr<Expression const> const alternative;
     };
 
 }

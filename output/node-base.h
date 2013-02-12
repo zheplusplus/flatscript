@@ -1,7 +1,6 @@
 #ifndef __STEKIN_OUTPUT_NODE_BASE_H__
 #define __STEKIN_OUTPUT_NODE_BASE_H__
 
-#include <vector>
 #include <ostream>
 
 #include <util/pointer.h>

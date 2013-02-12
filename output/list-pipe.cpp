@@ -6,35 +6,18 @@
 
 using namespace output;
 
-std::string AsyncPipeResult::str() const
-{
-    return "$result";
-}
-
-static std::string const ASYNC_MAPPER_NEXT(
+static std::string const ASYNC_MAPPER_CONTINUE(
 "return $next($index + 1, $result);\n"
 );
 
-static std::string const ASYNC_MAPPER_RESULT(
-"$result.push(#EXPRESSION);\n"
-+ ASYNC_MAPPER_NEXT
-);
-
-void PipelineResult::write(std::ostream& os) const
+void PipelineContinue::write(std::ostream& os) const
 {
-    os << util::replace_all(
-            ASYNC_MAPPER_RESULT
-                , "#EXPRESSION", expr->str());
-}
-
-void PipelineNext::write(std::ostream& os) const
-{
-    os << ASYNC_MAPPER_NEXT;
+    os << ASYNC_MAPPER_CONTINUE;
 }
 
 static std::string const ASYNC_PIPE(
 "(function ($list) {\n"
-"    if (!($list) || $list.length === undefined) throw 'not iterable';\n"
+"    if (!($list) || $list.length === undefined) #RAISE_EXC\n"
 "    function $next($index, $result) {\n"
 "        var $key = null;\n"
 "        if ($index === $list.length) {\n"
@@ -58,7 +41,9 @@ std::string AsyncPipeline::str() const
         util::replace_all(
         util::replace_all(
         util::replace_all(
+        util::replace_all(
             ASYNC_PIPE
+                , "#RAISE_EXC", raiser("'not iterable'"))
                 , "#SUCCESSIVE_STATEMENTS", suc_os.str())
                 , "#NEXT", rec_os.str())
                 , "#LIST", list->str())
@@ -70,13 +55,13 @@ static std::string const SYNC_PIPE(
 "    if (!($list)) return;\n"
 "    var $result = [];\n"
 "    var $ind = 0;\n"
-"    var $next = function() {};"
+"    var $next = function() {};\n"
 "    for (var $k in $list) {\n"
 "        if ($ind === $list.length) {\n"
 "            break;\n"
 "        }\n"
 "        (function ($index, $key, $element) {\n"
-"           #SECTION;\n"
+"           #SECTION\n"
 "        })($ind, $k, $list[$k]);\n"
 "        ++$ind;\n"
 "    }\n"
@@ -95,4 +80,24 @@ std::string SyncPipeline::str() const
                 , "#SECTION", sec_os.str())
                 , "#LIST", list->str())
         );
+}
+
+std::string PipeElement::str() const
+{
+    return "$element";
+}
+
+std::string PipeIndex::str() const
+{
+    return "$index";
+}
+
+std::string PipeKey::str() const
+{
+    return "$key";
+}
+
+std::string PipeResult::str() const
+{
+    return "$result";
 }

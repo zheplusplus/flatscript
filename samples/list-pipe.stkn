@@ -30,19 +30,20 @@ console.log(kls |: $())
 console.log(ls |:
     sqr: $ * $
     if sqr % 3 = 0
-        return sqr
-    return -sqr
+        $r.push(sqr)
+    else
+        $r.push(-sqr)
 )
 
 console.log(ls |:
     sqr: $ * $
     if sqr % 3 = 0
-        return sqr
+        $r.push(sqr)
 )
 
 console.log(ls |:
     sqr: $ * $
-    # oh lost return
+    # oh lost push
 )
 
 console.log('End')

@@ -1,0 +1,7 @@
+tasks: x |:
+    $result.push(0)
+execute(tasks)
+
+execute(x |:
+    $result.push(1)
+)

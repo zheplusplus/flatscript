@@ -41,10 +41,7 @@ namespace semantic {
         void defName(misc::position const& pos
                    , std::string const& name
                    , util::sptr<Expression const> init);
-        void defFunc(misc::position const& pos
-                   , std::string const& name
-                   , std::vector<std::string> const& param_names
-                   , util::sptr<Filter> body);
+        void defFunc(util::sptr<Function const> func);
 
         Block deliver();
     private:

@@ -19,7 +19,7 @@ namespace grammar {
             , expr(std::move(e))
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         util::sptr<Expression const> const expr;
     };
@@ -27,33 +27,21 @@ namespace grammar {
     struct Branch
         : Statement
     {
-        Branch(misc::position const& pos, util::sptr<Expression const> p, Block c, Block a)
+        Branch(misc::position const& pos, util::sptr<Expression const> p, Block c)
             : Statement(pos)
             , predicate(std::move(p))
             , consequence(std::move(c))
-            , alternative(std::move(a))
+            , _alternative(nullptr)
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
+        void compile(util::sref<semantic::Filter> filter) const;
+        void acceptElse(misc::position const& else_pos, Block&& block);
 
         util::sptr<Expression const> const predicate;
         Block const consequence;
-        Block const alternative;
-    };
-
-    struct BranchConsqOnly
-        : Statement
-    {
-        BranchConsqOnly(misc::position const& pos, util::sptr<Expression const> p, Block c)
-            : Statement(pos)
-            , predicate(std::move(p))
-            , consequence(std::move(c))
-        {}
-
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
-
-        util::sptr<Expression const> const predicate;
-        Block const consequence;
+    private:
+        util::sptr<Block const> _alternative;
+        misc::position _else_pos;
     };
 
     struct BranchAlterOnly
@@ -65,7 +53,7 @@ namespace grammar {
             , alternative(std::move(a))
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         util::sptr<Expression const> const predicate;
         Block const alternative;
@@ -79,7 +67,7 @@ namespace grammar {
             , ret_val(std::move(r))
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         util::sptr<Expression const> const ret_val;
     };
@@ -91,7 +79,7 @@ namespace grammar {
             : Statement(pos)
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const&) const;
+        void compile(util::sref<semantic::Filter> filter) const;
     };
 
     struct NameDef
@@ -103,7 +91,7 @@ namespace grammar {
             , init(std::move(i))
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         std::string const name;
         util::sptr<Expression const> const init;
@@ -117,7 +105,7 @@ namespace grammar {
             , names(n)
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const&) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         std::vector<std::string> const names;
     };
@@ -133,7 +121,7 @@ namespace grammar {
                 , value(std::move(v))
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         std::vector<std::string> const export_point;
         util::sptr<Expression const> const value;
@@ -150,7 +138,7 @@ namespace grammar {
             , value(std::move(v))
         {}
 
-        void compile(util::sref<semantic::Filter> filter, BaseReducingEnv const& env) const;
+        void compile(util::sref<semantic::Filter> filter) const;
 
         util::sptr<Expression const> const set_point;
         util::sptr<Expression const> const value;

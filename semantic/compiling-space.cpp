@@ -4,6 +4,7 @@
 #include <output/expr-nodes.h>
 #include <output/stmt-nodes.h>
 #include <output/list-pipe.h>
+#include <output/function.h>
 #include <report/errors.h>
 
 #include "compiling-space.h"
@@ -29,7 +30,7 @@ namespace {
                         , params.end()
                         , [&](std::string const& param)
                           {
-                              defName(pos, param);
+                              defParam(pos, param);
                           });
         }
 
@@ -42,6 +43,18 @@ namespace {
             _checkNoRef(pos, name);
             _checkNoDef(pos, name);
             _name_defs.insert(std::make_pair(name, pos));
+        }
+
+        void defFunc(misc::position const& pos, std::string const& name)
+        {
+            defName(pos, name);
+            _exclude_decls.insert(name);
+        }
+
+        void defParam(misc::position const& pos, std::string const& name)
+        {
+            defName(pos, name);
+            _exclude_decls.insert(name);
         }
 
         void defAsyncParam(misc::position const& pos, std::string const& name)
@@ -122,6 +135,24 @@ namespace {
                 }
             }
         }
+
+        std::set<std::string> localNames() const
+        {
+            std::set<std::string> names;
+            std::for_each(_name_defs.begin()
+                        , _name_defs.end()
+                        , [&](std::pair<std::string, misc::position> const& def)
+                          {
+                              names.insert(def.first);
+                          });
+            std::for_each(_exclude_decls.begin()
+                        , _exclude_decls.end()
+                        , [&](std::string const& e)
+                          {
+                              names.erase(e);
+                          });
+            return names;
+        }
     public:
         util::sref<SymbolTable const> const ext_symbols;
     private:
@@ -169,6 +200,7 @@ namespace {
         std::map<std::string, misc::position> _imported;
         std::map<std::string, std::pair<misc::position, util::sref<Expression const>>> _const_defs;
         std::vector<std::string> const _parameters;
+        std::set<std::string> _exclude_decls;
     };
 
     struct ReferralSymbolTable
@@ -181,6 +213,16 @@ namespace {
         void defName(misc::position const& pos, std::string const& name)
         {
             error::forbidDefName(pos, name);
+        }
+
+        void defFunc(misc::position const& pos, std::string const& name)
+        {
+            defName(pos, name);
+        }
+
+        void defParam(misc::position const& pos, std::string const& name)
+        {
+            defName(pos, name);
         }
 
         void defAsyncParam(misc::position const& pos, std::string const& name)
@@ -240,6 +282,11 @@ namespace {
                 _ext_sym->checkDefinition(pos, name);
             }
         }
+
+        std::set<std::string> localNames() const
+        {
+            return std::set<std::string>();
+        }
     private:
         util::sref<SymbolTable> const _ext_sym;
         std::map<std::string, misc::position> _async_param_defs;
@@ -248,7 +295,8 @@ namespace {
 }
 
 BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable> symbols)
-    : _symbols(std::move(symbols))
+    : _terminated(false)
+    , _symbols(std::move(symbols))
     , _main_block(new output::Block)
     , _current_block(*_main_block)
 {}
@@ -263,17 +311,27 @@ util::sref<output::Block> BaseCompilingSpace::block() const
     return _current_block;
 }
 
+void BaseCompilingSpace::terminate()
+{
+    _terminated = true;
+}
+
+bool BaseCompilingSpace::terminated() const
+{
+    return _terminated;
+}
+
 void BaseCompilingSpace::setAsyncSpace(misc::position const& pos
                                      , std::vector<std::string> const& params
                                      , util::sref<output::Block> block)
 {
+    setAsyncSpace(block);
     std::for_each(params.begin()
                 , params.end()
                 , [&](std::string const& param)
                   {
                       _symbols->defAsyncParam(pos, param);
                   });
-    setAsyncSpace(block);
 }
 
 void BaseCompilingSpace::setAsyncSpace(util::sref<output::Block> block)
@@ -281,19 +339,19 @@ void BaseCompilingSpace::setAsyncSpace(util::sref<output::Block> block)
     _current_block = block;
 }
 
-util::sptr<output::Statement const> BaseCompilingSpace::compileRet()
+util::sptr<output::Expression const> BaseCompilingSpace::ret(util::sref<Expression const> val)
 {
-    return util::mkptr(new output::ReturnNothing);
+    return val->compile(*this);
 }
 
-util::sptr<output::Statement const> BaseCompilingSpace::compileRet(
-                                        util::sptr<Expression const> const& val)
+output::Method BaseCompilingSpace::raiseMethod() const
 {
-    return util::mkptr(new output::Return(val->compile(*this)));
+    return output::method::throwExc();
 }
 
 util::sptr<output::Block> BaseCompilingSpace::deliver()
 {
+    _main_block->setLocalDecls(_symbols->localNames());
     return std::move(_main_block);
 }
 
@@ -303,8 +361,8 @@ CompilingSpace::CompilingSpace()
 {}
 
 CompilingSpace::CompilingSpace(misc::position const& pos
-             , util::sref<SymbolTable> ext_st
-             , std::vector<std::string> const& params)
+                             , util::sref<SymbolTable> ext_st
+                             , std::vector<std::string> const& params)
     : BaseCompilingSpace(util::mkptr(new RegularSymbolTable(pos, ext_st, params)))
     , _this_referenced(false)
 {}
@@ -325,6 +383,28 @@ util::sptr<output::Block> CompilingSpace::deliver()
     return BaseCompilingSpace::deliver();
 }
 
+util::sptr<output::Expression const> RegularAsyncCompilingSpace::ret(
+                                        util::sref<Expression const> val)
+{
+    misc::position const pos(val->pos);
+    return util::mkptr(new output::RegularAsyncReturnCall(pos, val->compile(*this)));
+}
+
+output::Method RegularAsyncCompilingSpace::raiseMethod() const
+{
+    return output::method::callbackExc();
+}
+
+util::sptr<output::Block> RegularAsyncCompilingSpace::deliver()
+{
+    if (!terminated()) {
+        block()->addStmt(util::mkptr(new output::Return(util::mkptr(
+                        new output::RegularAsyncReturnCall(compile_pos, util::mkptr(
+                                                          new output::Undefined(compile_pos)))))));
+    }
+    return CompilingSpace::deliver();
+}
+
 PipelineSpace::PipelineSpace(BaseCompilingSpace& ext_space)
     : BaseCompilingSpace(util::mkptr(new RegularSymbolTable(ext_space.sym())))
     , _ext_space(ext_space)
@@ -335,21 +415,20 @@ void PipelineSpace::referenceThis()
     _ext_space.referenceThis();
 }
 
-util::sptr<output::Statement const> PipelineSpace::compileRet()
+util::sptr<output::Expression const> PipelineSpace::ret(util::sref<Expression const> val)
 {
-    return util::mkptr(new output::PipelineResult(
-                    util::mkptr(new output::ImportedName(misc::position(), "undefined"))));
+    error::returnNotAllowedInPipe(val->pos);
+    return BaseCompilingSpace::ret(val);
 }
 
-util::sptr<output::Statement const> PipelineSpace::compileRet(
-                                        util::sptr<Expression const> const& val)
+output::Method PipelineSpace::raiseMethod() const
 {
-    return util::mkptr(new output::PipelineResult(val->compile(*this)));
+    return _ext_space.raiseMethod();
 }
 
-util::sptr<output::Block> PipelineSpace::deliver()
+util::sptr<output::Block> AsyncPipelineSpace::deliver()
 {
-    block()->addStmt(util::mkptr(new output::PipelineNext));
+    block()->addStmt(util::mkptr(new output::PipelineContinue));
     return BaseCompilingSpace::deliver();
 }
 
@@ -358,18 +437,22 @@ SubCompilingSpace::SubCompilingSpace(BaseCompilingSpace& ext_space)
     , _ext_space(ext_space)
 {}
 
+bool SubCompilingSpace::inPipe() const
+{
+    return _ext_space.inPipe();
+}
+
 void SubCompilingSpace::referenceThis()
 {
     _ext_space.referenceThis();
 }
 
-util::sptr<output::Statement const> SubCompilingSpace::compileRet()
+util::sptr<output::Expression const> SubCompilingSpace::ret(util::sref<Expression const> val)
 {
-    return _ext_space.compileRet();
+    return _ext_space.ret(val);
 }
 
-util::sptr<output::Statement const> SubCompilingSpace::compileRet(
-                                        util::sptr<Expression const> const& val)
+output::Method SubCompilingSpace::raiseMethod() const
 {
-    return _ext_space.compileRet(val);
+    return _ext_space.raiseMethod();
 }

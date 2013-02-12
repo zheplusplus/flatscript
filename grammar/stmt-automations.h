@@ -8,20 +8,75 @@ namespace grammar {
     struct ExprStmtAutomation
         : AutomationBase
     {
-        void activated(AutomationStack& stack);
-        void pushColon(AutomationStack& stack, misc::position const&);
-        void accepted(AutomationStack&, util::sptr<Expression const> expr);
-        bool finishOnBreak(bool) const;
-        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
+        explicit ExprStmtAutomation(util::sref<ClauseBase> clause);
 
-        explicit ExprStmtAutomation(util::sref<ClauseBase> acc)
-            : _clause(acc)
-        {}
+        void pushFactor(AutomationStack& stack
+                      , util::sptr<Expression const> factor
+                      , std::string const& image);
+        void accepted(AutomationStack&, util::sptr<Expression const> expr);
+        bool finishOnBreak(bool sub_empty) const;
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
     private:
+        void _pushColon(AutomationStack& stack, misc::position const& pos);
         util::sptr<Statement> _reduceAsStmt();
 
         std::vector<util::sptr<Expression const>> _exprs;
         util::sref<ClauseBase> const _clause;
+        bool _before_colon;
+    };
+
+    struct IfAutomation
+        : AutomationBase
+    {
+        void activated(AutomationStack& stack);
+        void accepted(AutomationStack&, util::sptr<Expression const> expr);
+        bool finishOnBreak(bool sub_empty) const;
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+
+        IfAutomation()
+            : _pred_cache(nullptr)
+        {}
+    private:
+        util::sptr<Expression const> _pred_cache;
+    };
+
+    struct ElseAutomation
+        : AutomationBase
+    {
+        explicit ElseAutomation(misc::position const& pos)
+            : else_pos(pos)
+        {}
+
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        bool finishOnBreak(bool) const { return true; }
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+
+        misc::position const else_pos;
+    };
+
+    struct FunctionAutomation
+        : AutomationBase
+    {
+        FunctionAutomation()
+            : _before_open_paren(true)
+            , _finished(false)
+            , _async_param_index(-1)
+        {}
+
+        void pushFactor(AutomationStack&
+                      , util::sptr<Expression const> factor
+                      , std::string const& image);
+        void accepted(AutomationStack&, util::sptr<Expression const>) {};
+        void accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list);
+        bool finishOnBreak(bool) const;
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+    private:
+        bool _before_open_paren;
+        bool _finished;
+        misc::position _pos;
+        std::string _func_name;
+        std::vector<std::string> _params;
+        int _async_param_index;
     };
 
     struct ExprReceiver
@@ -29,11 +84,11 @@ namespace grammar {
     {
         void activated(AutomationStack& stack);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
-        bool finishOnBreak(bool) const;
+        bool finishOnBreak(bool) const { return true; }
         void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
 
-        explicit ExprReceiver(util::sref<ClauseBase> acc)
-            : _clause(acc)
+        explicit ExprReceiver(util::sref<ClauseBase> clause)
+            : _clause(clause)
             , _expr(nullptr)
         {}
     protected:
@@ -46,8 +101,8 @@ namespace grammar {
     {
         void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
 
-        explicit ReturnAutomation(util::sref<ClauseBase> acc)
-            : ExprReceiver(acc)
+        explicit ReturnAutomation(util::sref<ClauseBase> clause)
+            : ExprReceiver(clause)
         {}
     };
 
@@ -56,8 +111,8 @@ namespace grammar {
     {
         void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
 
-        ExportStmtAutomation(util::sref<ClauseBase> acc, std::vector<std::string> const& ep)
-            : ExprReceiver(acc)
+        ExportStmtAutomation(util::sref<ClauseBase> clause, std::vector<std::string> const& ep)
+            : ExprReceiver(clause)
             , export_point(ep)
         {}
 

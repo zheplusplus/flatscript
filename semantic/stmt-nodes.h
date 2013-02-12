@@ -56,16 +56,6 @@ namespace semantic {
         util::sptr<Expression const> const ret_val;
     };
 
-    struct ReturnNothing
-        : Statement
-    {
-        explicit ReturnNothing(misc::position const& pos)
-            : Statement(pos)
-        {}
-
-        void compile(BaseCompilingSpace& space) const;
-    };
-
     struct NameDef
         : Statement
     {

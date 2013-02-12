@@ -8,7 +8,7 @@
 #include "test-common.h"
 #include "../clause-builder.h"
 #include "../expr-nodes.h"
-#include "../expr-tokens.h"
+#include "../tokens.h"
 #include "../syntax-types.h"
 
 namespace test {
@@ -28,32 +28,38 @@ namespace test {
 
         grammar::Token* op(misc::position const& pos, std::string const& img)
         {
-            return new grammar::OpToken(pos, img);
+            return new grammar::TypedToken(pos, img, grammar::OPERATOR);
         }
 
         grammar::Token* pipeSep(misc::position const& pos, std::string const& img)
         {
-            return new grammar::PipeSepToken(pos, img);
+            return new grammar::TypedToken(pos, img, grammar::PIPE_SEP);
         }
 
-        grammar::Token* openParen(misc::position const& pos)
+        grammar::Token* open(misc::position const& pos, std::string const& img)
         {
-            return new grammar::OpenParenToken(pos);
+            return new grammar::TypedToken(pos, img, IMAGE_TYPE_MAP.find(img)->second);
         }
 
         grammar::Token* close(misc::position const& pos, std::string const& img)
         {
-            return new grammar::CloserToken(pos, img);
-        }
-
-        grammar::Token* colon(misc::position const& pos)
-        {
-            return new grammar::ColonToken(pos);
+            return new grammar::TypedToken(pos, img, IMAGE_TYPE_MAP.find(img)->second);
         }
 
         grammar::Token* comma(misc::position const& pos)
         {
-            return new grammar::CommaToken(pos);
+            return new grammar::TypedToken(pos, ",", grammar::COMMA);
+        }
+
+        grammar::Token* colon(misc::position const& pos)
+        {
+            return new grammar::TypedToken(pos, ":", grammar::COLON);
+        }
+
+        grammar::Token* regularAsyncParam(misc::position const& pos)
+        {
+            return new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::RegularAsyncParam(pos)), "%%");
         }
     };
 

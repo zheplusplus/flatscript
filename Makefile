@@ -41,7 +41,7 @@ runtest:all test-lib
 	make -f semantic/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	bash test/sample-test.sh -cm
 
-test-lib:
+test-lib:code-gen
 	mkdir -p libs
 	make -f test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 

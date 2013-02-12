@@ -15,6 +15,7 @@ $(TESTDIR)/test-semantic.out:$(TEST_DEP) \
                              test-symbol-table.dt \
                              test-filter.dt \
                              test-async-calls.dt \
+                             test-functions.dt \
                              test-pipes.dt
 	$(LINK) $(TEST_OBJ) \
 	        $(TEST_LIBS) \

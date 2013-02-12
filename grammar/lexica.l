@@ -89,6 +89,10 @@ catch {
     return KW_RESERVED;
 }
 
+finally {
+    return KW_RESERVED;
+}
+
 with {
     return KW_RESERVED;
 }
@@ -102,6 +106,22 @@ continue {
 }
 
 yield {
+    return KW_RESERVED;
+}
+
+for {
+    return KW_RESERVED;
+}
+
+gen {
+    return KW_RESERVED;
+}
+
+ctor {
+    return KW_RESERVED;
+}
+
+while {
     return KW_RESERVED;
 }
 
@@ -183,11 +203,7 @@ yield {
     return OPERATOR;
 }
 
-[\|]: {
-    return PIPE_SEP;
-}
-
-[\|][?] {
+[\|][:?] {
     return PIPE_SEP;
 }
 
@@ -203,15 +219,35 @@ yield {
     return PIPE_INDEX;
 }
 
+[$]index {
+    return PIPE_INDEX;
+}
+
 [$]k {
     return PIPE_KEY;
 }
 
-[-+*/%=<>\|~&^] {
+[$]key {
+    return PIPE_KEY;
+}
+
+[$]r {
+    return PIPE_RESULT;
+}
+
+[$]result {
+    return PIPE_RESULT;
+}
+
+[%][%] {
+    return REGULAR_ASYNC_PARAM;
+}
+
+[-+*/%!=<>\|~&^] {
     return OPERATOR;
 }
 
-[()\[\],:.{}!@] {
+[()\[\],:.{}@] {
     return *yytext;
 }
 

@@ -10,6 +10,16 @@
 
 namespace semantic {
 
+    struct Undefined
+        : Expression
+    {
+        explicit Undefined(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
+    };
+
     struct PreUnaryOp
         : Expression
     {
@@ -183,36 +193,6 @@ namespace semantic {
         util::ptrarr<Expression const> const value;
     };
 
-    struct PipeElement
-        : Expression
-    {
-        explicit PipeElement(misc::position const& pos)
-            : Expression(pos)
-        {}
-
-        util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
-    };
-
-    struct PipeIndex
-        : Expression
-    {
-        explicit PipeIndex(misc::position const& pos)
-            : Expression(pos)
-        {}
-
-        util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
-    };
-
-    struct PipeKey
-        : Expression
-    {
-        explicit PipeKey(misc::position const& pos)
-            : Expression(pos)
-        {}
-
-        util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
-    };
-
     struct ListAppend
         : Expression
     {
@@ -288,16 +268,6 @@ namespace semantic {
     struct ListSlice
         : Expression
     {
-        struct Default
-            : Expression
-        {
-            explicit Default(misc::position const& pos)
-                : Expression(pos)
-            {}
-
-            util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
-        };
-
         ListSlice(misc::position const& pos
                 , util::sptr<Expression const> ls
                 , util::sptr<Expression const> b
@@ -348,28 +318,58 @@ namespace semantic {
         Block const body;
     };
 
-    struct AsyncCall
+    struct RegularAsyncLambda
+        : Lambda
+    {
+        RegularAsyncLambda(misc::position const& pos
+                         , std::vector<std::string> const& params
+                         , int async_param_idx
+                         , Block body)
+            : Lambda(pos, params, std::move(body))
+            , async_param_index(async_param_idx)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+
+        int const async_param_index;
+    };
+
+    struct RegularAsyncCall
         : Expression
     {
-        AsyncCall(misc::position const& pos
-                , util::sptr<Expression const> c
-                , util::ptrarr<Expression const> fargs
-                , std::vector<std::string> const ap
-                , util::ptrarr<Expression const> largs)
+        RegularAsyncCall(misc::position const& pos
+                       , util::sptr<Expression const> c
+                       , util::ptrarr<Expression const> fargs
+                       , util::ptrarr<Expression const> largs)
             : Expression(pos)
             , callee(std::move(c))
             , former_args(std::move(fargs))
-            , async_params(ap)
             , latter_args(std::move(largs))
         {}
 
         util::sptr<Expression const> const callee;
         util::ptrarr<Expression const> const former_args;
-        std::vector<std::string> const async_params;
         util::ptrarr<Expression const> const latter_args;
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
         bool isAsync() const { return true; }
+    };
+
+    struct AsyncCall
+        : RegularAsyncCall
+    {
+        AsyncCall(misc::position const& pos
+                , util::sptr<Expression const> callee
+                , util::ptrarr<Expression const> fargs
+                , std::vector<std::string> const ap
+                , util::ptrarr<Expression const> largs)
+            : RegularAsyncCall(pos, std::move(callee), std::move(fargs), std::move(largs))
+            , async_params(ap)
+        {}
+
+        std::vector<std::string> const async_params;
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
     };
 
     struct This
@@ -380,6 +380,37 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    };
+
+    struct Conditional
+        : Expression
+    {
+        Conditional(misc::position const& pos
+                  , util::sptr<Expression const> p
+                  , util::sptr<Expression const> c
+                  , util::sptr<Expression const> a)
+            : Expression(pos)
+            , predicate(std::move(p))
+            , consequence(std::move(c))
+            , alternative(std::move(a))
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool isLiteral(util::sref<SymbolTable const> sym) const;
+        std::string literalType(util::sref<SymbolTable const> sym) const;
+        bool boolValue(util::sref<SymbolTable const> sym) const;
+        mpz_class intValue(util::sref<SymbolTable const> sym) const;
+        mpf_class floatValue(util::sref<SymbolTable const> sym) const;
+        std::string stringValue(util::sref<SymbolTable const> sym) const;
+        bool isAsync() const;
+
+        util::sptr<Expression const> const predicate;
+        util::sptr<Expression const> const consequence;
+        util::sptr<Expression const> const alternative;
+    private:
+        util::sref<Expression const> _equivVal(util::sref<SymbolTable const> sym) const;
+        util::sptr<output::Expression const> _compileSync(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> _compileAsync(BaseCompilingSpace& space) const;
     };
 
 }

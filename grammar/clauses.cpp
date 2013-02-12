@@ -8,58 +8,76 @@
 
 using namespace grammar;
 
-IfClause::IfClause(int indent_level, misc::position const& ps, util::sref<ClauseBase> parent)
-    : ClauseBase(indent_level)
-    , pos(ps)
-    , _predicate(nullptr)
-    , _last_else_pos_or_nul_if_not_matched(nullptr)
-    , _current_branch(&_consequence)
-    , _parent(parent)
+void ClauseBase::acceptFunc(util::sptr<Function const> func)
 {
-    _stack.push(util::mkptr(new grammar::ExprReceiver(util::mkref(*this))));
+    _block.addFunc(std::move(func));
 }
 
-void IfClause::acceptFunc(util::sptr<Function const> func)
+void ClauseBase::acceptStmt(util::sptr<Statement> stmt)
 {
-    _current_branch->addFunc(std::move(func));
+    _block.addStmt(std::move(stmt));
 }
 
-void IfClause::acceptStmt(util::sptr<Statement> stmt)
+void ClauseBase::acceptElse(misc::position const& else_pos, Block&& block)
 {
-    _current_branch->addStmt(std::move(stmt));
+    _block.acceptElse(else_pos, std::move(block));
+}
+
+bool ClauseBase::shrinkOn(int level) const
+{
+    return level <= indent;
+}
+
+void ClauseBase::nextToken(util::sptr<Token> const& token)
+{
+    token->act(_stack);
+}
+
+bool ClauseBase::tryFinish(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses)
+{
+    if ((!_stack.empty()) && _stack.top()->finishOnBreak(true)) {
+        ClauseStackWrapper wrapper(_member_indent, _stack, pos, clauses);
+        _stack.top()->finish(wrapper, _stack, pos);
+        return true;
+    }
+    return _stack.empty();
+}
+
+void ClauseBase::prepareArith()
+{
+    _stack.push(util::mkptr(new ExprStmtAutomation(util::mkref(*this))));
+}
+
+void ClauseBase::prepareReturn()
+{
+    _stack.push(util::mkptr(new ReturnAutomation(util::mkref(*this))));
+}
+
+void ClauseBase::prepareExport(std::vector<std::string> const& names)
+{
+    _stack.push(util::mkptr(new ExportStmtAutomation(util::mkref(*this), names)));
+}
+
+void ClauseBase::setMemberIndent(int level, misc::position const& pos)
+{
+    if (-1 == _member_indent) {
+        _member_indent = level;
+        return;
+    }
+    if (level != _member_indent) {
+        error::invalidIndent(pos);
+    }
 }
 
 void IfClause::deliver()
 {
-    if (_elseMatched()) {
-        _parent->acceptStmt(util::mkptr(new Branch(pos
-                                                 , std::move(_predicate)
-                                                 , std::move(_consequence)
-                                                 , std::move(_alternative))));
-    } else {
-        _parent->acceptStmt(util::mkptr(
-                    new BranchConsqOnly(pos, std::move(_predicate), std::move(_consequence))));
-    }
+    misc::position pos(_predicate->pos);
+    _parent->acceptStmt(util::mkptr(new Branch(pos, std::move(_predicate), std::move(_block))));
 }
 
-void IfClause::acceptElse(misc::position const& else_pos)
+void ElseClause::deliver()
 {
-    if (_elseMatched()) {
-        error::ifAlreadyMatchElse(_last_else_pos_or_nul_if_not_matched.cp(), else_pos);
-    } else {
-        _current_branch = &_alternative;
-        _last_else_pos_or_nul_if_not_matched.reset(new misc::position(else_pos));
-    }
-}
-
-void IfClause::acceptExpr(util::sptr<Expression const> expr)
-{
-    _predicate = std::move(expr);
-}
-
-bool IfClause::_elseMatched() const
-{
-    return _last_else_pos_or_nul_if_not_matched.not_nul();
+    _parent->acceptElse(else_pos, std::move(_block));
 }
 
 IfnotClause::IfnotClause(int indent_level, misc::position const& ps, util::sref<ClauseBase> parent)
@@ -68,23 +86,13 @@ IfnotClause::IfnotClause(int indent_level, misc::position const& ps, util::sref<
     , _predicate(nullptr)
     , _parent(parent)
 {
-    _stack.push(util::mkptr(new grammar::ExprReceiver(util::mkref(*this))));
-}
-
-void IfnotClause::acceptFunc(util::sptr<Function const> func)
-{
-    _alternative.addFunc(std::move(func));
-}
-
-void IfnotClause::acceptStmt(util::sptr<Statement> stmt)
-{
-    _alternative.addStmt(std::move(stmt));
+    _stack.push(util::mkptr(new ExprReceiver(util::mkref(*this))));
 }
 
 void IfnotClause::deliver()
 {
     _parent->acceptStmt(util::mkptr(
-                new BranchAlterOnly(pos, std::move(_predicate), std::move(_alternative))));
+                new BranchAlterOnly(pos, std::move(_predicate), std::move(_block))));
 }
 
 void IfnotClause::acceptExpr(util::sptr<Expression const> expr)
@@ -92,17 +100,21 @@ void IfnotClause::acceptExpr(util::sptr<Expression const> expr)
     _predicate = std::move(expr);
 }
 
-void FunctionClause::acceptFunc(util::sptr<Function const> func)
-{
-    _body.addFunc(std::move(func));
-}
-
-void FunctionClause::acceptStmt(util::sptr<Statement> stmt)
-{
-    _body.addStmt(std::move(stmt));
-}
-
 void FunctionClause::deliver()
 {
-    _parent->acceptFunc(util::mkptr(new Function(pos, name, param_names, std::move(_body))));
+    return _parent->acceptFunc(util::mkptr(
+                    new Function(pos, name, param_names, async_param_index, std::move(_block))));
+}
+
+void BlockReceiverClause::deliver()
+{
+    _blockRecr->accepted(_stack, _pos, std::move(_block));
+}
+
+bool BlockReceiverClause::shrinkOn(int level) const
+{
+    if (_member_indent == -1) {
+        return ClauseBase::shrinkOn(level);
+    }
+    return level < _member_indent;
 }

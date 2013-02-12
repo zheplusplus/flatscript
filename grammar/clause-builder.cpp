@@ -17,31 +17,25 @@ namespace {
     struct GlobalClause
         : ClauseBase
     {
-        GlobalClause(Block& global)
+        GlobalClause()
             : ClauseBase(-1)
-            , _global(global)
         {}
 
-        void acceptStmt(util::sptr<Statement> stmt)
+        Block* getGlobalBlockPtr()
         {
-            _global.addStmt(std::move(stmt));
-        }
-
-        void acceptFunc(util::sptr<Function const> func)
-        {
-            _global.addFunc(std::move(func));
+            return &_block;
         }
 
         void deliver() {}
-    private:
-        Block& _global;
     };
 
 }
 
 ClauseBuilder::ClauseBuilder()
 {
-    _clauses.push_back(util::mkptr(new GlobalClause(_global)));
+    util::sptr<GlobalClause> global(new GlobalClause);
+    _global = global->getGlobalBlockPtr();
+    _clauses.push_back(std::move(global));
 }
 
 void ClauseBuilder::addArith(int indent_len
@@ -88,29 +82,6 @@ void ClauseBuilder::addExport(int indent_len
     _pushSequence(pos, sequence);
 }
 
-void ClauseBuilder::addFunction(int indent_len
-                              , misc::position const& pos
-                              , std::string const& name
-                              , std::vector<std::string> const& params)
-{
-    if (!_prepareLevel(indent_len, pos, "func")) {
-        return;
-    }
-    _clauses.push_back(util::mkptr(
-                new FunctionClause(indent_len, pos, name, params, *_clauses.back())));
-}
-
-void ClauseBuilder::addIf(int indent_len
-                        , misc::position const& pos
-                        , std::vector<util::sptr<Token>> const& sequence)
-{
-    if (!_prepareLevel(indent_len, pos, "if")) {
-        return;
-    }
-    _clauses.push_back(util::mkptr(new IfClause(indent_len, pos, *_clauses.back())));
-    _pushSequence(pos, sequence);
-}
-
 void ClauseBuilder::addIfnot(int indent_len
                            , misc::position const& pos
                            , std::vector<util::sptr<Token>> const& sequence)
@@ -122,23 +93,13 @@ void ClauseBuilder::addIfnot(int indent_len
     _pushSequence(pos, sequence);
 }
 
-void ClauseBuilder::addElse(int indent_len, misc::position const& pos)
-{
-    _shrinkTo(indent_len + 1, pos);
-    if (_clauses.back()->indent == indent_len) {
-        _clauses.back()->acceptElse(pos);
-    } else {
-        error::elseNotMatchIf(pos);
-    }
-}
-
 semantic::Block ClauseBuilder::buildAndClear()
 {
     if (!_shrinkTo(0, misc::position())) {
         error::unexpectedEof();
     }
     _clauses[0]->tryFinish(misc::position(), _clauses);
-    return _global.compile()->deliver();
+    return _global->compile()->deliver();
 }
 
 bool ClauseBuilder::_shrinkTo(int level, misc::position const& pos)

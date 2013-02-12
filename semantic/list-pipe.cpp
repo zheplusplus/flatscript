@@ -1,5 +1,7 @@
 #include <output/list-pipe.h>
 #include <output/stmt-nodes.h>
+#include <output/function.h>
+#include <report/errors.h>
 
 #include "compiling-space.h"
 #include "function.h"
@@ -30,9 +32,10 @@ util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace&
     current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(util::mkptr(
                                 new output::AsyncPipeline(pos
                                                         , std::move(compl_list)
-                                                        , section.compile(PipelineSpace(space))
-                                                        , std::move(succession_flow))))));
-    return util::mkptr(new output::AsyncPipeResult(pos));
+                                                        , section.compile(AsyncPipelineSpace(space))
+                                                        , std::move(succession_flow)
+                                                        , space.raiseMethod())))));
+    return util::mkptr(new output::PipeResult(pos));
 }
 
 util::sptr<output::Expression const> Pipeline::_compileSync(BaseCompilingSpace& space) const
@@ -42,20 +45,66 @@ util::sptr<output::Expression const> Pipeline::_compileSync(BaseCompilingSpace& 
                         pos, std::move(clist), section.compile(PipelineSpace(space))));
 }
 
+static Block pushElementToResult(util::sptr<Expression const> sec)
+{
+    Block push;
+    misc::position sec_pos(sec->pos);
+    util::sptr<Expression const> callee(
+            new MemberAccess(sec->pos, util::mkptr(new PipeResult(sec->pos)), "push"));
+    util::ptrarr<Expression const> args;
+    args.append(std::move(sec));
+    push.addStmt(util::mkptr(new Arithmetics(sec_pos, util::mkptr(new Call(
+                            sec_pos, std::move(callee), std::move(args))))));
+    return std::move(push);
+}
+
 util::sptr<Expression const> Pipeline::createMapper(
       misc::position const& pos, util::sptr<Expression const> ls, util::sptr<Expression const> sec)
 {
-    Block ret;
-    ret.addStmt(util::mkptr(new Return(sec->pos, std::move(sec))));
-    return util::mkptr(new Pipeline(pos, std::move(ls), std::move(ret)));
+    return util::mkptr(new Pipeline(pos, std::move(ls), pushElementToResult(std::move(sec))));
 }
 
 util::sptr<Expression const> Pipeline::createFilter(
       misc::position const& pos, util::sptr<Expression const> ls, util::sptr<Expression const> sec)
 {
-    Block ret;
-    ret.addStmt(util::mkptr(new Return(sec->pos, util::mkptr(new PipeElement(sec->pos)))));
     Block filter;
-    filter.addStmt(util::mkptr(new Branch(sec->pos, std::move(sec), std::move(ret), Block())));
+    misc::position sec_pos(sec->pos);
+    filter.addStmt(util::mkptr(new Branch(
+                    sec_pos
+                  , std::move(sec)
+                  , pushElementToResult(util::mkptr(new PipeElement(sec_pos)))
+                  , Block())));
     return util::mkptr(new Pipeline(pos, std::move(ls), std::move(filter)));
+}
+
+util::sptr<output::Expression const> PipeElement::compile(BaseCompilingSpace& space) const
+{
+    if (!space.inPipe()) {
+        error::pipeReferenceNotInListContext(pos);
+    }
+    return util::mkptr(new output::PipeElement(pos));
+}
+
+util::sptr<output::Expression const> PipeIndex::compile(BaseCompilingSpace& space) const
+{
+    if (!space.inPipe()) {
+        error::pipeReferenceNotInListContext(pos);
+    }
+    return util::mkptr(new output::PipeIndex(pos));
+}
+
+util::sptr<output::Expression const> PipeKey::compile(BaseCompilingSpace& space) const
+{
+    if (!space.inPipe()) {
+        error::pipeReferenceNotInListContext(pos);
+    }
+    return util::mkptr(new output::PipeKey(pos));
+}
+
+util::sptr<output::Expression const> PipeResult::compile(BaseCompilingSpace& space) const
+{
+    if (!space.inPipe()) {
+        error::pipeReferenceNotInListContext(pos);
+    }
+    return util::mkptr(new output::PipeResult(pos));
 }

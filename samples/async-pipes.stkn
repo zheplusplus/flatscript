@@ -23,13 +23,13 @@ func asyncSqr(element, cb)
 
 console.log(list |:
     asyncSqr($, %x)
-    return x
+    $result.push(x)
 )
 
 console.log(list |:
     asyncSqr($, %x)
     if x % 3 = 1
-        return x
+        $r.push(x)
 )
 
 list |:

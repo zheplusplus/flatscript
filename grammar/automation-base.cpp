@@ -1,7 +1,10 @@
+#include <algorithm>
+
 #include <report/errors.h>
 
-#include "node-base.h"
-#include "stmt-automations.h"
+#include "tokens.h"
+#include "automation-base.h"
+#include "clauses.h"
 #include "function.h"
 
 using namespace grammar;
@@ -59,12 +62,18 @@ bool AutomationStack::empty() const
     return _stack.empty();
 }
 
-void AutomationBase::pushOp(AutomationStack&, Token const& token)
+AutomationBase::AutomationBase()
+    : _previous(nullptr)
 {
-    error::unexpectedToken(token.pos, token.image);
+    std::fill(_actions, _actions + TOKEN_TYPE_COUNT, AutomationBase::discardToken);
 }
 
-void AutomationBase::pushPipeSep(AutomationStack&, Token const& token)
+void AutomationBase::nextToken(AutomationStack& stack, TypedToken const& token)
+{
+    _actions[token.type](stack, token);
+}
+
+void AutomationBase::discardToken(AutomationStack&, TypedToken const& token)
 {
     error::unexpectedToken(token.pos, token.image);
 }
@@ -75,144 +84,61 @@ void AutomationBase::pushFactor(
     error::unexpectedToken(factor->pos, image);
 }
 
-void AutomationBase::pushThis(AutomationStack&, misc::position const& pos)
+void AutomationBase::_setFollowings(std::set<TokenType> types)
 {
-    error::unexpectedToken(pos, "@");
+    std::for_each(types.begin()
+                , types.end()
+                , [&](TokenType tp)
+                  {
+                      _actions[tp] = [=](AutomationStack& stack, TypedToken const& follower)
+                                     {
+                                         if (_reduce(stack, follower)) {
+                                             stack.top()->nextToken(stack, follower);
+                                         }
+                                     };
+                  });
 }
 
-void AutomationBase::pushOpenParen(AutomationStack&, misc::position const& pos)
+void AutomationBase::_setShifts(std::map<TokenType, std::pair<AutomationCreator, bool>> types)
 {
-    error::unexpectedToken(pos, "(");
-}
-
-void AutomationBase::pushOpenBracket(AutomationStack&, misc::position const& pos)
-{
-    error::unexpectedToken(pos, "[");
-}
-
-void AutomationBase::pushOpenBrace(AutomationStack&, misc::position const& pos)
-{
-    error::unexpectedToken(pos, "{");
-}
-
-void AutomationBase::pushColon(AutomationStack&, misc::position const& pos)
-{
-    error::unexpectedToken(pos, ":");
-}
-
-void AutomationBase::pushPropertySeparator(AutomationStack&, misc::position const& pos)
-{
-    error::unexpectedToken(pos, "::");
-}
-
-void AutomationBase::pushComma(AutomationStack&, misc::position const& pos)
-{
-    error::unexpectedToken(pos, ",");
-}
-
-void AutomationBase::matchClosing(AutomationStack&, Token const& closer)
-{
-    error::unexpectedToken(closer.pos, closer.image);
-}
-
-void ClauseBase::acceptElse(misc::position const& else_pos)
-{
-    error::elseNotMatchIf(else_pos);
-}
-
-bool ClauseBase::shrinkOn(int level) const
-{
-    return level <= indent;
-}
-
-void ClauseBase::nextToken(util::sptr<Token> const& token)
-{
-    token->act(_stack);
-}
-
-bool ClauseBase::tryFinish(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses)
-{
-    if ((!_stack.empty()) && _stack.top()->finishOnBreak(true)) {
-        ClauseStackWrapper wrapper(_member_indent, _stack, pos, clauses);
-        _stack.top()->finish(wrapper, _stack, pos);
-        return true;
-    }
-    return _stack.empty();
-}
-
-void ClauseBase::prepareArith()
-{
-    _stack.push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(*this))));
-}
-
-void ClauseBase::prepareReturn()
-{
-    _stack.push(util::mkptr(new grammar::ReturnAutomation(util::mkref(*this))));
-}
-
-void ClauseBase::prepareExport(std::vector<std::string> const& names)
-{
-    _stack.push(util::mkptr(new grammar::ExportStmtAutomation(util::mkref(*this), names)));
-}
-
-void ClauseBase::setMemberIndent(int level, misc::position const& pos)
-{
-    if (-1 == _member_indent) {
-        _member_indent = level;
-        return;
-    }
-    if (level != _member_indent) {
-        error::invalidIndent(pos);
-    }
-}
-
-namespace {
-
-    struct BlockReceiver
-        : ClauseBase
-    {
-        BlockReceiver(int level
-                    , AutomationStack& stack
-                    , misc::position const& pos
-                    , util::sref<AutomationBase> blockRecr)
-            : ClauseBase(level)
-            , _stack(stack)
-            , _pos(pos)
-            , _blockRecr(blockRecr)
-        {}
-
-        void acceptFunc(util::sptr<Function const> func)
-        {
-            _block.addFunc(std::move(func));
-        }
-
-        void acceptStmt(util::sptr<Statement> stmt)
-        {
-            _block.addStmt(std::move(stmt));
-        }
-
-        void deliver()
-        {
-            _blockRecr->accepted(_stack, _pos, std::move(_block));
-        }
-
-        bool shrinkOn(int level) const
-        {
-            if (_member_indent == -1) {
-                return ClauseBase::shrinkOn(level);
-            }
-            return level < _member_indent;
-        }
-    private:
-        AutomationStack& _stack;
-        misc::position const _pos;
-        Block _block;
-        util::sref<AutomationBase> _blockRecr;
-    };
-
+    std::for_each(types.begin()
+                , types.end()
+                , [&](std::pair<TokenType, std::pair<AutomationCreator, bool>> t)
+                  {
+                      TokenType tp(t.first);
+                      AutomationCreator creator(t.second.first);
+                      bool shiftToken(t.second.second);
+                      _actions[tp] = [=](AutomationStack& stack, TypedToken const& token)
+                                     {
+                                         stack.push(creator(token));
+                                         if (shiftToken) {
+                                             stack.top()->nextToken(stack, token);
+                                         }
+                                     };
+                  });
 }
 
 void ClauseStackWrapper::pushBlockReceiver(util::sref<AutomationBase> blockRecr)
 {
-    _clauses.push_back(util::mkptr(new BlockReceiver(_last_indent, _stack, _pos, blockRecr)));
+    _clauses.push_back(util::mkptr(new BlockReceiverClause(_last_indent, _stack, _pos, blockRecr)));
+}
+
+void ClauseStackWrapper::pushIfClause(util::sptr<Expression const> predicate)
+{
+    _clauses.push_back(util::mkptr(new IfClause(
+                        _last_indent, std::move(predicate), *_clauses.back())));
+}
+
+void ClauseStackWrapper::pushElseClause(misc::position const& else_pos)
+{
+    _clauses.push_back(util::mkptr(new ElseClause(_last_indent, else_pos, *_clauses.back())));
+}
+
+void ClauseStackWrapper::pushFuncClause(misc::position const& pos
+                                      , std::string name
+                                      , std::vector<std::string> const& params
+                                      , int async_param_index)
+{
+    _clauses.push_back(util::mkptr(new FunctionClause(
+                        _last_indent, pos, name, params, async_param_index, *_clauses.back())));
 }

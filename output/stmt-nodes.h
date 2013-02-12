@@ -1,6 +1,8 @@
 #ifndef __STEKIN_OUTPUT_STATEMENT_NODES_H__
 #define __STEKIN_OUTPUT_STATEMENT_NODES_H__
 
+#include <vector>
+
 #include "node-base.h"
 
 namespace output {
@@ -9,15 +11,15 @@ namespace output {
         : Statement
     {
         Branch(util::sptr<Expression const> p
-             , util::sptr<Statement const> consequence_stmt
-             , util::sptr<Statement const> alternative_stmt)
+             , util::sptr<Statement const> c
+             , util::sptr<Statement const> a)
                 : predicate(std::move(p))
-                , consequence(std::move(consequence_stmt))
-                , alternative(std::move(alternative_stmt))
+                , consequence(std::move(c))
+                , alternative(std::move(a))
         {}
 
         void write(std::ostream& os) const;
-    public:
+
         util::sptr<Expression const> const predicate;
         util::sptr<Statement const> const consequence;
         util::sptr<Statement const> const alternative;
@@ -30,23 +32,9 @@ namespace output {
             : expr(std::move(e))
         {}
 
+        void write(std::ostream& os) const;
+
         util::sptr<Expression const> const expr;
-
-        void write(std::ostream& os) const;
-    };
-
-    struct NameDef
-        : Statement
-    {
-        NameDef(std::string const& n, util::sptr<Expression const> i)
-            : name(n)
-            , init(std::move(i))
-        {}
-
-        std::string const name;
-        util::sptr<Expression const> const init;
-
-        void write(std::ostream& os) const;
     };
 
     struct AsyncCallResultDef
@@ -56,8 +44,9 @@ namespace output {
             : async_result(std::move(ar))
         {}
 
-        util::sptr<Expression const> const async_result;
         void write(std::ostream& os) const;
+
+        util::sptr<Expression const> const async_result;
     };
 
     struct Return
@@ -67,17 +56,9 @@ namespace output {
             : ret_val(std::move(r))
         {}
 
+        void write(std::ostream& os) const;
+
         util::sptr<Expression const> const ret_val;
-
-        void write(std::ostream& os) const;
-    };
-
-    struct ReturnNothing
-        : Statement
-    {
-        ReturnNothing() = default;
-
-        void write(std::ostream& os) const;
     };
 
     struct Export
@@ -92,20 +73,6 @@ namespace output {
         int count() const;
 
         std::vector<std::string> const export_point;
-        util::sptr<Expression const> const value;
-    };
-
-    struct AttrSet
-        : Statement
-    {
-        AttrSet(util::sptr<Expression const> s, util::sptr<Expression const> v)
-            : set_point(std::move(s))
-            , value(std::move(v))
-        {}
-
-        void write(std::ostream& os) const;
-
-        util::sptr<Expression const> const set_point;
         util::sptr<Expression const> const value;
     };
 

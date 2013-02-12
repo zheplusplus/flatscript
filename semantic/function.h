@@ -6,6 +6,9 @@
 namespace semantic {
 
     struct Function {
+        virtual ~Function() {}
+        Function(Function const&) = delete;
+
         Function(misc::position const& ps
                , std::string const& func_name
                , std::vector<std::string> const& params
@@ -16,12 +19,29 @@ namespace semantic {
             , body(std::move(func_body))
         {}
 
-        util::sptr<output::Function const> compile(util::sref<SymbolTable> st) const;
+        virtual util::sptr<output::Function const> compile(util::sref<SymbolTable> st) const;
 
         misc::position const pos;
         std::string const name;
         std::vector<std::string> const param_names;
         Block const body;
+    };
+
+    struct RegularAsyncFunction
+        : Function
+    {
+        RegularAsyncFunction(misc::position const& pos
+                           , std::string const& func_name
+                           , std::vector<std::string> const& params
+                           , int async_param_idx
+                           , Block func_body)
+            : Function(pos, func_name, params, std::move(func_body))
+            , async_param_index(async_param_idx)
+        {}
+
+        int const async_param_index;
+
+        util::sptr<output::Function const> compile(util::sref<SymbolTable> st) const;
     };
 
 }
