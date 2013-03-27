@@ -1,6 +1,8 @@
 #ifndef __STEKIN_GRAMMAR_FUNCTION_H__
 #define __STEKIN_GRAMMAR_FUNCTION_H__
 
+#include <semantic/function.h>
+
 #include "block.h"
 
 namespace grammar {
@@ -18,7 +20,7 @@ namespace grammar {
             , body(std::move(b))
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Function const> compile() const;
 
         misc::position const pos;
         std::string const name;

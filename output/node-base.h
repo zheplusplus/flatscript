@@ -14,7 +14,6 @@ namespace output {
         virtual ~Expression() {}
 
         virtual std::string str() const = 0;
-        virtual std::string strAsProp() const;
 
         misc::position const pos;
 

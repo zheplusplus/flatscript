@@ -50,5 +50,8 @@ verify lambda
 verify set-timeout
 verify async-calls
 verify async-pipes
+verify branch-with-async-sub
 verify ref-this
 verify async-fib
+verify try-catch
+verify throw-in-pipeline

@@ -9,6 +9,7 @@
 #include "syntax-types.h"
 #include "yy-misc.h"
 #include "node-base.h"
+#include "function.h"
 #include "syn.hpp"
 
 #endif /* __STEKIN_GRAMMAR_LEX_INCLUDE_H__ */

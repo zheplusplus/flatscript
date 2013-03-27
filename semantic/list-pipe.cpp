@@ -27,12 +27,14 @@ util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace&
     util::sptr<output::Expression const> compl_list(list->compile(space));
 
     util::sptr<output::Block> succession_flow(new output::Block);
-    space.setAsyncSpace(*succession_flow);
+    space.setAsyncSpace(pos, std::vector<std::string>(), *succession_flow);
 
+    AsyncPipelineSpace pipe_space(space);
+    section.compile(pipe_space);
     current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(util::mkptr(
                                 new output::AsyncPipeline(pos
                                                         , std::move(compl_list)
-                                                        , section.compile(AsyncPipelineSpace(space))
+                                                        , pipe_space.deliver()
                                                         , std::move(succession_flow)
                                                         , space.raiseMethod())))));
     return util::mkptr(new output::PipeResult(pos));
@@ -41,8 +43,9 @@ util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace&
 util::sptr<output::Expression const> Pipeline::_compileSync(BaseCompilingSpace& space) const
 {
     util::sptr<output::Expression const> clist(list->compile(space));
-    return util::mkptr(new output::SyncPipeline(
-                        pos, std::move(clist), section.compile(PipelineSpace(space))));
+    PipelineSpace pipe_space(space);
+    section.compile(pipe_space);
+    return util::mkptr(new output::SyncPipeline(pos, std::move(clist), pipe_space.deliver()));
 }
 
 static Block pushElementToResult(util::sptr<Expression const> sec)
@@ -67,14 +70,14 @@ util::sptr<Expression const> Pipeline::createMapper(
 util::sptr<Expression const> Pipeline::createFilter(
       misc::position const& pos, util::sptr<Expression const> ls, util::sptr<Expression const> sec)
 {
-    Block filter;
+    Block block;
     misc::position sec_pos(sec->pos);
-    filter.addStmt(util::mkptr(new Branch(
+    block.addStmt(util::mkptr(new Branch(
                     sec_pos
                   , std::move(sec)
                   , pushElementToResult(util::mkptr(new PipeElement(sec_pos)))
                   , Block())));
-    return util::mkptr(new Pipeline(pos, std::move(ls), std::move(filter)));
+    return util::mkptr(new Pipeline(pos, std::move(ls), std::move(block)));
 }
 
 util::sptr<output::Expression const> PipeElement::compile(BaseCompilingSpace& space) const

@@ -2,6 +2,10 @@
 
 #include "env.h"
 
+#ifndef EOF
+#define EOF (-1)
+#endif
+
 static std::set<std::string> pre_imported({
     "console", "setTimeout", "setInterval", "clearTimeout", "parseInt", "parseFloat", "Number",
     "Date", "Math", "Object", "Function", "escape", "unescape", "encodeURI", "encodeURIComponent",

@@ -2,7 +2,7 @@
      write(x + y)
    write(y + z)
 
-  ifnot false
+  if false
     return
 
 func nothing()

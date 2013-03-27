@@ -1,8 +1,7 @@
 #include <semantic/node-base.h>
 
-#include "node-base.h"
-#include "clauses.h"
 #include "yy-misc.h"
+#include "clauses.h"
 
 using namespace grammar;
 

@@ -25,6 +25,22 @@ namespace grammar {
         bool _before_colon;
     };
 
+    struct StandaloneKeyWordAutomation
+        : AutomationBase
+    {
+        explicit StandaloneKeyWordAutomation(misc::position const& ps)
+            : pos(ps)
+        {}
+
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        bool finishOnBreak(bool) const { return true; }
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+
+        virtual util::sptr<ClauseBase> createClause(ClauseStackWrapper& wrapper) = 0;
+
+        misc::position const pos;
+    };
+
     struct IfAutomation
         : AutomationBase
     {
@@ -36,22 +52,24 @@ namespace grammar {
         IfAutomation()
             : _pred_cache(nullptr)
         {}
-    private:
+    protected:
         util::sptr<Expression const> _pred_cache;
     };
 
     struct ElseAutomation
-        : AutomationBase
+        : StandaloneKeyWordAutomation
     {
         explicit ElseAutomation(misc::position const& pos)
-            : else_pos(pos)
+            : StandaloneKeyWordAutomation(pos)
         {}
 
-        void accepted(AutomationStack&, util::sptr<Expression const>) {}
-        bool finishOnBreak(bool) const { return true; }
-        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+        util::sptr<ClauseBase> createClause(ClauseStackWrapper& wrapper);
+    };
 
-        misc::position const else_pos;
+    struct IfnotAutomation
+        : IfAutomation
+    {
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
     };
 
     struct FunctionAutomation
@@ -117,6 +135,36 @@ namespace grammar {
         {}
 
         std::vector<std::string> const export_point;
+    };
+
+    struct ThrowAutomation
+        : ExprReceiver
+    {
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
+
+        explicit ThrowAutomation(util::sref<ClauseBase> clause)
+            : ExprReceiver(clause)
+        {}
+    };
+
+    struct TryAutomation
+        : StandaloneKeyWordAutomation
+    {
+        explicit TryAutomation(misc::position const& pos)
+            : StandaloneKeyWordAutomation(pos)
+        {}
+
+        util::sptr<ClauseBase> createClause(ClauseStackWrapper& wrapper);
+    };
+
+    struct CatchAutomation
+        : StandaloneKeyWordAutomation
+    {
+        explicit CatchAutomation(misc::position const& pos)
+            : StandaloneKeyWordAutomation(pos)
+        {}
+
+        util::sptr<ClauseBase> createClause(ClauseStackWrapper& wrapper);
     };
 
 }

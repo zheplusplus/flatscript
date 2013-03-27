@@ -3,6 +3,7 @@
 
 #include <output/block.h>
 #include <output/methods.h>
+#include <output/function.h>
 #include <util/arrays.h>
 #include <misc/pos-type.h>
 
@@ -41,23 +42,27 @@ namespace semantic {
         explicit BaseCompilingSpace(util::sptr<SymbolTable> symbols);
 
         BaseCompilingSpace(BaseCompilingSpace&& rhs)
-            : _terminated(rhs._terminated)
+            : _terminated_err_reported(rhs._terminated_err_reported)
+            , _term_pos_or_nul_if_not_term(std::move(rhs._term_pos_or_nul_if_not_term))
             , _symbols(std::move(rhs._symbols))
             , _main_block(std::move(rhs._main_block))
             , _current_block(rhs._current_block)
         {}
 
         util::sref<SymbolTable> sym();
+        void addStmt(misc::position const& pos, util::sptr<output::Statement const> stmt);
         util::sref<output::Block> block() const;
-        void terminate();
+        void terminate(misc::position const& pos);
         bool terminated() const;
 
         virtual bool inPipe() const = 0;
+        virtual bool inCatch() const = 0;
 
         void setAsyncSpace(misc::position const& pos
                          , std::vector<std::string> const& params
                          , util::sref<output::Block> block);
-        void setAsyncSpace(util::sref<output::Block> block);
+        virtual util::sref<output::Block> replaceSpace(
+                    misc::position const& pos, util::sref<output::Block> block);
         virtual void referenceThis() = 0;
 
         virtual util::sptr<output::Expression const> ret(util::sref<Expression const> val);
@@ -65,10 +70,13 @@ namespace semantic {
 
         virtual util::sptr<output::Block> deliver();
     private:
-        bool _terminated;
+        bool _terminated_err_reported;
+        util::sptr<misc::position const> _term_pos_or_nul_if_not_term;
         util::sptr<SymbolTable> _symbols;
         util::sptr<output::Block> _main_block;
         util::sref<output::Block> _current_block;
+
+        void _testOrReportTerminated(misc::position const& pos);
     };
 
     struct CompilingSpace
@@ -85,6 +93,7 @@ namespace semantic {
         {}
 
         bool inPipe() const { return false; }
+        bool inCatch() const { return false; }
 
         void referenceThis();
         util::sptr<output::Block> deliver();
@@ -109,17 +118,38 @@ namespace semantic {
         misc::position const compile_pos;
     };
 
-    struct PipelineSpace
+    struct SubCompilingSpace
         : BaseCompilingSpace
+    {
+        SubCompilingSpace(util::sptr<SymbolTable> symbols, BaseCompilingSpace& ext_space)
+            : BaseCompilingSpace(std::move(symbols))
+            , _ext_space(ext_space)
+        {}
+
+        bool inPipe() const;
+        bool inCatch() const;
+        util::sptr<output::Expression const> ret(util::sref<Expression const> val);
+        output::Method raiseMethod() const;
+        void referenceThis();
+        util::sref<output::Block> replaceSpace(
+                misc::position const& pos, util::sref<output::Block> block);
+    private:
+        BaseCompilingSpace& _ext_space;
+    };
+
+    struct RegularSubCompilingSpace
+        : SubCompilingSpace
+    {
+        explicit RegularSubCompilingSpace(BaseCompilingSpace& ext_space);
+    };
+
+    struct PipelineSpace
+        : SubCompilingSpace
     {
         explicit PipelineSpace(BaseCompilingSpace& ext_space);
 
         bool inPipe() const { return true; }
         util::sptr<output::Expression const> ret(util::sref<Expression const> val);
-        output::Method raiseMethod() const;
-        void referenceThis();
-    private:
-        BaseCompilingSpace& _ext_space;
     };
 
     struct AsyncPipelineSpace
@@ -132,18 +162,43 @@ namespace semantic {
         util::sptr<output::Block> deliver();
     };
 
-    struct SubCompilingSpace
-        : BaseCompilingSpace
+    struct NoSymbolCompilingSpace
+        : SubCompilingSpace
     {
-        explicit SubCompilingSpace(BaseCompilingSpace& ext_space);
+        explicit NoSymbolCompilingSpace(BaseCompilingSpace& ext_space);
+    };
 
-        bool inPipe() const;
+    struct BranchCompilingSpace
+        : NoSymbolCompilingSpace
+    {
+        explicit BranchCompilingSpace(BaseCompilingSpace& ext_space)
+            : NoSymbolCompilingSpace(ext_space)
+        {}
+    };
 
-        void referenceThis();
-        util::sptr<output::Expression const> ret(util::sref<Expression const> val);
+    struct CatcherSpace
+        : NoSymbolCompilingSpace
+    {
+        explicit CatcherSpace(BaseCompilingSpace& ext_space)
+            : NoSymbolCompilingSpace(ext_space)
+        {}
+
+        bool inCatch() const { return true; }
+    };
+
+    struct AsyncTrySpace
+        : NoSymbolCompilingSpace
+    {
+        AsyncTrySpace(BaseCompilingSpace& ext_space, util::sref<output::Function const> cf)
+            : NoSymbolCompilingSpace(ext_space)
+            , catch_func(cf)
+        {}
+
         output::Method raiseMethod() const;
-    private:
-        BaseCompilingSpace& _ext_space;
+        util::sref<output::Block> replaceSpace(
+                misc::position const& pos, util::sref<output::Block> block);
+
+        util::sref<output::Function const> const catch_func;
     };
 
 }

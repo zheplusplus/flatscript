@@ -21,21 +21,11 @@ namespace output {
         std::string str() const;
     };
 
-    struct PropertyNameExpr
+    struct BoolLiteral
         : Expression
     {
-        explicit PropertyNameExpr(misc::position const& pos)
-            : Expression(pos)
-        {}
-
-        std::string strAsProp() const;
-    };
-
-    struct BoolLiteral
-        : PropertyNameExpr
-    {
         BoolLiteral(misc::position const& pos, bool v)
-            : PropertyNameExpr(pos)
+            : Expression(pos)
             , value(v)
         {}
 
@@ -45,10 +35,10 @@ namespace output {
     };
 
     struct IntLiteral
-        : PropertyNameExpr
+        : Expression
     {
         IntLiteral(misc::position const& pos, mpz_class const& v)
-            : PropertyNameExpr(pos)
+            : Expression(pos)
             , value(v)
         {}
 
@@ -58,10 +48,10 @@ namespace output {
     };
 
     struct FloatLiteral
-        : PropertyNameExpr
+        : Expression
     {
         FloatLiteral(misc::position const& pos, mpf_class const& v)
-            : PropertyNameExpr(pos)
+            : Expression(pos)
             , value(v)
         {}
 
@@ -71,10 +61,10 @@ namespace output {
     };
 
     struct StringLiteral
-        : PropertyNameExpr
+        : Expression
     {
         StringLiteral(misc::position const& pos, std::string const& v)
-            : PropertyNameExpr(pos)
+            : Expression(pos)
             , value(v)
         {}
 
@@ -97,10 +87,10 @@ namespace output {
     };
 
     struct Reference
-        : PropertyNameExpr
+        : Expression
     {
         Reference(misc::position const& pos, std::string const& n)
-            : PropertyNameExpr(pos)
+            : Expression(pos)
             , name(n)
         {}
 
@@ -136,23 +126,6 @@ namespace output {
         std::string str() const;
 
         util::sptr<Expression const> const callee;
-        util::ptrarr<Expression const> const args;
-    };
-
-    struct FunctionInvocation
-        : Expression
-    {
-        FunctionInvocation(misc::position const& pos
-                         , util::sref<Function const> f
-                         , util::ptrarr<Expression const> a)
-            : Expression(pos)
-            , func(f)
-            , args(std::move(a))
-        {}
-
-        std::string str() const;
-
-        util::sref<Function const> const func;
         util::ptrarr<Expression const> const args;
     };
 
@@ -393,6 +366,16 @@ namespace output {
         util::sptr<Expression const> const predicate;
         util::sptr<Expression const> const consequence;
         util::sptr<Expression const> const alternative;
+    };
+
+    struct ExceptionObj
+        : Expression
+    {
+        explicit ExceptionObj(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        std::string str() const;
     };
 
 }

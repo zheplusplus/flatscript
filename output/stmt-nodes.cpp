@@ -61,3 +61,25 @@ void ThisDeclaration::write(std::ostream& os) const
 {
     os << "var $this = this;" << std::endl;
 }
+
+void ExceptionStall::write(std::ostream& os) const
+{
+    if (0 == try_block->count()) {
+        return;
+    }
+    os << "try{" << std::endl;
+    try_block->write(os);
+    os << "}catch($exception){" << std::endl;
+    catch_block->write(os);
+    os << "}" << std::endl;
+}
+
+int ExceptionStall::count() const
+{
+    return std::max(try_block->count(), 1);
+}
+
+void Throw::write(std::ostream& os) const
+{
+    os << throw_method(exception->str()) << std::endl;
+}

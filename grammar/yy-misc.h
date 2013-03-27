@@ -6,8 +6,6 @@
 #include <misc/pos-type.h>
 
 #include "clause-builder.h"
-#include "node-base.h"
-#include "function.h"
 
 void yyerror(std::string const& msg);
 int yyparse();

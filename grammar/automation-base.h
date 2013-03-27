@@ -9,6 +9,7 @@
 #include <misc/pos-type.h>
 
 #include "tokens.h"
+#include "block.h"
 
 namespace grammar {
 
@@ -34,7 +35,7 @@ namespace grammar {
 
         virtual void accepted(AutomationStack&, util::sptr<Expression const> expr) = 0;
         virtual void accepted(AutomationStack&, std::vector<util::sptr<Expression const>>) {}
-        virtual void accepted(AutomationStack&, misc::position const&, Block&&) {}
+        virtual void accepted(AutomationStack&, misc::position const&, Block) {}
         virtual bool finishOnBreak(bool sub_empty) const = 0;
         virtual void finish(ClauseStackWrapper& clauses
                           , AutomationStack& stack
@@ -68,21 +69,18 @@ namespace grammar {
                          , AutomationStack& stack
                          , misc::position const pos
                          , std::vector<util::sptr<ClauseBase>>& clauses)
-            : _last_indent(indent)
+            : last_indent(indent)
             , _stack(stack)
             , _pos(pos)
             , _clauses(clauses)
         {}
 
-        void pushBlockReceiver(util::sref<AutomationBase> blockRecr);
-        void pushIfClause(util::sptr<Expression const> predicate);
-        void pushElseClause(misc::position const& else_pos);
-        void pushFuncClause(misc::position const& pos
-                          , std::string name
-                          , std::vector<std::string> const& params
-                          , int async_param_index);
+        void pushBlockReceiver(AutomationBase* blockRecr);
+        void pushClause(util::sptr<ClauseBase> clause);
+        util::sref<ClauseBase> lastClause() const;
+
+        int const last_indent;
     private:
-        int const _last_indent;
         AutomationStack& _stack;
         misc::position const _pos;
         std::vector<util::sptr<ClauseBase>>& _clauses;

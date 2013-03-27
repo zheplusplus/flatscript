@@ -314,15 +314,17 @@ bool Dictionary::isAsync() const
 
 util::sptr<output::Expression const> Lambda::compile(BaseCompilingSpace& space) const
 {
-    return util::mkptr(new output::Lambda(
-            pos, param_names, body.compile(CompilingSpace(pos, space.sym(), param_names)), false));
+    CompilingSpace body_space(pos, space.sym(), param_names);
+    body.compile(body_space);
+    return util::mkptr(new output::Lambda(pos, param_names, body_space.deliver(), false));
 }
 
 util::sptr<output::Expression const> RegularAsyncLambda::compile(BaseCompilingSpace& space) const
 {
+    RegularAsyncCompilingSpace body_space(pos, space.sym(), param_names);
+    body.compile(body_space);
     return util::mkptr(new output::RegularAsyncLambda(
-            pos, param_names, async_param_index, body.compile(
-                                    RegularAsyncCompilingSpace(pos, space.sym(), param_names))));
+                    pos, param_names, async_param_index, body_space.deliver()));
 }
 
 util::sptr<output::Expression const> RegularAsyncCall::compile(BaseCompilingSpace& space) const
@@ -428,8 +430,8 @@ util::sref<Expression const> Conditional::_equivVal(util::sref<SymbolTable const
 util::sptr<output::Expression const> Conditional::_compileSync(BaseCompilingSpace& space) const
 {
     util::sptr<output::Expression const> compl_pred(predicate->compile(space));
-    SubCompilingSpace consq_space(space);
-    SubCompilingSpace alter_space(space);
+    BranchCompilingSpace consq_space(space);
+    BranchCompilingSpace alter_space(space);
     return util::mkptr(new output::Conditional(pos
                                              , std::move(compl_pred)
                                              , consequence->compile(consq_space)
@@ -442,10 +444,10 @@ static util::sptr<output::Block const> compileConditionalBranch(
           , util::sref<output::ConditionalCallback const> cb)
 {
     util::ptrarr<output::Expression const> args;
-    SubCompilingSpace sub_space(space);
+    BranchCompilingSpace sub_space(space);
     args.append(expr->compile(sub_space));
-    sub_space.block()->addStmt(util::mkptr(new output::Arithmetics(util::mkptr(
-                        new output::FunctionInvocation(expr->pos, cb, std::move(args))))));
+    sub_space.addStmt(expr->pos, util::mkptr(
+                new output::Arithmetics(cb->callMe(expr->pos, std::move(args)))));
     return sub_space.deliver();
 }
 
@@ -461,8 +463,16 @@ util::sptr<output::Expression const> Conditional::_compileAsync(BaseCompilingSpa
 
     util::sref<output::Block> cb_body_flow(cb->bodyFlow());
     space.block()->addFunc(std::move(cb));
-    space.block()->addStmt(util::mkptr(new output::Branch(
+    space.addStmt(pos, util::mkptr(new output::Branch(
                         std::move(compl_pred), std::move(consq_flow), std::move(alter_flow))));
-    space.setAsyncSpace(cb_body_flow);
+    space.setAsyncSpace(pos, std::vector<std::string>(), cb_body_flow);
     return util::mkptr(new output::Reference(pos, param_name));
+}
+
+util::sptr<output::Expression const> ExceptionObj::compile(BaseCompilingSpace& space) const
+{
+    if (!space.inCatch()) {
+        error::exceptionNotInCatchContext(pos);
+    }
+    return util::mkptr(new output::ExceptionObj(pos));
 }

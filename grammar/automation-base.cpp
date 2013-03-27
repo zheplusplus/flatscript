@@ -118,27 +118,17 @@ void AutomationBase::_setShifts(std::map<TokenType, std::pair<AutomationCreator,
                   });
 }
 
-void ClauseStackWrapper::pushBlockReceiver(util::sref<AutomationBase> blockRecr)
+void ClauseStackWrapper::pushBlockReceiver(AutomationBase* blockRecr)
 {
-    _clauses.push_back(util::mkptr(new BlockReceiverClause(_last_indent, _stack, _pos, blockRecr)));
+    _clauses.push_back(util::mkptr(new BlockReceiverClause(last_indent, _stack, _pos, blockRecr)));
 }
 
-void ClauseStackWrapper::pushIfClause(util::sptr<Expression const> predicate)
+void ClauseStackWrapper::pushClause(util::sptr<ClauseBase> clause)
 {
-    _clauses.push_back(util::mkptr(new IfClause(
-                        _last_indent, std::move(predicate), *_clauses.back())));
+    _clauses.push_back(std::move(clause));
 }
 
-void ClauseStackWrapper::pushElseClause(misc::position const& else_pos)
+util::sref<ClauseBase> ClauseStackWrapper::lastClause() const
 {
-    _clauses.push_back(util::mkptr(new ElseClause(_last_indent, else_pos, *_clauses.back())));
-}
-
-void ClauseStackWrapper::pushFuncClause(misc::position const& pos
-                                      , std::string name
-                                      , std::vector<std::string> const& params
-                                      , int async_param_index)
-{
-    _clauses.push_back(util::mkptr(new FunctionClause(
-                        _last_indent, pos, name, params, async_param_index, *_clauses.back())));
+    return *_clauses.back();
 }

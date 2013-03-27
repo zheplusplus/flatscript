@@ -21,8 +21,7 @@ TEST_F(AutomationTest, ReduceArithExpression)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -71,8 +70,7 @@ TEST_F(AutomationTest, ReduceLogicExpression)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -126,8 +124,7 @@ TEST_F(AutomationTest, ReducePipeExpression)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -179,8 +176,7 @@ TEST_F(AutomationTest, ReduceBitwise)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -233,8 +229,7 @@ TEST_F(AutomationTest, ReduceCallExpression)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -285,8 +280,7 @@ TEST_F(AutomationTest, ReduceSubExpression)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
 
@@ -338,8 +332,7 @@ TEST_F(AutomationTest, ReduceAnonyFunc)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -380,8 +373,7 @@ TEST_F(AutomationTest, ReduceDefineAnonyFunc)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -418,8 +410,7 @@ TEST_F(AutomationTest, ReduceLookupSlice)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -459,8 +450,7 @@ TEST_F(AutomationTest, ReduceAnonyFuncAsArg)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -505,8 +495,7 @@ TEST_F(AutomationTest, ReduceListLiteral)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -570,8 +559,7 @@ TEST_F(AutomationTest, ReduceDictionary)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -614,8 +602,7 @@ TEST_F(AutomationTest, ReduceSingleThis)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -676,8 +663,7 @@ TEST_F(AutomationTest, ReduceThisAndProperty)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -866,9 +852,8 @@ TEST_F(AutomationTest, BracketNestedExpressions)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
-    clause.filter->deliver().compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -900,9 +885,8 @@ TEST_F(AutomationTest, ParenNestedExpressions)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
-    clause.filter->deliver().compile(semantic::CompilingSpace());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -952,8 +936,7 @@ TEST_F(AutomationTest, ReduceAnonyFuncAsOneOfArgs)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
+    clause.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -1037,11 +1020,10 @@ TEST_F(AutomationTest, ReduceSimpleAsyncPlaceholderInCall)
     close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
-
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
-    ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
+
+    clause.compile().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -1141,10 +1123,10 @@ TEST_F(AutomationTest, ReduceParenAsyncPlaceholderInCall)
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
-    ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
+
+    clause.compile().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -1343,11 +1325,10 @@ TEST_F(AutomationTest, Conditional)
     pushIdent(pos, "kyotarou");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
-
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
-    ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
+
+    clause.compile().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -1493,11 +1474,10 @@ TEST_F(AutomationTest, ReduceRegularAsyncCall)
     close(pos, ")");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
-
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
-    ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
+
+    clause.compile().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -1540,11 +1520,10 @@ TEST_F(AutomationTest, ConditionalNested)
 
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
-
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
-    ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
+
+    clause.compile().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)

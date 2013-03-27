@@ -12,6 +12,7 @@ namespace output {
 
         Method throwExc();
         Method callbackExc();
+        Method asyncCatcher(std::string const& catcher_func_name);
 
     }
 }

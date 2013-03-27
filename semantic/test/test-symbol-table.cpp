@@ -234,17 +234,20 @@ TEST_F(SymbolTableTest, ForbidDef)
     misc::position def_pos_a(1100);
     misc::position def_pos_b(1101);
 
-    semantic::Filter filter;
+    semantic::Block block;
     refSym()->defName(pos, "ryou");
-    util::sptr<semantic::Filter> filter_consq(new semantic::Filter);
-    filter_consq->addImport(def_pos_a, std::vector<std::string>({ "nagisa", "fuuko" }));
-    filter_consq->defName(def_pos_b, "tomoya", util::mkptr(new semantic::Reference(pos, "kyou")));
-    filter.addBranch(pos
+    semantic::Block consq_block;
+    consq_block.addStmt(util::mkptr(
+                new semantic::Import(def_pos_a, std::vector<std::string>({ "nagisa", "fuuko" }))));
+    consq_block.addStmt(util::mkptr(new semantic::NameDef(def_pos_b, "tomoya", util::mkptr(
+                                                    new semantic::Reference(pos, "kyou")))));
+    block.addStmt(util::mkptr(new semantic::Branch(
+                     pos
                    , util::mkptr(new semantic::Reference(pos, "ryou"))
-                   , std::move(filter_consq)
-                   , util::mkptr(new semantic::Filter));
+                   , std::move(consq_block)
+                   , semantic::Block())));
 
-    compile(filter, refSym());
+    compile(block, refSym());
 
     ASSERT_TRUE(error::hasError());
 

@@ -185,20 +185,29 @@ std::cerr << "    slice step omitted." << std::endl;
 , Param(POS_TYPE, 'pos')),
 
 ReportFunc(
-'elseNotMatchIf',
+'partialStmtNotMatch',
 lineno() + '''
-std::cerr << else_pos.str() << std::endl;
-std::cerr << "    `else' does not match an `if'." << std::endl;
+std::cerr << pos.str() << std::endl;
+std::cerr << "    `" << successor << "' does not match an `" << match << "'." << std::endl;
 '''
-, Param(POS_TYPE, 'else_pos')),
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'successor'), Param(STR_TYPE, 'match')),
 
 ReportFunc(
-'ifAlreadyMatchElse',
+'partialStmtDupMatch',
 lineno() + '''
-std::cerr << this_else_pos.str() << std::endl;
-std::cerr << "    another `else' already matches the `if' at " << prev_else_pos.str() << std::endl;
+std::cerr << this_pos.str() << std::endl;
+std::cerr << "    another `" << successor << "' already matches the `" << match << "' at "
+          << prev_pos.str() << std::endl;
 '''
-, Param(POS_TYPE, 'prev_else_pos'), Param(POS_TYPE, 'this_else_pos')),
+, Param(POS_TYPE, 'prev_pos'), Param(POS_TYPE, 'this_pos'), Param(STR_TYPE, 'successor')
+, Param(STR_TYPE, 'match')),
+
+ReportFunc(
+'tryWithoutCatch',
+lineno() + '''
+std::cerr << "    no `catch' clause matching `try' clause at " << try_pos.str() << std::endl;
+'''
+, Param(POS_TYPE, 'try_pos')),
 
 ReportFunc(
 'incompleteConditional',
@@ -347,10 +356,26 @@ std::cerr << "    return statement not allowed in pipeline." << std::endl;
 , Param(POS_TYPE, 'pos')),
 
 ReportFunc(
+'asyncNotAllowedInThrow',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    asynchronous expression not allowed in throw." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'pipeReferenceNotInListContext',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
 std::cerr << "    pipeline reference not in list context." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'exceptionNotInCatchContext',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    exception not in `catch' context." << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 

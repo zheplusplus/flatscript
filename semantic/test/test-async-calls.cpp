@@ -18,7 +18,7 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
 {
     misc::position pos(1);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -29,38 +29,38 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
     space.sym()->defName(pos, "log");
 
     largs.append(util::mkptr(new semantic::IntLiteral(pos, "1")));
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "setTimeout"))
                                       , std::move(fargs)
                                       , std::vector<std::string>()
-                                      , std::move(largs))));
+                                      , std::move(largs))))));
 
-    filter.addArith(pos, util::mkptr(new semantic::Call(
-                    pos, util::mkptr(new semantic::Reference(pos, "cb")), std::move(largs))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
+                    pos, util::mkptr(new semantic::Reference(pos, "cb")), std::move(largs))))));
 
     fargs.append(util::mkptr(new semantic::StringLiteral(pos, "config.ini")));
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "readLine"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "content" })
-                                      , std::move(largs))));
+                                      , std::move(largs))))));
 
     fargs.append(util::mkptr(new semantic::IntLiteral(pos, "200")));
     largs.append(util::mkptr(new semantic::Reference(pos, "content")));
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "writeLine"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "err" })
-                                      , std::move(largs))));
+                                      , std::move(largs))))));
 
     largs.append(util::mkptr(new semantic::Reference(pos, "err")));
-    filter.addArith(pos, util::mkptr(new semantic::Call(
-                    pos, util::mkptr(new semantic::Reference(pos, "log")), std::move(largs))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
+                    pos, util::mkptr(new semantic::Reference(pos, "log")), std::move(largs))))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -115,9 +115,9 @@ TEST_F(AsyncCallsTest, InBranch)
 {
     misc::position pos(2);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
-    util::sptr<semantic::Filter> consq_filter(new semantic::Filter);
-    util::sptr<semantic::Filter> alter_filter(new semantic::Filter);
+    semantic::Block block;
+    semantic::Block consq_block;
+    semantic::Block alter_block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -126,28 +126,37 @@ TEST_F(AsyncCallsTest, InBranch)
     space.sym()->defName(pos, "read");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "f20130106")));
-    consq_filter->addArith(pos, util::mkptr(
+    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "read"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "content" })
-                                      , std::move(largs))));
-    consq_filter->addArith(pos, util::mkptr(new semantic::Reference(pos, "content")));
+                                      , std::move(largs))))));
+    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                              new semantic::Reference(pos, "content")))));
 
-    alter_filter->addArith(pos, util::mkptr(new semantic::Reference(pos, "x")));
+    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                                new semantic::Reference(pos, "x")))));
 
-    filter.addBranch(pos
+    block.addStmt(util::mkptr(new semantic::Branch(
+                     pos
                    , util::mkptr(new semantic::Reference(pos, "y"))
-                   , std::move(consq_filter)
-                   , std::move(alter_filter));
+                   , std::move(consq_block)
+                   , std::move(alter_block))));
 
-    filter.addArith(pos, util::mkptr(new semantic::FloatLiteral(pos, "17.53")));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                                new semantic::FloatLiteral(pos, "17.53")))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
+            (FUNCTION, "# AnonymousCallback", 0)
+                (SCOPE_BEGIN)
+                    (ARITHMETICS)
+                        (pos, FLOATING, "17.53")
+                (SCOPE_END)
             (BRANCH)
                 (pos, REFERENCE, "y")
             (SCOPE_BEGIN)
@@ -162,15 +171,19 @@ TEST_F(AsyncCallsTest, InBranch)
                                     (pos, ASYNC_REFERENCE)
                                 (ARITHMETICS)
                                     (pos, REFERENCE, "content")
+                                (ARITHMETICS)
+                                    (pos, CALL, 0)
+                                        (pos, REFERENCE, "# AnonymousCallback")
                             (SCOPE_END)
                         (pos, STRING, "f20130106")
             (SCOPE_END)
             (SCOPE_BEGIN)
                 (ARITHMETICS)
                     (pos, REFERENCE, "x")
+                (ARITHMETICS)
+                    (pos, CALL, 0)
+                        (pos, REFERENCE, "# AnonymousCallback")
             (SCOPE_END)
-            (ARITHMETICS)
-                (pos, FLOATING, "17.53")
         (SCOPE_END)
     ;
 }
@@ -179,9 +192,9 @@ TEST_F(AsyncCallsTest, AsBranchPredicate)
 {
     misc::position pos(3);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
-    util::sptr<semantic::Filter> consq_filter(new semantic::Filter);
-    util::sptr<semantic::Filter> alter_filter(new semantic::Filter);
+    semantic::Block block;
+    semantic::Block consq_block;
+    semantic::Block alter_block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -189,23 +202,27 @@ TEST_F(AsyncCallsTest, AsBranchPredicate)
     space.sym()->defName(pos, "n");
     space.sym()->defName(pos, "write");
 
-    consq_filter->addArith(pos, util::mkptr(new semantic::Reference(pos, "m")));
-    alter_filter->addArith(pos, util::mkptr(new semantic::Reference(pos, "err")));
+    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                                new semantic::Reference(pos, "m")))));
+    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                                new semantic::Reference(pos, "err")))));
 
     largs.append(util::mkptr(new semantic::Reference(pos, "n")));
-    filter.addBranch(pos
+    block.addStmt(util::mkptr(new semantic::Branch(
+                     pos
                    , util::mkptr(new semantic::AsyncCall(
                                         pos
                                       , util::mkptr(new semantic::Reference(pos, "write"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "err" })
                                       , std::move(largs)))
-                   , std::move(consq_filter)
-                   , std::move(alter_filter));
+                   , std::move(consq_block)
+                   , std::move(alter_block))));
 
-    filter.addArith(pos, util::mkptr(new semantic::FloatLiteral(pos, "17.53")));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                                new semantic::FloatLiteral(pos, "17.53")))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -243,28 +260,30 @@ TEST_F(AsyncCallsTest, ConflictDefinition)
     misc::position pos_b(401);
     misc::position pos_c(402);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    filter.defName(pos, "suzuha", util::mkptr(new semantic::IntLiteral(pos, "1")));
+    block.addStmt(util::mkptr(new semantic::NameDef(
+                            pos, "suzuha", util::mkptr(new semantic::IntLiteral(pos, "1")))));
     largs.append(util::mkptr(new semantic::IntLiteral(pos, "1")));
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos_a
                                       , util::mkptr(new semantic::Reference(pos, "suzuha"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "suzuha" })
-                                      , std::move(largs))));
+                                      , std::move(largs))))));
 
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos_b
                                       , util::mkptr(new semantic::Reference(pos, "suzuha"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "kyouma" })
-                                      , std::move(largs))));
-    filter.defName(pos_c, "kyouma", util::mkptr(new semantic::FloatLiteral(pos, "0.456914")));
+                                      , std::move(largs))))));
+    block.addStmt(util::mkptr(new semantic::NameDef(
+                    pos_c, "kyouma", util::mkptr(new semantic::FloatLiteral(pos, "0.456914")))));
 
-    compile(filter, space.sym());
+    compile(block, space.sym());
     ASSERT_TRUE(error::hasError());
 
     std::vector<NameAlreadyInLocalRec> redefs(getNameAlreadyInLocalRecs());
@@ -282,7 +301,7 @@ TEST_F(AsyncCallsTest, NestedAsyncArgs)
 {
     misc::position pos(5);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -300,19 +319,19 @@ TEST_F(AsyncCallsTest, NestedAsyncArgs)
                                                    , util::ptrarr<semantic::Expression const>()
                                                    , std::vector<std::string>()
                                                    , util::ptrarr<semantic::Expression const>())));
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "f"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "x" })
-                                      , std::move(largs))));
+                                      , std::move(largs))))));
 
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                  new semantic::Call(pos
                                   , util::mkptr(new semantic::Reference(pos, "x"))
-                                  , util::ptrarr<semantic::Expression const>())));
+                                  , util::ptrarr<semantic::Expression const>())))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -355,7 +374,7 @@ TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
 {
     misc::position pos(16);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
 
     space.sym()->defName(pos, "suzuha");
     space.sym()->defName(pos, "yuki");
@@ -377,21 +396,22 @@ TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
     util::sptr<semantic::Expression const> call(new semantic::Call(
                 pos, util::mkptr(new semantic::Reference(pos, "yuki")), std::move(args)));
 
-    filter.defName(pos, "ruka", util::mkptr(new semantic::Conditional(pos
-                            , util::mkptr(new semantic::Reference(pos, "rintarou"))
-                            , std::move(call)
-                            , util::mkptr(new semantic::BoolLiteral(pos, false)))));
+    block.addStmt(util::mkptr(new semantic::NameDef(pos, "ruka", util::mkptr(
+                new semantic::Conditional(pos
+                                        , util::mkptr(new semantic::Reference(pos, "rintarou"))
+                                        , std::move(call)
+                                        , util::mkptr(new semantic::BoolLiteral(pos, false)))))));
     args.append(util::mkptr(new semantic::Reference(pos, "ruka")));
-    filter.addArith(pos, util::mkptr(new semantic::Call(
-                    pos, util::mkptr(new semantic::Reference(pos, "mayuri")), std::move(args))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
+                    pos, util::mkptr(new semantic::Reference(pos, "mayuri")), std::move(args))))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (FWD_DECL, "ruka")
-            (FUNCTION, "# ConditionalCallback", 1)
+            (FUNCTION, "# AnonymousCallback", 1)
                 (PARAMETER, "ConditionalCallback # Parameter")
                 (SCOPE_BEGIN)
                     (ARITHMETICS)
@@ -414,7 +434,8 @@ TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
                                 (COPY_PARAM_DECL)
                                 (SCOPE_BEGIN)
                                     (ARITHMETICS)
-                                        (pos, FUNC_INVOKE, 1)
+                                        (pos, CALL, 1)
+                                            (pos, REFERENCE, "# AnonymousCallback")
                                             (pos, CALL, 1)
                                                 (pos, REFERENCE, "yuki")
                                                 (pos, ASYNC_REFERENCE)
@@ -423,7 +444,8 @@ TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
                 (SCOPE_END)
                 (SCOPE_BEGIN)
                     (ARITHMETICS)
-                        (pos, FUNC_INVOKE, 1)
+                        (pos, CALL, 1)
+                            (pos, REFERENCE, "# AnonymousCallback")
                             (pos, BOOLEAN, "false")
                 (SCOPE_END)
         (SCOPE_END)
@@ -448,7 +470,8 @@ TEST_F(AsyncCallsTest, RegularAsyncCall)
                                       , std::move(fargs)
                                       , std::move(largs))))));
 
-    body.compile(std::move(space))->write(dummyos());
+    body.compile(space);
+    space.deliver()->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

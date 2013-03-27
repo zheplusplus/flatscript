@@ -27,11 +27,12 @@
 
 %token INDENT EOL
 %token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_IMPORT KW_EXPORT KW_RESERVED
+%token KW_TRY KW_CATCH KW_TRHOW
 %token PROP_SEP OPERATOR PIPE_SEP
 %token BOOL_TRUE BOOL_FALSE
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
 %token IDENT
-%token PIPE_ELEMENT PIPE_INDEX PIPE_KEY PIPE_RESULT REGULAR_ASYNC_PARAM
+%token PIPE_ELEMENT PIPE_INDEX PIPE_KEY PIPE_RESULT EXCEPTION_OBJ REGULAR_ASYNC_PARAM
 
 %%
 
@@ -67,19 +68,26 @@ stmt_list:
 stmt:
     arithmetics {}
     |
+    throw {}
+    |
     func_return {}
     |
     import {}
     |
     export {}
-    |
-    ifnot_clue {}
 ;
 
 arithmetics:
     indent token_sequence eol
     {
         grammar::builder.addArith($1, misc::position($3), $2->deliver());
+    }
+;
+
+throw:
+    indent KW_TRHOW token_sequence eol
+    {
+        grammar::builder.addThrow($1, misc::position($4), $3->deliver());
     }
 ;
 
@@ -147,6 +155,21 @@ token:
     KW_IF
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::IF);
+    }
+    |
+    KW_IFNOT
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::IFNOT);
+    }
+    |
+    KW_TRY
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::TRY);
+    }
+    |
+    KW_CATCH
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CATCH);
     }
     |
     KW_ELSE
@@ -247,6 +270,12 @@ token:
         $$ = new grammar::FactorToken(here, util::mkptr(new grammar::PipeResult(here)), yytext);
     }
     |
+    EXCEPTION_OBJ
+    {
+        misc::position here(grammar::here());
+        $$ = new grammar::FactorToken(here, util::mkptr(new grammar::ExceptionObj(here)), yytext);
+    }
+    |
     REGULAR_ASYNC_PARAM
     {
         misc::position here(grammar::here());
@@ -315,13 +344,6 @@ additional_name:
     |
     {
         $$ = new grammar::NameList;
-    }
-;
-
-ifnot_clue:
-    indent KW_IFNOT token_sequence eol
-    {
-        grammar::builder.addIfnot($1, misc::position($4), $3->deliver());
     }
 ;
 

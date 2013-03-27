@@ -36,6 +36,14 @@ ExprStmtAutomation::ExprStmtAutomation(util::sref<ClauseBase> clause)
                      {
                          stack.replace(util::mkptr(new ElseAutomation(token.pos)));
                      };
+    _actions[IFNOT] = [](AutomationStack& stack, TypedToken const&)
+                      {
+                          stack.replace(util::mkptr(new IfnotAutomation));
+                      };
+    _actions[TRY] = [](AutomationStack& stack, TypedToken const& token)
+                    {
+                        stack.replace(util::mkptr(new TryAutomation(token.pos)));
+                    };
     _actions[FUNC] = [](AutomationStack& stack, TypedToken const&)
                      {
                          stack.replace(util::mkptr(new FunctionAutomation));
@@ -43,6 +51,10 @@ ExprStmtAutomation::ExprStmtAutomation(util::sref<ClauseBase> clause)
     _actions[COLON] = [&](AutomationStack& stack, TypedToken const& token)
                       {
                           _pushColon(stack, token.pos);
+                      };
+    _actions[CATCH] = [](AutomationStack& stack, TypedToken const& token)
+                      {
+                          stack.replace(util::mkptr(new CatchAutomation(token.pos)));
                       };
 }
 
@@ -94,6 +106,13 @@ util::sptr<Statement> ExprStmtAutomation::_reduceAsStmt()
     return util::mkptr(new AttrSet(pos, std::move(_exprs[0]), std::move(_exprs[1])));
 }
 
+void StandaloneKeyWordAutomation::finish(
+                ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
+{
+    wrapper.pushClause(createClause(wrapper));
+    stack.pop();
+}
+
 void IfAutomation::activated(AutomationStack& stack)
 {
     stack.push(util::mkptr(new PipelineAutomation));
@@ -115,14 +134,24 @@ void IfAutomation::finish(
     if (_pred_cache->empty()) {
         error::invalidEmptyExpr(_pred_cache->pos);
     }
-    wrapper.pushIfClause(std::move(_pred_cache));
+    wrapper.pushClause(util::mkptr(new IfClause(
+                        wrapper.last_indent, std::move(_pred_cache), wrapper.lastClause())));
     stack.pop();
 }
 
-void ElseAutomation::finish(
+util::sptr<ClauseBase> ElseAutomation::createClause(ClauseStackWrapper& wrapper)
+{
+    return util::mkptr(new ElseClause(wrapper.last_indent, pos, wrapper.lastClause()));
+}
+
+void IfnotAutomation::finish(
                 ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
 {
-    wrapper.pushElseClause(else_pos);
+    if (_pred_cache->empty()) {
+        error::invalidEmptyExpr(_pred_cache->pos);
+    }
+    wrapper.pushClause(util::mkptr(new IfnotClause(
+                        wrapper.last_indent, std::move(_pred_cache), wrapper.lastClause())));
     stack.pop();
 }
 
@@ -166,7 +195,12 @@ bool FunctionAutomation::finishOnBreak(bool) const
 void FunctionAutomation::finish(
                 ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
 {
-    wrapper.pushFuncClause(_pos, _func_name, _params, _async_param_index);
+    wrapper.pushClause(util::mkptr(new FunctionClause(wrapper.last_indent
+                                                    , _pos
+                                                    , _func_name
+                                                    , _params
+                                                    , _async_param_index
+                                                    , wrapper.lastClause())));
     stack.pop();
 }
 
@@ -207,4 +241,20 @@ void ExportStmtAutomation::finish(
     }
     _clause->acceptStmt(util::mkptr(new Export(_expr->pos, export_point, std::move(_expr))));
     stack.pop();
+}
+
+void ThrowAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
+{
+    _clause->acceptStmt(util::mkptr(new Throw(_expr->pos, std::move(_expr))));
+    stack.pop();
+}
+
+util::sptr<ClauseBase> TryAutomation::createClause(ClauseStackWrapper& wrapper)
+{
+    return util::mkptr(new TryClause(wrapper.last_indent, pos, wrapper.lastClause()));
+}
+
+util::sptr<ClauseBase> CatchAutomation::createClause(ClauseStackWrapper& wrapper)
+{
+    return util::mkptr(new CatchClause(wrapper.last_indent, pos, wrapper.lastClause()));
 }

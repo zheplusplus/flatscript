@@ -75,6 +75,19 @@ void Function::write(std::ostream&) const
     body()->write(dummyos());
 }
 
+std::string Function::mangledParameters() const
+{
+    return "";
+}
+
+util::sptr<Expression const> Function::callMe(
+        misc::position const& pos, util::ptrarr<Expression const> args) const
+{
+    return util::mkptr(new output::Call(
+                pos, util::mkptr(new Reference(pos, mangledName())),
+                std::move(args)));
+}
+
 util::sref<Statement const> RegularFunction::body() const
 {
     return *body_stmt;
@@ -104,14 +117,19 @@ std::string RegularAsyncReturnCall::str() const
     return "";
 }
 
-util::sref<Statement const> ConditionalCallback::body() const
+util::sref<Statement const> AnonymousCallback::body() const
 {
     return *_body;
 }
 
-std::string ConditionalCallback::mangledName() const
+std::string AnonymousCallback::mangledName() const
 {
-    return "# ConditionalCallback";
+    return "# AnonymousCallback";
+}
+
+util::sref<Block> AnonymousCallback::bodyFlow()
+{
+    return *_body;
 }
 
 std::vector<std::string> ConditionalCallback::parameters() const
@@ -119,16 +137,19 @@ std::vector<std::string> ConditionalCallback::parameters() const
     return std::vector<std::string>({ "ConditionalCallback # Parameter" });
 }
 
-util::sref<Block> ConditionalCallback::bodyFlow()
+std::vector<std::string> NoParamCallback::parameters() const
 {
-    return *_body;
+    return std::vector<std::string>();
 }
 
-std::string FunctionInvocation::str() const
+std::vector<std::string> AsyncCatcher::parameters() const
 {
-    DataTree::actualOne()(pos, FUNC_INVOKE, args.size());
-    writeList(args);
-    return "";
+    return std::vector<std::string>({ "AsyncCatcher # Parameter" });
+}
+
+std::string AsyncCatcher::mangledParameters() const
+{
+    return "AsyncCatcher # MangledParameter";
 }
 
 std::string MemberAccess::str() const
@@ -183,6 +204,20 @@ void ThisDeclaration::write(std::ostream&) const
     DataTree::actualOne()(DEC_THIS);
 }
 
+void ExceptionStall::write(std::ostream&) const
+{
+    DataTree::actualOne()(TRY);
+    try_block->write(dummyos());
+    DataTree::actualOne()(CATCH);
+    catch_block->write(dummyos());
+}
+
+void Throw::write(std::ostream&) const
+{
+    DataTree::actualOne()(THROW);
+    exception->str();
+}
+
 void PipelineContinue::write(std::ostream&) const
 {
     DataTree::actualOne()(PIPELINE_CONTINUE);
@@ -192,16 +227,6 @@ std::string Undefined::str() const
 {
     DataTree::actualOne()(pos, UNDEFINED);
     return "";
-}
-
-std::string Expression::strAsProp() const
-{
-    return str();
-}
-
-std::string PropertyNameExpr::strAsProp() const
-{
-    return str();
 }
 
 std::string BoolLiteral::str() const
@@ -387,6 +412,12 @@ std::string Conditional::str() const
     return "";
 }
 
+std::string ExceptionObj::str() const
+{
+    DataTree::actualOne()(pos, EXCEPTION_OBJ);
+    return "";
+}
+
 std::string AsyncReference::str() const
 {
     DataTree::actualOne()(pos, ASYNC_REFERENCE);
@@ -438,5 +469,15 @@ Method method::callbackExc()
            };
 }
 
+Method method::asyncCatcher(std::string const& s)
+{
+    return [=](std::string const&)
+           {
+               DataTree::actualOne()(ASYNC_CATCH_FUNC, s);
+               return "";
+           };
+}
+
 int Block::count() const { return 0; }
 int Export::count() const { return 0; }
+int ExceptionStall::count() const { return 0; }

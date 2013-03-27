@@ -67,3 +67,8 @@ log('I think ' + typeof 0 + ' is the type of 0.')
 bitwise: x + ~-y * z
 bitwiseX: x < ~y << z
 bitwiseY: x >>> ~y & z
+
+try
+    f()
+catch
+    g($exception)

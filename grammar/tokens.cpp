@@ -1,6 +1,7 @@
 #include "node-base.h"
 #include "tokens.h"
 #include "automation-base.h"
+#include "function.h"
 
 using namespace grammar;
 

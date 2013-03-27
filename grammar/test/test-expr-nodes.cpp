@@ -12,14 +12,13 @@ typedef GrammarTest ExprNodesTest;
 TEST_F(ExprNodesTest, Pipeline)
 {
     misc::position pos(1);
-    semantic::CompilingSpace space;
 
     util::sptr<grammar::Expression const> p(new grammar::Pipeline(
                 pos
               , util::mkptr(new grammar::Identifier(pos, "x20130109"))
               , "|:"
               , util::mkptr(new grammar::PipeElement(pos))));
-    p->reduceAsExpr()->compile(space);
+    p->reduceAsExpr()->compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

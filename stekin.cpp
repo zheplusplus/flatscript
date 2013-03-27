@@ -3,6 +3,8 @@
 #include <sstream>
 
 #include <grammar/yy-misc.h>
+#include <grammar/node-base.h>
+#include <grammar/function.h>
 #include <semantic/function.h>
 #include <semantic/compiling-space.h>
 #include <output/function.h>
@@ -35,7 +37,9 @@ int main(int argc, char* argv[])
     if (error::hasError()) {
         return 1;
     }
-    util::sptr<output::Statement const> global_scope(global_flow.compile(globalSpace()));
+    semantic::CompilingSpace global_space(globalSpace());
+    global_flow.compile(global_space);
+    util::sptr<output::Statement const> global_scope(global_space.deliver());
     if (error::hasError()) {
         return 1;
     }

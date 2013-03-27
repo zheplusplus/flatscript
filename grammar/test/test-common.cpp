@@ -1,8 +1,5 @@
 #include <sstream>
 
-#include <semantic/filter.h>
-#include <semantic/node-base.h>
-#include <semantic/function.h>
 #include <test/common.h>
 #include <test/phony-errors.h>
 
@@ -18,11 +15,6 @@ std::map<std::string, grammar::TokenType> const test::IMAGE_TYPE_MAP({
     { "]", grammar::CLOSE_BRACKET },
     { "}", grammar::CLOSE_BRACE },
 });
-
-util::sptr<semantic::Filter> test::mkfilter()
-{
-    return std::move(util::mkptr(new semantic::Filter));
-}
 
 util::sref<semantic::SymbolTable> test::nulSymbols()
 {
@@ -113,7 +105,6 @@ NodeType const test::DICT_ITEM("dictionary item");
 NodeType const test::NAME_DEF("name def");
 NodeType const test::ARITHMETICS("arithmetics");
 NodeType const test::RETURN("return");
-NodeType const test::RETURN_NOTHING("return nothing");
 NodeType const test::IMPORT("import");
 NodeType const test::EXPORT("export");
 NodeType const test::EXPORT_VALUE("exported value");
@@ -124,10 +115,13 @@ NodeType const test::FUNC_DEF("func def");
 NodeType const test::PARAMETER("parameter");
 
 NodeType const test::BRANCH("branch");
-NodeType const test::BRANCH_CONSQ_ONLY("branch consequence only");
-NodeType const test::BRANCH_ALTER_ONLY("branch alternative only");
 NodeType const test::CONSEQUENCE("consequence");
 NodeType const test::ALTERNATIVE("alternative");
+
+NodeType const test::TRY("try");
+NodeType const test::CATCH("catch");
+NodeType const test::EXCEPTION_OBJ("exception object");
+NodeType const test::THROW("throw");
 
 NodeType const test::BLOCK_BEGIN("block begin");
 NodeType const test::BLOCK_END("block end");

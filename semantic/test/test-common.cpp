@@ -2,7 +2,6 @@
 
 #include <test/common.h>
 #include <test/phony-errors.h>
-#include <test/phony-warnings.h>
 #include <semantic/compiling-space.h>
 #include <util/string.h>
 
@@ -17,10 +16,11 @@ std::ostream& test::dummyos()
 }
 
 util::sptr<output::Statement const> test::compile(
-        semantic::Filter& f, util::sref<semantic::SymbolTable> sym)
+                                        semantic::Block& b, util::sref<semantic::SymbolTable> sym)
 {
-    return f.deliver().compile(
-            semantic::CompilingSpace(misc::position(), sym, std::vector<std::string>()));
+    semantic::CompilingSpace space(misc::position(), sym, std::vector<std::string>());
+    b.compile(space);
+    return space.deliver();
 }
 
 DataTree& DataTree::operator()(misc::position const& pos
@@ -86,6 +86,7 @@ NodeType const test::THIS("this");
 NodeType const test::BINARY_OP("binary operation");
 NodeType const test::PRE_UNARY_OP("prefix unary operation");
 NodeType const test::CONDITIONAL("conditional expression");
+NodeType const test::EXCEPTION_OBJ("exception object");
 NodeType const test::REFERENCE("reference");
 NodeType const test::IMPORTED_NAME("imported name");
 NodeType const test::PIPE_ELEMENT("pipe element");
@@ -94,7 +95,6 @@ NodeType const test::PIPE_KEY("pipe key");
 NodeType const test::PIPE_RESULT("pipe result");
 
 NodeType const test::CALL("call");
-NodeType const test::FUNC_INVOKE("function invocation");
 NodeType const test::ASYNC_REFERENCE("asynchronous reference");
 
 NodeType const test::ASYNC_PIPELINE("asynchronous pipeline");
@@ -116,6 +116,9 @@ NodeType const test::EXPORT("export");
 NodeType const test::EXPORT_VALUE("exported value");
 NodeType const test::DEC_THIS("declare this");
 NodeType const test::BRANCH("branch");
+NodeType const test::TRY("try");
+NodeType const test::CATCH("catch");
+NodeType const test::THROW("throw");
 
 NodeType const test::FUNCTION("function");
 NodeType const test::PARAMETER("parameter");
@@ -125,6 +128,7 @@ NodeType const test::REGULAR_ASYNC_RETURN("regular asynchronous return call");
 
 NodeType const test::EXC_THROW("exception method throw");
 NodeType const test::EXC_CALLBACK("exception method callback");
+NodeType const test::ASYNC_CATCH_FUNC("asynchronous catch function");
 
 NodeType const test::SCOPE_BEGIN("scope begin");
 NodeType const test::SCOPE_END("scope end");
@@ -132,7 +136,6 @@ NodeType const test::SCOPE_END("scope end");
 void SemanticTest::SetUp()
 {
     clearErr();
-    clearWarn();
 }
 
 void SemanticTest::TearDown()

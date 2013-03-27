@@ -182,6 +182,16 @@ namespace grammar {
         util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
+    struct ExceptionObj
+        : Expression
+    {
+        explicit ExceptionObj(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+    };
+
     struct Call
         : Expression
     {

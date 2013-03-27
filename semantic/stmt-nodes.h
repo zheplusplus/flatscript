@@ -121,6 +121,36 @@ namespace semantic {
         util::sptr<Expression const> const value;
     };
 
+    struct ExceptionStall
+        : Statement
+    {
+        ExceptionStall(misc::position const& pos, Block fl, Block c)
+            : Statement(pos)
+            , try_block(std::move(fl))
+            , catch_block(std::move(c))
+        {}
+
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
+
+        Block const try_block;
+        Block const catch_block;
+    };
+
+    struct Throw
+        : Statement
+    {
+        Throw(misc::position const& pos, util::sptr<Expression const> e)
+            : Statement(pos)
+            , exception(std::move(e))
+        {}
+
+        void compile(BaseCompilingSpace& space) const;
+        bool isAsync() const { return false; }
+
+        util::sptr<Expression const> const exception;
+    };
+
 }
 
 #endif /* __STEKIN_SEMANTIC_STATEMENT_NODES_H__ */

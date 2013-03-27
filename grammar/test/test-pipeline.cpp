@@ -22,7 +22,7 @@ TEST_F(PipelineTest, MultiLinesPipeline)
     builder.addReturn(1, pos_b, (new grammar::TokenSequence(id(pos_b, "houjou")))
                                                      ->deliver());
 
-    builder.buildAndClear().compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -60,7 +60,7 @@ TEST_F(PipelineTest, MultiLinesPipelineSeparatedByFilterBreak)
                                                      ->add(pipeElement(pos_a))
                                                      ->deliver());
 
-    builder.buildAndClear().compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

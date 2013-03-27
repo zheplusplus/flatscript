@@ -10,7 +10,7 @@ using namespace test;
 TEST(Syntax, MultiLevelLambdas)
 {
     yyparse();
-    grammar::builder.buildAndClear().compile(semantic::CompilingSpace());
+    grammar::builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

@@ -1,0 +1,56 @@
+func asyncThrowFunc(t, i, %%)
+    if t
+        throw 'this is an asynchronous exception: ' + i
+
+func syncThrowFunc(t, i)
+    if t
+        throw 'this is a synchronous exception: ' + i
+
+func f()
+    try
+        asyncThrowFunc(true, 9, %%)
+    catch
+        console.log($e)
+
+f()
+
+func g()
+    try
+        asyncThrowFunc(false, -1, %%)
+        [0, 9] |: asyncThrowFunc(false, -1, %%)
+        syncThrowFunc(true, 10)
+    catch
+        console.log($e)
+
+g()
+
+x: []
+try
+    x.push(false)
+    x.push(true)
+    x |: asyncThrowFunc($, $i, %%)
+catch
+    console.log($e)
+
+try
+    x.length: 0
+    x.push(false)
+    x.push(false)
+    x.push(true)
+    x |: syncThrowFunc($, $i)
+catch
+    console.log($e)
+
+try
+    try
+        x.length: 0
+        x.push(true)
+        x |: syncThrowFunc($, 0)
+    catch
+        setTimeout(%, 1)
+        throw 'throw in catch'
+catch
+    setTimeout(%, 1)
+    console.log($e)
+
+console.log('end')

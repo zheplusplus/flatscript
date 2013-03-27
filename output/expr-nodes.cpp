@@ -29,11 +29,6 @@ static bool isReserved(std::string const& name)
     return RESERVED_WORDS.find(name) != RESERVED_WORDS.end();
 }
 
-std::string PropertyNameExpr::strAsProp() const
-{
-    return str();
-}
-
 template <typename T>
 static std::string strPrimitive(T const& t)
 {
@@ -89,11 +84,6 @@ std::string ImportedName::str() const
 std::string Call::str() const
 {
     return callee->str() + "(" + util::join(",", strList(args)) + ")";
-}
-
-std::string FunctionInvocation::str() const
-{
-    return func->mangledName() + "(" + util::join(",", strList(args)) + ")";
 }
 
 std::string MemberAccess::str() const
@@ -277,4 +267,9 @@ std::string This::str() const
 std::string Conditional::str() const
 {
     return "(" + predicate->str() + "?" + consequence->str() + ":" + alternative->str() + ")";
+}
+
+std::string ExceptionObj::str() const
+{
+    return "$exception";
 }

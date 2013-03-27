@@ -1,7 +1,5 @@
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
-#include <semantic/function.h>
-#include <semantic/filter.h>
 #include <util/string.h>
 #include <report/errors.h>
 
@@ -149,6 +147,11 @@ util::sptr<semantic::Expression const> PipeResult::reduceAsExpr() const
     return util::mkptr(new semantic::PipeResult(pos));
 }
 
+util::sptr<semantic::Expression const> ExceptionObj::reduceAsExpr() const
+{
+    return util::mkptr(new semantic::ExceptionObj(pos));
+}
+
 util::sptr<semantic::Expression const> Call::reduceAsExpr() const
 {
     ArgReducingEnv args_env;
@@ -206,13 +209,13 @@ util::sptr<semantic::Expression const> Dictionary::reduceAsExpr() const
 
 util::sptr<semantic::Expression const> Lambda::reduceAsExpr() const
 {
-    return util::mkptr(new semantic::Lambda(pos, param_names, body.compile()->deliver()));
+    return util::mkptr(new semantic::Lambda(pos, param_names, body.compile()));
 }
 
 util::sptr<semantic::Expression const> RegularAsyncLambda::reduceAsExpr() const
 {
     return util::mkptr(new semantic::RegularAsyncLambda(
-                            pos, param_names, async_param_index, body.compile()->deliver()));
+                            pos, param_names, async_param_index, body.compile()));
 }
 
 util::sptr<semantic::Expression const> AsyncPlaceholder::reduceAsExpr() const
@@ -243,8 +246,7 @@ util::sptr<semantic::Expression const> Pipeline::reduceAsExpr() const
 
 util::sptr<semantic::Expression const> BlockPipeline::reduceAsExpr() const
 {
-    return util::mkptr(new semantic::Pipeline(
-                    pos, list->reduceAsExpr(), section.compile()->deliver()));
+    return util::mkptr(new semantic::Pipeline(pos, list->reduceAsExpr(), section.compile()));
 }
 
 util::sptr<semantic::Expression const> Conditional::reduceAsExpr() const

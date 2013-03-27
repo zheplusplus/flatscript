@@ -24,7 +24,8 @@ namespace grammar {
 
         void acceptFunc(util::sptr<Function const> func);
         void acceptStmt(util::sptr<Statement> stmt);
-        void acceptElse(misc::position const& else_pos, Block&& block);
+        void acceptElse(misc::position const& else_pos, Block block);
+        void acceptCatch(misc::position const& catch_pos, Block block);
 
         virtual void acceptExpr(util::sptr<Expression const>) {}
         virtual void deliver() = 0;
@@ -34,6 +35,7 @@ namespace grammar {
         bool tryFinish(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses);
         void prepareArith();
         void prepareReturn();
+        void prepareThrow();
         void prepareExport(std::vector<std::string> const& names);
 
         void setMemberIndent(int level, misc::position const& pos);
@@ -53,7 +55,7 @@ namespace grammar {
             , _predicate(std::move(pred))
             , _parent(parent)
         {}
-    private:
+    protected:
         util::sptr<Expression const> _predicate;
         util::sref<ClauseBase> const _parent;
     };
@@ -75,17 +77,15 @@ namespace grammar {
     };
 
     struct IfnotClause
-        : ClauseBase
+        : IfClause
     {
         void deliver();
-        void acceptExpr(util::sptr<Expression const> expr);
 
-        IfnotClause(int indent_level, misc::position const& pos, util::sref<ClauseBase> parent);
-
-        misc::position const pos;
-    private:
-        util::sptr<Expression const> _predicate;
-        util::sref<ClauseBase> const _parent;
+        IfnotClause(int indent_len
+                  , util::sptr<Expression const> pred
+                  , util::sref<ClauseBase> parent)
+            : IfClause(indent_len, std::move(pred), parent)
+        {}
     };
 
     struct FunctionClause
@@ -115,13 +115,44 @@ namespace grammar {
         util::sref<ClauseBase> const _parent;
     };
 
+    struct TryClause
+        : ClauseBase
+    {
+        TryClause(int indent_len, misc::position const& pos, util::sref<ClauseBase> parent)
+            : ClauseBase(indent_len)
+            , _try_pos(pos)
+            , _parent(parent)
+        {}
+
+        void deliver();
+    private:
+        misc::position const _try_pos;
+        util::sref<ClauseBase> const _parent;
+    };
+
+    struct CatchClause
+        : ClauseBase
+    {
+        CatchClause(int indent_len, misc::position const& pos, util::sref<ClauseBase> parent)
+            : ClauseBase(indent_len)
+            , catch_pos(pos)
+            , _parent(parent)
+        {}
+
+        void deliver();
+
+        misc::position const catch_pos;
+    private:
+        util::sref<ClauseBase> const _parent;
+    };
+
     struct BlockReceiverClause
         : ClauseBase
     {
         BlockReceiverClause(int level
                           , AutomationStack& stack
                           , misc::position const& pos
-                          , util::sref<AutomationBase> blockRecr)
+                          , AutomationBase* blockRecr)
             : ClauseBase(level)
             , _stack(stack)
             , _pos(pos)
@@ -133,7 +164,7 @@ namespace grammar {
     private:
         AutomationStack& _stack;
         misc::position const _pos;
-        util::sref<AutomationBase> _blockRecr;
+        AutomationBase* const _blockRecr;
     };
 
 }

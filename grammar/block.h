@@ -9,13 +9,7 @@
 namespace grammar {
 
     struct Block {
-        util::sptr<semantic::Filter> compile() const;
-
-        void addStmt(util::sptr<Statement> stmt);
-        void addFunc(util::sptr<Function const> func);
-        void acceptElse(misc::position const& else_pos, Block&& block);
-
-        Block() = default;
+        Block();
 
         Block(Block const&) = delete;
 
@@ -23,6 +17,13 @@ namespace grammar {
             : _stmts(std::move(rhs._stmts))
             , _funcs(std::move(rhs._funcs))
         {}
+
+        semantic::Block compile() const;
+
+        void addStmt(util::sptr<Statement> stmt);
+        void addFunc(util::sptr<Function const> func);
+        void acceptElse(misc::position const& else_pos, Block block);
+        void acceptCatch(misc::position const& catch_pos, Block block);
     private:
         util::ptrarr<Statement> _stmts;
         util::ptrarr<Function const> _funcs;

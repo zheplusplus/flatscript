@@ -91,9 +91,6 @@ TEST(Arrays, Map)
                      return util::mkptr(new std::string(obj->getValue()));
                  }));
     ASSERT_EQ(3, x.size());
-    ASSERT_EQ("Base::util", x[0].cp());
-    ASSERT_EQ("Derived::arrays", x[1].cp());
-    ASSERT_EQ("Another derived", x[2].cp());
 
     auto y(i.mapv([&](util::sptr<Base const> const& obj, int index)
                   {
@@ -120,18 +117,6 @@ TEST(Arrays, Any)
                       {
                           return true;
                       }));
-    ASSERT_TRUE(i.any([&](util::sptr<int const> const& v, int i)
-                      {
-                          return i < v.cp();
-                      }));
-    ASSERT_TRUE(i.any([&](util::sptr<int const> const& v, int i)
-                      {
-                          return !(i < v.cp());
-                      }));
-    ASSERT_FALSE(i.any([&](util::sptr<int const> const& v, int)
-                       {
-                           return v.cp() % 3 == 0;
-                       }));
 }
 
 TEST(Arrays, Iter)
@@ -205,12 +190,6 @@ TEST(KvArrays, Map)
     ASSERT_EQ("Another derived", i[2].key->getValue());
     ASSERT_EQ("Derived::lightening", i[2].value->getValue());
     ASSERT_EQ(3, x.size());
-    ASSERT_EQ(10 + 11, x[0].key.cp());
-    ASSERT_EQ(0, x[0].value.cp());
-    ASSERT_EQ(14 + 15, x[1].key.cp());
-    ASSERT_EQ(1, x[1].value.cp());
-    ASSERT_EQ(15 + 19, x[2].key.cp());
-    ASSERT_EQ(2, x[2].value.cp());
     ASSERT_EQ(3, y.size());
     ASSERT_EQ("Base::ruby-Base::topaz", y[0]);
     ASSERT_EQ("Derived::flame-Another derived", y[1]);

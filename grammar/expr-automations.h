@@ -13,7 +13,7 @@ namespace grammar {
 
         void activated(AutomationStack& stack);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
-        void accepted(AutomationStack& stack, misc::position const& pos, Block&& block);
+        void accepted(AutomationStack& stack, misc::position const& pos, Block block);
         bool finishOnBreak(bool sub_empty) const;
         void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&);
     protected:
@@ -130,7 +130,7 @@ namespace grammar {
         NestedOrParamsAutomation();
 
         void accepted(AutomationStack& stack, util::sptr<Expression const> expr);
-        void accepted(AutomationStack& stack, misc::position const& pos, Block&& block);
+        void accepted(AutomationStack& stack, misc::position const& pos, Block block);
         bool finishOnBreak(bool sub_empty) const;
         void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos);
     private:

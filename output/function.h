@@ -12,10 +12,13 @@ namespace output {
         Function() = default;
 
         void write(std::ostream& os) const;
+        util::sptr<Expression const> callMe(
+                misc::position const& pos, util::ptrarr<Expression const> args) const;
 
         virtual util::sref<Statement const> body() const = 0;
         virtual std::string mangledName() const = 0;
         virtual std::vector<std::string> parameters() const = 0;
+        virtual std::string mangledParameters() const;
     };
 
     struct RegularFunction
@@ -67,20 +70,44 @@ namespace output {
         util::sptr<Expression const> const val;
     };
 
-    struct ConditionalCallback
+    struct AnonymousCallback
         : Function
     {
-        ConditionalCallback()
+        AnonymousCallback()
             : _body(new Block)
         {}
 
         util::sref<Statement const> body() const;
         std::string mangledName() const;
-        std::vector<std::string> parameters() const;
 
         util::sref<Block> bodyFlow();
     private:
         util::sptr<Block> const _body;
+    };
+
+    struct ConditionalCallback
+        : AnonymousCallback
+    {
+        ConditionalCallback() = default;
+
+        std::vector<std::string> parameters() const;
+    };
+
+    struct NoParamCallback
+        : AnonymousCallback
+    {
+        NoParamCallback() = default;
+
+        std::vector<std::string> parameters() const;
+    };
+
+    struct AsyncCatcher
+        : AnonymousCallback
+    {
+        AsyncCatcher() = default;
+
+        std::vector<std::string> parameters() const;
+        std::string mangledParameters() const;
     };
 
 }

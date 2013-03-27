@@ -22,7 +22,7 @@ namespace semantic {
             , _funcs(std::move(rhs._funcs))
         {}
 
-        util::sptr<output::Statement const> compile(BaseCompilingSpace&& space) const;
+        void compile(BaseCompilingSpace& space) const;
         bool isAsync() const;
 
         void addStmt(util::sptr<Statement const> stmt);

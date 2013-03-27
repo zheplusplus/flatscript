@@ -1,0 +1,18 @@
+x: [0, 1, 2, 3]
+
+try
+    x |:
+        if $ % 4 = 3
+            throw 'sync pipeline throw'
+catch
+    console.log($e)
+
+try
+    x |:
+        setTimeout(%, 1)
+        if $ % 4 = 3
+            throw 'async pipeline throw'
+catch
+    console.log($e)
+
+console.log('end')

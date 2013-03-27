@@ -18,7 +18,7 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
 {
     misc::position pos(1);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -26,20 +26,20 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
     space.sym()->defName(pos, "g");
     space.sym()->defName(pos, "list");
 
-    filter.addArith(pos, semantic::Pipeline::createMapper(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, semantic::Pipeline::createMapper(
                 pos
               , util::mkptr(new semantic::Reference(pos, "list"))
               , util::mkptr(new semantic::AsyncCall(pos
                                                   , util::mkptr(new semantic::Reference(pos, "f"))
                                                   , std::move(fargs)
                                                   , std::vector<std::string>()
-                                                  , std::move(largs)))));
-    filter.addArith(pos, util::mkptr(
+                                                  , std::move(largs)))))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                  new semantic::Call(pos
                                   , util::mkptr(new semantic::Reference(pos, "g"))
-                                  , util::ptrarr<semantic::Expression const>())));
+                                  , util::ptrarr<semantic::Expression const>())))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -79,7 +79,7 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
 {
     misc::position pos(2);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -93,18 +93,18 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
                                                    , util::ptrarr<semantic::Expression const>()
                                                    , std::vector<std::string>({ "h" })
                                                    , util::ptrarr<semantic::Expression const>())));
-    filter.addArith(pos, semantic::Pipeline::createMapper(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, semantic::Pipeline::createMapper(
                     pos
                   , util::mkptr(new semantic::Reference(pos, "list"))
                   , util::mkptr(new semantic::Call(pos
                                                  , util::mkptr(new semantic::Reference(pos, "f"))
-                                                 , std::move(fargs)))));
-    filter.addArith(pos, util::mkptr(
+                                                 , std::move(fargs)))))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                  new semantic::Call(pos
                                   , util::mkptr(new semantic::Reference(pos, "h"))
-                                  , util::ptrarr<semantic::Expression const>())));
+                                  , util::ptrarr<semantic::Expression const>())))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -149,7 +149,7 @@ TEST_F(PipelinesTest, RefNameDefInAsyncWithinPipeSection)
     misc::position pos(3);
     misc::position pos_err(300);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -162,18 +162,18 @@ TEST_F(PipelinesTest, RefNameDefInAsyncWithinPipeSection)
                                                    , util::ptrarr<semantic::Expression const>()
                                                    , std::vector<std::string>({ "h" })
                                                    , util::ptrarr<semantic::Expression const>())));
-    filter.addArith(pos, semantic::Pipeline::createMapper(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, semantic::Pipeline::createMapper(
                     pos
                   , util::mkptr(new semantic::Reference(pos, "list"))
                   , util::mkptr(new semantic::Call(pos
                                                  , util::mkptr(new semantic::Reference(pos, "f"))
-                                                 , std::move(fargs)))));
-    filter.addArith(pos, util::mkptr(
+                                                 , std::move(fargs)))))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                  new semantic::Call(pos
                                   , util::mkptr(new semantic::Reference(pos_err, "h"))
-                                  , util::ptrarr<semantic::Expression const>())));
+                                  , util::ptrarr<semantic::Expression const>())))));
 
-    compile(filter, space.sym());
+    compile(block, space.sym());
     ASSERT_TRUE(error::hasError());
 
     std::vector<NameNotDefRec> nodefs(getNameNotDefRecs());
@@ -186,7 +186,7 @@ TEST_F(PipelinesTest, PipeBlock)
 {
     misc::position pos(4);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> args;
 
     space.sym()->defName(pos, "merin");
@@ -202,11 +202,12 @@ TEST_F(PipelinesTest, PipeBlock)
                                     pos
                                   , util::mkptr(new semantic::Reference(pos, "scarlet"))
                                   , std::move(args))))));
-    filter.addArith(pos, util::mkptr(new semantic::Pipeline(
-                    pos, util::mkptr(new semantic::Reference(pos, "merin")), std::move(pipe_sec))));
-    filter.addArith(pos, util::mkptr(new semantic::Reference(pos, "merin")));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Pipeline(
+                  pos, util::mkptr(new semantic::Reference(pos, "merin")), std::move(pipe_sec))))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                                    new semantic::Reference(pos, "merin")))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -235,7 +236,7 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
 {
     misc::position pos(4);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> args;
 
     space.sym()->defName(pos, "merin");
@@ -253,11 +254,12 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
                                   , util::ptrarr<semantic::Expression const>())))));
     pipe_sec.addStmt(util::mkptr(new semantic::Arithmetics(
                     pos, util::mkptr(new semantic::Reference(pos, "scarlet")))));
-    filter.addArith(pos, util::mkptr(new semantic::Pipeline(
-                    pos, util::mkptr(new semantic::Reference(pos, "merin")), std::move(pipe_sec))));
-    filter.addArith(pos, util::mkptr(new semantic::Reference(pos, "merin")));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Pipeline(
+                  pos, util::mkptr(new semantic::Reference(pos, "merin")), std::move(pipe_sec))))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                                new semantic::Reference(pos, "merin")))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -297,7 +299,7 @@ TEST_F(PipelinesTest, ReturnInPipelineContext)
     misc::position pos(5);
     misc::position pos_a(500);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
     util::ptrarr<semantic::Expression const> args;
 
     space.sym()->defName(pos, "marisa");
@@ -313,10 +315,10 @@ TEST_F(PipelinesTest, ReturnInPipelineContext)
                                   , util::ptrarr<semantic::Expression const>()
                                   , std::vector<std::string>({ "x" })
                                   , util::ptrarr<semantic::Expression const>())))));
-    filter.addArith(pos, util::mkptr(new semantic::Pipeline(
-                    pos, util::mkptr(new semantic::Reference(pos, "reimu")), std::move(pipe_sec))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Pipeline(
+                  pos, util::mkptr(new semantic::Reference(pos, "reimu")), std::move(pipe_sec))))));
 
-    compile(filter, space.sym());
+    compile(block, space.sym());
     ASSERT_TRUE(error::hasError());
 
     std::vector<ReturnNotAllowedInPipeRec> recs(getReturnNotAllowedInPipeRecs());

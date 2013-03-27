@@ -1,5 +1,5 @@
-#include <semantic/node-base.h>
-#include <semantic/function.h>
+#include <semantic/stmt-nodes.h>
+#include <semantic/expr-nodes.h>
 #include <report/errors.h>
 
 #include "stmt-nodes.h"
@@ -7,61 +7,99 @@
 
 using namespace grammar;
 
-void Arithmetics::compile(util::sref<semantic::Filter> filter) const
-{
-    filter->addArith(pos, expr->reduceAsExpr());
+namespace {
+
+    struct FakeStatement
+        : semantic::Statement
+    {
+        explicit FakeStatement(misc::position const& pos)
+            : Statement(pos)
+        {}
+
+        void compile(semantic::BaseCompilingSpace&) const {}
+    };
+
 }
 
-void Branch::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> Arithmetics::compile() const
 {
-    if (_alternative.nul()) {
-        filter->addBranch(pos, predicate->reduceAsExpr(), consequence.compile());
-    } else {
-        filter->addBranch(
-                    pos, predicate->reduceAsExpr(), consequence.compile(), _alternative->compile());
-    }
+    return util::mkptr(new semantic::Arithmetics(pos, expr->reduceAsExpr()));
+}
+
+util::sptr<semantic::Statement const> Branch::compile() const
+{
+    return util::mkptr(new semantic::Branch(
+                    pos
+                  , predicate->reduceAsExpr()
+                  , consequence.compile()
+                  , _alternative.nul() ? semantic::Block() : _alternative->compile()));
 }
 
 void Branch::acceptElse(misc::position const& else_pos, Block&& block)
 {
     if (_alternative.not_nul()) {
-        error::ifAlreadyMatchElse(_else_pos, else_pos);
+        return error::partialStmtDupMatch(_else_pos, else_pos, "else", "if");
     }
     _else_pos = else_pos;
     _alternative.reset(new Block(std::move(block)));
 }
 
-void BranchAlterOnly::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> BranchAlterOnly::compile() const
 {
-    filter->addBranchAlterOnly(pos, predicate->reduceAsExpr(), alternative.compile());
+    return util::mkptr(new semantic::Branch(
+            pos, predicate->reduceAsExpr(), semantic::Block(), alternative.compile()));
 }
 
-void Return::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> Return::compile() const
 {
-    filter->addReturn(pos, ret_val->reduceAsExpr());
+    return util::mkptr(new semantic::Return(pos, ret_val->reduceAsExpr()));
 }
 
-void ReturnNothing::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> ReturnNothing::compile() const
 {
-    filter->addReturnNothing(pos);
+    return util::mkptr(new semantic::Return(pos, util::mkptr(new semantic::Undefined(pos))));
 }
 
-void NameDef::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> NameDef::compile() const
 {
-    filter->defName(pos, name, init->reduceAsExpr());
+    return util::mkptr(new semantic::NameDef(pos, name, init->reduceAsExpr()));
 }
 
-void Import::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> Import::compile() const
 {
-    filter->addImport(pos, names);
+    return util::mkptr(new semantic::Import(pos, names));
 }
 
-void Export::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> Export::compile() const
 {
-    filter->addExport(pos, export_point, value->reduceAsExpr());
+    return util::mkptr(new semantic::Export(pos, export_point, value->reduceAsExpr()));
 }
 
-void AttrSet::compile(util::sref<semantic::Filter> filter) const
+util::sptr<semantic::Statement const> AttrSet::compile() const
 {
-    filter->addAttrSet(pos, set_point->reduceAsLeftValue(), value->reduceAsExpr());
+    return util::mkptr(new semantic::AttrSet(
+                                pos, set_point->reduceAsLeftValue(), value->reduceAsExpr()));
+}
+
+util::sptr<semantic::Statement const> ExceptionStall::compile() const
+{
+    if (_catch.nul()) {
+        error::tryWithoutCatch(pos);
+        return util::mkptr(new FakeStatement(pos));
+    }
+    return util::mkptr(new semantic::ExceptionStall(pos, flow.compile(), _catch->compile()));
+}
+
+void ExceptionStall::acceptCatch(misc::position const& catch_pos, Block&& block)
+{
+    if (_catch.not_nul()) {
+        return error::partialStmtDupMatch(_catch_pos, catch_pos, "catch", "try");
+    }
+    _catch_pos = catch_pos;
+    _catch.reset(new Block(std::move(block)));
+}
+
+util::sptr<semantic::Statement const> Throw::compile() const
+{
+    return util::mkptr(new semantic::Throw(pos, exception->reduceAsExpr()));
 }

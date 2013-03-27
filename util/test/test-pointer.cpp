@@ -31,21 +31,12 @@ TEST(Pointer, SRef)
     int y = 1;
     int const* ax = &x;
     int const* ay = &y;
-    ASSERT_EQ(util::mkref(x).cp(), util::mkref(y).cp());
-    ASSERT_NE(util::mkref(ax).cp(), util::mkref(ay).cp());
-    y = 2;
-    ASSERT_LT(util::mkref(x).cp(), util::mkref(y).cp());
-    x = 3;
-    ASSERT_LT(util::mkref(y).cp(), util::mkref(x).cp());
 
     ASSERT_TRUE(util::mkref(x).not_nul());
     ASSERT_TRUE(util::mkref(y).not_nul());
     ASSERT_TRUE(util::mkref(ax).not_nul());
     ASSERT_TRUE(util::mkref(ay).not_nul());
     ASSERT_TRUE(util::sref<int const>(nullptr).nul());
-
-    ASSERT_EQ(3, util::mkref(x).cp());
-    ASSERT_EQ(2, util::mkref(y).cp());
 
     std::stringstream os4;
     util::sref<int const> ref(&x);

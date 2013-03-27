@@ -18,7 +18,7 @@ void Block::addFunc(util::sptr<Function const> func)
     _funcs.append(std::move(func));
 }
 
-util::sptr<output::Statement const> Block::compile(BaseCompilingSpace&& space) const
+void Block::compile(BaseCompilingSpace& space) const
 {
     util::sref<SymbolTable> root_sym(space.sym());
     util::sref<output::Block> root_block(space.block());
@@ -34,12 +34,11 @@ util::sptr<output::Statement const> Block::compile(BaseCompilingSpace&& space) c
                 {
                     root_block->addFunc(func->compile(root_sym));
                 });
-    return space.deliver();
 }
 
 bool Block::isAsync() const
 {
-    return _stmts.any([&](util::sptr<Statement const> const& stmt, int)
+    return _stmts.any([](util::sptr<Statement const> const& stmt, int)
                       {
                           return stmt->isAsync();
                       });

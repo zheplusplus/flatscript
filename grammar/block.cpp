@@ -1,4 +1,3 @@
-#include <semantic/filter.h>
 #include <semantic/node-base.h>
 #include <semantic/function.h>
 #include <report/errors.h>
@@ -8,6 +7,28 @@
 #include "function.h"
 
 using namespace grammar;
+
+namespace {
+
+    struct PlaceholderStatement
+        : Statement
+    {
+        PlaceholderStatement()
+            : Statement(misc::position())
+        {}
+
+        util::sptr<semantic::Statement const> compile() const
+        {
+            return util::sptr<semantic::Statement const>(nullptr);
+        }
+    };
+
+}
+
+Block::Block()
+{
+    _stmts.append(util::mkptr(new PlaceholderStatement));
+}
 
 void Block::addStmt(util::sptr<Statement> stmt)
 {
@@ -19,24 +40,26 @@ void Block::addFunc(util::sptr<Function const> Function)
     _funcs.append(std::move(Function));
 }
 
-void Block::acceptElse(misc::position const& else_pos, Block&& block)
+void Block::acceptElse(misc::position const& else_pos, Block block)
 {
-    if (_stmts.empty()) {
-        return error::elseNotMatchIf(else_pos);
-    }
     _stmts.back()->acceptElse(else_pos, std::move(block));
 }
 
-util::sptr<semantic::Filter> Block::compile() const
+void Block::acceptCatch(misc::position const& catch_pos, Block block)
 {
-    util::sptr<semantic::Filter> filter(new semantic::Filter);
+    _stmts.back()->acceptCatch(catch_pos, std::move(block));
+}
+
+semantic::Block Block::compile() const
+{
+    semantic::Block block;
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
-                    func->compile(*filter);
+                    block.addFunc(func->compile());
                 });
     _stmts.iter([&](util::sptr<Statement> const& stmt, int)
                 {
-                    stmt->compile(*filter);
-                });
-    return std::move(filter);
+                    block.addStmt(stmt->compile());
+                }, 1);
+    return std::move(block);
 }

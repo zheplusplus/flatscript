@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "node-base.h"
+#include "methods.h"
 
 namespace output {
 
@@ -80,6 +81,35 @@ namespace output {
         : Statement
     {
         void write(std::ostream& os) const;
+    };
+
+    struct ExceptionStall
+        : Statement
+    {
+        ExceptionStall(util::sptr<Statement const> t, util::sptr<Statement const> c)
+            : try_block(std::move(t))
+            , catch_block(std::move(c))
+        {}
+
+        void write(std::ostream& os) const;
+        int count() const;
+
+        util::sptr<Statement const> const try_block;
+        util::sptr<Statement const> const catch_block;
+    };
+
+    struct Throw
+        : Statement
+    {
+        Throw(Method tm, util::sptr<Expression const> e)
+            : throw_method(std::move(tm))
+            , exception(std::move(e))
+        {}
+
+        void write(std::ostream& os) const;
+
+        Method const throw_method;
+        util::sptr<Expression const> const exception;
     };
 
 }

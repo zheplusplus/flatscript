@@ -9,7 +9,6 @@
 #include "../expr-nodes.h"
 #include "../list-pipe.h"
 #include "../compiling-space.h"
-#include "../filter.h"
 
 using namespace test;
 
@@ -351,20 +350,12 @@ TEST_F(ExprNodesTest, FoldBitwiseShift)
     EXPECT_TRUE(bin_c.isLiteral(space.sym()));
     bin_c.compile(space)->str();
 
-    semantic::BinaryOp bin_d(pos
-                           , util::mkptr(new semantic::IntLiteral(pos, "-1"))
-                           , ">>>"
-                           , util::mkptr(new semantic::IntLiteral(pos, "4")));
-    EXPECT_TRUE(bin_d.isLiteral(space.sym()));
-    bin_d.compile(space)->str();
-
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (pos, INTEGER, "-1")
         (pos, INTEGER, "-16")
         (pos, INTEGER, "16")
-        (pos, INTEGER, util::str(long(0xFFFFFFFFUL >> 4)))
     ;
 }
 

@@ -67,11 +67,23 @@ namespace util {
         }
 
         template <class F>
-        void iter(F f) const
+        void iter(F f, int start, int end) const
         {
-            for (int i = 0; i < int(_array.size()); ++i) {
+            for (int i = start; i < end; ++i) {
                 f(_array[i], i);
             }
+        }
+
+        template <class F>
+        void iter(F f, int start) const
+        {
+            iter(f, start, _array.size());
+        }
+
+        template <class F>
+        void iter(F f) const
+        {
+            iter(f, 0);
         }
 
         void append(value_type v)

@@ -1,7 +1,6 @@
 #ifndef __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 #define __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 
-#include <semantic/filter.h>
 #include <semantic/function.h>
 #include <output/node-base.h>
 #include <output/block.h>
@@ -14,7 +13,7 @@ namespace test {
 
     std::ostream& dummyos();
     util::sptr<output::Statement const> compile(
-        semantic::Filter& f, util::sref<semantic::SymbolTable> sym);
+                                    semantic::Block& b, util::sref<semantic::SymbolTable> sym);
 
     struct SemanticData {
         misc::position const pos;
@@ -74,6 +73,7 @@ namespace test {
     extern NodeType const BINARY_OP;
     extern NodeType const PRE_UNARY_OP;
     extern NodeType const CONDITIONAL;
+    extern NodeType const EXCEPTION_OBJ;
     extern NodeType const REFERENCE;
     extern NodeType const IMPORTED_NAME;
     extern NodeType const PIPE_ELEMENT;
@@ -82,7 +82,6 @@ namespace test {
     extern NodeType const PIPE_RESULT;
 
     extern NodeType const CALL;
-    extern NodeType const FUNC_INVOKE;
     extern NodeType const ASYNC_REFERENCE;
 
     extern NodeType const ASYNC_PIPELINE;
@@ -104,6 +103,9 @@ namespace test {
     extern NodeType const EXPORT_VALUE;
     extern NodeType const DEC_THIS;
     extern NodeType const BRANCH;
+    extern NodeType const TRY;
+    extern NodeType const CATCH;
+    extern NodeType const THROW;
 
     extern NodeType const FUNCTION;
     extern NodeType const PARAMETER;
@@ -113,6 +115,7 @@ namespace test {
 
     extern NodeType const EXC_THROW;
     extern NodeType const EXC_CALLBACK;
+    extern NodeType const ASYNC_CATCH_FUNC;
 
     extern NodeType const SCOPE_BEGIN;
     extern NodeType const SCOPE_END;

@@ -18,9 +18,14 @@ void ClauseBase::acceptStmt(util::sptr<Statement> stmt)
     _block.addStmt(std::move(stmt));
 }
 
-void ClauseBase::acceptElse(misc::position const& else_pos, Block&& block)
+void ClauseBase::acceptElse(misc::position const& else_pos, Block block)
 {
     _block.acceptElse(else_pos, std::move(block));
+}
+
+void ClauseBase::acceptCatch(misc::position const& catch_pos, Block block)
+{
+    _block.acceptCatch(catch_pos, std::move(block));
 }
 
 bool ClauseBase::shrinkOn(int level) const
@@ -58,6 +63,11 @@ void ClauseBase::prepareExport(std::vector<std::string> const& names)
     _stack.push(util::mkptr(new ExportStmtAutomation(util::mkref(*this), names)));
 }
 
+void ClauseBase::prepareThrow()
+{
+    _stack.push(util::mkptr(new ThrowAutomation(util::mkref(*this))));
+}
+
 void ClauseBase::setMemberIndent(int level, misc::position const& pos)
 {
     if (-1 == _member_indent) {
@@ -80,30 +90,27 @@ void ElseClause::deliver()
     _parent->acceptElse(else_pos, std::move(_block));
 }
 
-IfnotClause::IfnotClause(int indent_level, misc::position const& ps, util::sref<ClauseBase> parent)
-    : ClauseBase(indent_level)
-    , pos(ps)
-    , _predicate(nullptr)
-    , _parent(parent)
-{
-    _stack.push(util::mkptr(new ExprReceiver(util::mkref(*this))));
-}
-
 void IfnotClause::deliver()
 {
+    misc::position pos(_predicate->pos);
     _parent->acceptStmt(util::mkptr(
                 new BranchAlterOnly(pos, std::move(_predicate), std::move(_block))));
-}
-
-void IfnotClause::acceptExpr(util::sptr<Expression const> expr)
-{
-    _predicate = std::move(expr);
 }
 
 void FunctionClause::deliver()
 {
     return _parent->acceptFunc(util::mkptr(
                     new Function(pos, name, param_names, async_param_index, std::move(_block))));
+}
+
+void TryClause::deliver()
+{
+    _parent->acceptStmt(util::mkptr(new ExceptionStall(_try_pos, std::move(_block))));
+}
+
+void CatchClause::deliver()
+{
+    _parent->acceptCatch(catch_pos, std::move(_block));
 }
 
 void BlockReceiverClause::deliver()

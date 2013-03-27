@@ -1,11 +1,64 @@
 Stekinscript
 ============
 
-A Javascript generator that makes it easy to write asynchronous code, in a synchronous way.
+A Javascript generator that makes it easy to write asynchronous code in a synchronous way. [Alpha Version]
 
-[Preview Version]
+A Simple Example of Starring Features
+-----------------
 
-Starring Features
+Steknscript code:
+
+    fs: require('fs')
+    try
+        console.log(fs.readFile('a.txt', %%) + fs.readFile('b.txt', %%))
+    catch
+        console.error($e)
+    console.log('end')
+
+Program would first read "a.txt", then read "b.txt", concatenate their content successively, and output to console, or report to stderr if any error occurs. And a message "end" would get printed in the end.
+
+Though in this piece of Stekinscript code there isn't any *asynchronous* part like callbacks, but actually Stekinscript compile it into Javascript like (formatted by other tools)
+
+    (function() {
+        var $c_fs;
+        function $anf_0xa753c0($exception) {
+            console.error($exception);
+            $anf_0xa75480();
+        }
+        function $anf_0xa75480() {
+            console.log("end");
+        }
+
+        $c_fs = require("fs");
+        try {
+            $c_fs.readFile("a.txt", (function($cb_err, $ar_0xa74740) {
+                if ($cb_err) return $anf_0xa753c0($cb_err);
+                try {
+                    $c_fs.readFile("b.txt", (function($cb_err, $ar_0xa75bc0) {
+                        if ($cb_err) return $anf_0xa753c0($cb_err);
+                        try {
+                            console.log(($ar_0xa74740 + $ar_0xa75bc0));
+                            $anf_0xa75480();
+                        } catch ($exception) {
+                            $anf_0xa753c0($exception);
+                        }
+                    }));
+                } catch ($exception) {
+                    $anf_0xa753c0($exception);
+                }
+            }));
+        } catch ($exception) {
+            $anf_0xa753c0($exception);
+        }
+    })();
+
+Let me explain the generated code. Function `$anf_0xa753c0` is actually from the `catch` block in the original code, the name of which is randomly generated. But as we know in asynchronous context a try-catch wouldn't help if the exception is generated from a callback, so in Stekinscript the `catch` blockes would be translated into a function, and if an exception is thrown in a callback, the function would be called. The name `$anf_0xa753c0` would be used several times, as in each actual `catch` block it would be called in case any exception raised outside a callback. And it is also used when a callback to each `fs.readFile` is called with error.
+
+The happy path is remarkable, too. When write in Stekinscript two `fs.readFile` calls are side by side, just like function calls whose results are get added together and passed to `console.log`. But in target JS code it becomes somehow sophisticated that the are replaced by two corresponding callback parameters.
+
+Another function `$anf_0xa75480` I shall introduce is what contains codes that should be executed after the try-catch. The calls to this function is properly inserted to ensure `console.log('end')` runs at the last.
+
+Other Features
 -----------------
 
 ### Indentation-indicated syntax
@@ -33,8 +86,12 @@ It is easy to break a long line into shorter ones, by hitting return after prope
 
     ['this', 'is', 'a',
         'long', 'list']
+
     callFunction('with', 'several'
             , 'arguments')
+
+    x: a +
+        b
 
 ### Anonymous function in an easy way
 
@@ -55,45 +112,9 @@ Output
         console.log($c_content.toString());
     }));
 
-### Write asynchronous calls in a synchronous way, thus getting rid of annoying nested callbacks
-
-If a callback is an anonymous function with parameters like `(error, result)` it is called a **regular asynchronous callback** in Stekinscript. It is good to use token `%%` to replace the callback **as an argument** in a call, and the rest statements in the block will become a part of the body of that anonymous function.
-
-Code sample I
-
-    content: fs.read('some-file', %%).toString()
-    console.log(content)
-
-Output
-
-    var $c_content;
-    fs.read("some-file", (function ($cb_err, $ar_0) {
-        if ($cb_err) throw $cb_err;
-        $c_content = $ar_0.toString();
-        console.log($c_content);
-    }));
-
-Code sample II
-
-    content: fs.read('some-file-a', %%).toString() +
-             fs.read('some-file-b', %%).toString()
-    console.log(content)
-
-Output
-
-    var $c_content;
-    fs.read("some-file-a", (function ($cb_err, $ar_0) {
-        if ($cb_err) throw $cb_err;
-        fs.read("some-file-b", (function ($cb_err, $ar_1) {
-            if ($cb_err) throw $cb_err;
-            $c_content = ($ar_0.toString() + $ar_1.toString());
-            console.log($c_content);
-        }));
-    }));
-
 ### Change the way to handle errors in regular asynchronous callback
 
-It is a bad idea to throw an exception in asynchronous environment. Instead the error should also be propagated to some callback. In Stekinscript, if a function is defined with one of whose parameters is `%%`, this parameter is considered as the callback that consumes errors along with result.
+Along with the try-catch mode at the first, if a function is defined with one of whose parameters is `%%`, this parameter is considered as the callback that consumes errors along with result.
 
 Code sample
 
@@ -167,6 +188,27 @@ Output
 Use the Compiler
 ----------------
 
+### Build
+
+* C++ compiler with C++11 features with lambda, move semantic, `nullptr`, decltype support. Suggested: g++ 4.6 or later clang++ 3.2 or later
+* flex (the lexical parser) 2.5+
+* bison 2.4+
+* GMP lib 5+
+* Python 2.7.x (to generate some code)
+* make
+
+Just run
+
+    make
+
+in the source directory and executable `stekin` would be generated. Clang is used by default. To specify another compiler, try
+
+    make COMPILER=g++
+
+In cygwin g++ is preferred.
+
+### Run
+
 Stekinscript will always read source code from stdin, and output Javascript via stdout. The ordinary way to compile files is like
 
     stekin < source.stkn > output.js
@@ -174,6 +216,9 @@ Stekinscript will always read source code from stdin, and output Javascript via 
 Or pipe the program to node
 
     stekin < source.stkn | node
+
+FAQ
+---
 
 ### Why the compiler complains name 'require'/'exports'/'document'/'window' not defined?
 

@@ -6,7 +6,6 @@ namespace semantic {
     struct Statement;
     struct Expression;
     struct PipeBase;
-    struct Filter;
     struct Block;
     struct Function;
     struct SymbolTable;

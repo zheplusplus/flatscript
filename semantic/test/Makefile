@@ -13,7 +13,7 @@ $(TESTDIR)/test-semantic.out:$(TEST_DEP) \
                              test-expr-nodes.dt \
                              test-stmt-nodes.dt \
                              test-symbol-table.dt \
-                             test-filter.dt \
+                             test-block.dt \
                              test-async-calls.dt \
                              test-functions.dt \
                              test-pipes.dt

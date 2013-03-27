@@ -1,11 +1,6 @@
 #ifndef __STEKIN_GRAMMAR_STATEMENT_NODES_H__
 #define __STEKIN_GRAMMAR_STATEMENT_NODES_H__
 
-#include <string>
-
-#include <semantic/filter.h>
-#include <util/pointer.h>
-
 #include "node-base.h"
 #include "block.h"
 
@@ -19,7 +14,7 @@ namespace grammar {
             , expr(std::move(e))
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
 
         util::sptr<Expression const> const expr;
     };
@@ -34,7 +29,7 @@ namespace grammar {
             , _alternative(nullptr)
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
         void acceptElse(misc::position const& else_pos, Block&& block);
 
         util::sptr<Expression const> const predicate;
@@ -53,7 +48,7 @@ namespace grammar {
             , alternative(std::move(a))
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
 
         util::sptr<Expression const> const predicate;
         Block const alternative;
@@ -67,7 +62,7 @@ namespace grammar {
             , ret_val(std::move(r))
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
 
         util::sptr<Expression const> const ret_val;
     };
@@ -79,7 +74,7 @@ namespace grammar {
             : Statement(pos)
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
     };
 
     struct NameDef
@@ -91,7 +86,7 @@ namespace grammar {
             , init(std::move(i))
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
 
         std::string const name;
         util::sptr<Expression const> const init;
@@ -105,7 +100,7 @@ namespace grammar {
             , names(n)
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
 
         std::vector<std::string> const names;
     };
@@ -121,7 +116,7 @@ namespace grammar {
                 , value(std::move(v))
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
 
         std::vector<std::string> const export_point;
         util::sptr<Expression const> const value;
@@ -138,10 +133,41 @@ namespace grammar {
             , value(std::move(v))
         {}
 
-        void compile(util::sref<semantic::Filter> filter) const;
+        util::sptr<semantic::Statement const> compile() const;
 
         util::sptr<Expression const> const set_point;
         util::sptr<Expression const> const value;
+    };
+
+    struct ExceptionStall
+        : Statement
+    {
+        ExceptionStall(misc::position const& pos, Block f)
+            : Statement(pos)
+            , flow(std::move(f))
+            , _catch(nullptr)
+        {}
+
+        util::sptr<semantic::Statement const> compile() const;
+        void acceptCatch(misc::position const& catch_pos, Block&& block);
+
+        Block const flow;
+    private:
+        util::sptr<Block const> _catch;
+        misc::position _catch_pos;
+    };
+
+    struct Throw
+        : Statement
+    {
+        Throw(misc::position const& pos, util::sptr<Expression const> e)
+            : Statement(pos)
+            , exception(std::move(e))
+        {}
+
+        util::sptr<semantic::Statement const> compile() const;
+
+        util::sptr<Expression const> const exception;
     };
 
 }

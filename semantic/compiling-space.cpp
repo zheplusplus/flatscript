@@ -183,7 +183,7 @@ namespace {
         {
             util::sref<misc::position const> local_pos(_localDefPosOrNul(name));
             if (local_pos.not_nul()) {
-                error::nameAlreadyInLocal(local_pos.cp(), pos, name);
+                error::nameAlreadyInLocal(misc::position(local_pos->line), pos, name);
             }
         }
 
@@ -295,7 +295,8 @@ namespace {
 }
 
 BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable> symbols)
-    : _terminated(false)
+    : _terminated_err_reported(false)
+    , _term_pos_or_nul_if_not_term(nullptr)
     , _symbols(std::move(symbols))
     , _main_block(new output::Block)
     , _current_block(*_main_block)
@@ -306,37 +307,45 @@ util::sref<SymbolTable> BaseCompilingSpace::sym()
     return *_symbols;
 }
 
+void BaseCompilingSpace::addStmt(misc::position const& pos
+                               , util::sptr<output::Statement const> stmt)
+{
+    _testOrReportTerminated(pos);
+    _current_block->addStmt(std::move(stmt));
+}
+
 util::sref<output::Block> BaseCompilingSpace::block() const
 {
     return _current_block;
 }
 
-void BaseCompilingSpace::terminate()
+void BaseCompilingSpace::terminate(misc::position const& pos)
 {
-    _terminated = true;
+    _term_pos_or_nul_if_not_term.reset(new misc::position(pos));
 }
 
 bool BaseCompilingSpace::terminated() const
 {
-    return _terminated;
+    return _term_pos_or_nul_if_not_term.not_nul();
 }
 
 void BaseCompilingSpace::setAsyncSpace(misc::position const& pos
                                      , std::vector<std::string> const& params
                                      , util::sref<output::Block> block)
 {
-    setAsyncSpace(block);
     std::for_each(params.begin()
                 , params.end()
                 , [&](std::string const& param)
                   {
                       _symbols->defAsyncParam(pos, param);
                   });
+    _current_block = replaceSpace(pos, block);
 }
 
-void BaseCompilingSpace::setAsyncSpace(util::sref<output::Block> block)
+util::sref<output::Block> BaseCompilingSpace::replaceSpace(
+        misc::position const&, util::sref<output::Block> block)
 {
-    _current_block = block;
+    return block;
 }
 
 util::sptr<output::Expression const> BaseCompilingSpace::ret(util::sref<Expression const> val)
@@ -353,6 +362,14 @@ util::sptr<output::Block> BaseCompilingSpace::deliver()
 {
     _main_block->setLocalDecls(_symbols->localNames());
     return std::move(_main_block);
+}
+
+void BaseCompilingSpace::_testOrReportTerminated(misc::position const& pos)
+{
+    if (terminated() && !_terminated_err_reported) {
+        error::flowTerminated(pos, misc::position(_term_pos_or_nul_if_not_term->line));
+        _terminated_err_reported = true;
+    }
 }
 
 CompilingSpace::CompilingSpace()
@@ -405,41 +422,14 @@ util::sptr<output::Block> RegularAsyncCompilingSpace::deliver()
     return CompilingSpace::deliver();
 }
 
-PipelineSpace::PipelineSpace(BaseCompilingSpace& ext_space)
-    : BaseCompilingSpace(util::mkptr(new RegularSymbolTable(ext_space.sym())))
-    , _ext_space(ext_space)
-{}
-
-void PipelineSpace::referenceThis()
-{
-    _ext_space.referenceThis();
-}
-
-util::sptr<output::Expression const> PipelineSpace::ret(util::sref<Expression const> val)
-{
-    error::returnNotAllowedInPipe(val->pos);
-    return BaseCompilingSpace::ret(val);
-}
-
-output::Method PipelineSpace::raiseMethod() const
-{
-    return _ext_space.raiseMethod();
-}
-
-util::sptr<output::Block> AsyncPipelineSpace::deliver()
-{
-    block()->addStmt(util::mkptr(new output::PipelineContinue));
-    return BaseCompilingSpace::deliver();
-}
-
-SubCompilingSpace::SubCompilingSpace(BaseCompilingSpace& ext_space)
-    : BaseCompilingSpace(util::mkptr(new ReferralSymbolTable(ext_space.sym())))
-    , _ext_space(ext_space)
-{}
-
 bool SubCompilingSpace::inPipe() const
 {
     return _ext_space.inPipe();
+}
+
+bool SubCompilingSpace::inCatch() const
+{
+    return _ext_space.inCatch();
 }
 
 void SubCompilingSpace::referenceThis()
@@ -455,4 +445,57 @@ util::sptr<output::Expression const> SubCompilingSpace::ret(util::sref<Expressio
 output::Method SubCompilingSpace::raiseMethod() const
 {
     return _ext_space.raiseMethod();
+}
+
+util::sref<output::Block> SubCompilingSpace::replaceSpace(
+        misc::position const& pos, util::sref<output::Block> block)
+{
+    return _ext_space.replaceSpace(pos, block);
+}
+
+RegularSubCompilingSpace::RegularSubCompilingSpace(BaseCompilingSpace& ext_space)
+    : SubCompilingSpace(util::mkptr(new RegularSymbolTable(ext_space.sym())), ext_space)
+{}
+
+PipelineSpace::PipelineSpace(BaseCompilingSpace& ext_space)
+    : SubCompilingSpace(util::mkptr(new RegularSymbolTable(ext_space.sym())), ext_space)
+{}
+
+util::sptr<output::Expression const> PipelineSpace::ret(util::sref<Expression const> val)
+{
+    error::returnNotAllowedInPipe(val->pos);
+    return BaseCompilingSpace::ret(val);
+}
+
+util::sptr<output::Block> AsyncPipelineSpace::deliver()
+{
+    block()->addStmt(util::mkptr(new output::PipelineContinue));
+    return BaseCompilingSpace::deliver();
+}
+
+NoSymbolCompilingSpace::NoSymbolCompilingSpace(BaseCompilingSpace& ext_space)
+    : SubCompilingSpace(util::mkptr(new ReferralSymbolTable(ext_space.sym())), ext_space)
+{}
+
+output::Method AsyncTrySpace::raiseMethod() const
+{
+    return output::method::asyncCatcher(catch_func->mangledName());
+}
+
+util::sref<output::Block> AsyncTrySpace::replaceSpace(
+        misc::position const& pos, util::sref<output::Block> block)
+{
+    util::sptr<output::Block> try_block(new output::Block);
+    util::sref<output::Block> try_flow(*try_block);
+
+    BaseCompilingSpace& me = *this;
+    RegularSubCompilingSpace staller(me);
+    util::ptrarr<output::Expression const> args;
+    args.append(util::mkptr(new output::ExceptionObj(pos)));
+    staller.addStmt(pos, util::mkptr(
+            new output::Arithmetics(catch_func->callMe(pos, std::move(args)))));
+
+    block->addStmt(util::mkptr(new output::ExceptionStall(
+                    std::move(try_block), staller.deliver())));
+    return try_flow;
 }

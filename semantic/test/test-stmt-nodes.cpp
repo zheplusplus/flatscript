@@ -18,9 +18,9 @@ TEST_F(StmtNodesTest, AsyncSpaceInBranchWithConstantPredicate)
 {
     misc::position pos(1);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
-    util::sptr<semantic::Filter> consq_filter(new semantic::Filter);
-    util::sptr<semantic::Filter> alter_filter(new semantic::Filter);
+    semantic::Block block;
+    semantic::Block consq_block;
+    semantic::Block alter_block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -28,24 +28,28 @@ TEST_F(StmtNodesTest, AsyncSpaceInBranchWithConstantPredicate)
     space.sym()->defName(pos, "read");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "f20130123")));
-    consq_filter->addArith(pos, util::mkptr(
+    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "read"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "content" })
-                                      , std::move(largs))));
-    consq_filter->addArith(pos, util::mkptr(new semantic::Reference(pos, "content")));
+                                      , std::move(largs))))));
+    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                            new semantic::Reference(pos, "content")))));
 
-    alter_filter->addArith(pos, util::mkptr(new semantic::Reference(pos, "x")));
+    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                            new semantic::Reference(pos, "x")))));
 
-    filter.addBranch(pos
+    block.addStmt(util::mkptr(new semantic::Branch(
+                     pos
                    , util::mkptr(new semantic::BoolLiteral(pos, true))
-                   , std::move(consq_filter)
-                   , std::move(alter_filter));
+                   , std::move(consq_block)
+                   , std::move(alter_block))));
 
-    filter.addArith(pos, util::mkptr(new semantic::FloatLiteral(pos, "11.04")));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                            new semantic::FloatLiteral(pos, "11.04")))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -75,29 +79,30 @@ TEST_F(StmtNodesTest, ReferenceThisInBranch)
 {
     misc::position pos(2);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
 
-    util::sptr<semantic::Filter> consq_filter(new semantic::Filter);
-    util::sptr<semantic::Filter> alter_filter(new semantic::Filter);
+    semantic::Block consq_block;
+    semantic::Block alter_block;
 
     space.sym()->defName(pos, "houjou");
     space.sym()->defName(pos, "ryuuguu");
 
-    consq_filter->addArith(pos, util::mkptr(
+    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::This(pos))
-                                   , util::mkptr(new semantic::StringLiteral(pos, "maebara")))));
-    alter_filter->addArith(pos, util::mkptr(
+                                   , util::mkptr(new semantic::StringLiteral(pos, "maebara")))))));
+    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Call(pos
                                  , util::mkptr(new semantic::Reference(pos, "ryuuguu"))
-                                 , util::ptrarr<semantic::Expression const>())));
+                                 , util::ptrarr<semantic::Expression const>())))));
 
-    filter.addBranch(pos
+    block.addStmt(util::mkptr(new semantic::Branch(
+                     pos
                    , util::mkptr(new semantic::Reference(pos, "houjou"))
-                   , std::move(consq_filter)
-                   , std::move(alter_filter));
+                   , std::move(consq_block)
+                   , std::move(alter_block))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -124,28 +129,29 @@ TEST_F(StmtNodesTest, ReferenceThisInBranchWithConstantPredicate)
 {
     misc::position pos(3);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
 
-    util::sptr<semantic::Filter> consq_filter(new semantic::Filter);
-    util::sptr<semantic::Filter> alter_filter(new semantic::Filter);
+    semantic::Block consq_block;
+    semantic::Block alter_block;
 
     space.sym()->defName(pos, "rena");
 
-    consq_filter->addArith(pos, util::mkptr(
+    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::This(pos))
-                                   , util::mkptr(new semantic::StringLiteral(pos, "keiiti")))));
-    alter_filter->addArith(pos, util::mkptr(
+                                   , util::mkptr(new semantic::StringLiteral(pos, "keiiti")))))));
+    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Call(pos
                                  , util::mkptr(new semantic::Reference(pos, "rena"))
-                                 , util::ptrarr<semantic::Expression const>())));
+                                 , util::ptrarr<semantic::Expression const>())))));
 
-    filter.addBranch(pos
+    block.addStmt(util::mkptr(new semantic::Branch(
+                     pos
                    , util::mkptr(new semantic::BoolLiteral(pos, false))
-                   , std::move(consq_filter)
-                   , std::move(alter_filter));
+                   , std::move(consq_block)
+                   , std::move(alter_block))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -163,22 +169,22 @@ TEST_F(StmtNodesTest, ReferenceThisInLambda)
 {
     misc::position pos(4);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
 
-    util::sptr<semantic::Filter> lambda_filter(new semantic::Filter);
+    semantic::Block lambda_block;
 
     space.sym()->defName(pos, "satoko");
     space.sym()->defName(pos, "satosi");
 
-    lambda_filter->addArith(pos, util::mkptr(
+    lambda_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::Reference(pos, "satoko"))
-                                   , util::mkptr(new semantic::This(pos)))));
+                                   , util::mkptr(new semantic::This(pos)))))));
 
-    filter.addArith(pos, util::mkptr(
-                new semantic::Lambda(pos, std::vector<std::string>(), lambda_filter->deliver())));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                new semantic::Lambda(pos, std::vector<std::string>(), std::move(lambda_block))))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -200,26 +206,26 @@ TEST_F(StmtNodesTest, ReferenceThisInHostFunction)
 {
     misc::position pos(5);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
 
-    util::sptr<semantic::Filter> lambda_filter(new semantic::Filter);
+    semantic::Block lambda_block;
 
     space.sym()->defName(pos, "furukawa");
     space.sym()->defName(pos, "okasaki");
 
-    lambda_filter->addArith(pos, util::mkptr(
+    lambda_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::Reference(pos, "furukawa"))
-                                   , util::mkptr(new semantic::StringLiteral(pos, "okasaki")))));
+                                   , util::mkptr(new semantic::StringLiteral(pos, "okasaki")))))));
 
-    filter.addArith(pos, util::mkptr(
-                new semantic::Lambda(pos, std::vector<std::string>(), lambda_filter->deliver())));
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                new semantic::Lambda(pos, std::vector<std::string>(), std::move(lambda_block))))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::This(pos))
-                                   , util::mkptr(new semantic::Reference(pos, "okasaki")))));
+                                   , util::mkptr(new semantic::Reference(pos, "okasaki")))))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -245,23 +251,23 @@ TEST_F(StmtNodesTest, ReferenceThisInAsyncSpace)
 {
     misc::position pos(6);
     semantic::CompilingSpace space;
-    semantic::Filter filter;
+    semantic::Block block;
 
     space.sym()->defName(pos, "tomoya");
     space.sym()->defName(pos, "nagisa");
 
-    filter.addArith(pos, util::mkptr(
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "nagisa"))
                                       , util::ptrarr<semantic::Expression const>()
                                       , std::vector<std::string>()
-                                      , util::ptrarr<semantic::Expression const>())));
-    filter.addArith(pos, util::mkptr(
+                                      , util::ptrarr<semantic::Expression const>())))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::This(pos))
-                                   , util::mkptr(new semantic::Reference(pos, "tomoya")))));
+                                   , util::mkptr(new semantic::Reference(pos, "tomoya")))))));
 
-    compile(filter, space.sym())->write(dummyos());
+    compile(block, space.sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -282,4 +288,86 @@ TEST_F(StmtNodesTest, ReferenceThisInAsyncSpace)
                         (SCOPE_END)
         (SCOPE_END)
     ;
+}
+
+TEST_F(StmtNodesTest, StatementsAfterReturn)
+{
+    misc::position pos(7);
+    misc::position pos_a(700);
+    misc::position pos_b(701);
+    semantic::CompilingSpace space;
+    semantic::Block block;
+
+    block.addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
+                                        new semantic::IntLiteral(pos, 328)))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos_a, util::mkptr(
+                                        new semantic::IntLiteral(pos, 2013)))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos_b, util::mkptr(
+                                        new semantic::IntLiteral(pos, 923)))));
+
+    block.compile(space);
+    ASSERT_TRUE(error::hasError());
+
+    ASSERT_EQ(1, getFlowTerminatedRecs().size());
+    ASSERT_EQ(pos_a, getFlowTerminatedRecs()[0].this_pos);
+    ASSERT_EQ(pos, getFlowTerminatedRecs()[0].prev_pos);
+}
+
+TEST_F(StmtNodesTest, StatementsAfterBothBranchesReturned)
+{
+    misc::position pos(8);
+    misc::position pos_a(800);
+    misc::position pos_b(801);
+    misc::position pos_c(802);
+    semantic::CompilingSpace space;
+    space.sym()->defName(pos, "mion");
+    space.sym()->defName(pos, "sion");
+    semantic::Block block;
+    semantic::Block consq_block;
+    semantic::Block alter_block;
+
+    consq_block.addStmt(util::mkptr(new semantic::Return(pos_a, util::mkptr(
+                                        new semantic::IntLiteral(pos, 328)))));
+    alter_block.addStmt(util::mkptr(new semantic::Return(pos_b, util::mkptr(
+                                        new semantic::Reference(pos, "mion")))));
+    block.addStmt(util::mkptr(new semantic::Branch(
+                    pos
+                  , util::mkptr(new semantic::Reference(pos, "sion"))
+                  , std::move(consq_block)
+                  , std::move(alter_block))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos_c, util::mkptr(
+                                        new semantic::BoolLiteral(pos, false)))));
+
+    block.compile(space);
+    ASSERT_TRUE(error::hasError());
+
+    ASSERT_EQ(1, getFlowTerminatedRecs().size());
+    ASSERT_EQ(pos_c, getFlowTerminatedRecs()[0].this_pos);
+    ASSERT_EQ(pos, getFlowTerminatedRecs()[0].prev_pos);
+}
+
+TEST_F(StmtNodesTest, StatementsAfterFoldedBranchReturned)
+{
+    misc::position pos(9);
+    semantic::CompilingSpace space;
+    space.sym()->defName(pos, "sonozaki");
+    semantic::Block block;
+    semantic::Block consq_block;
+    semantic::Block alter_block;
+
+    consq_block.addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
+                                        new semantic::FloatLiteral(pos, 9.49)))));
+    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                        new semantic::Reference(pos, "sonozaki")))));
+
+    block.addStmt(util::mkptr(new semantic::Branch(
+                    pos
+                  , util::mkptr(new semantic::BoolLiteral(pos, true))
+                  , std::move(consq_block)
+                  , std::move(alter_block))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                                        new semantic::BoolLiteral(pos, false)))));
+
+    block.compile(space);
+    ASSERT_FALSE(error::hasError());
 }

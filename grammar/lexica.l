@@ -65,6 +65,10 @@ export {
     return KW_EXPORT;
 }
 
+from {
+    return KW_RESERVED;
+}
+
 typeof {
     return OPERATOR;
 }
@@ -78,7 +82,11 @@ false {
 }
 
 try {
-    return KW_RESERVED;
+    return KW_TRY;
+}
+
+throw {
+    return KW_TRHOW;
 }
 
 raise {
@@ -86,7 +94,7 @@ raise {
 }
 
 catch {
-    return KW_RESERVED;
+    return KW_CATCH;
 }
 
 finally {
@@ -122,6 +130,10 @@ ctor {
 }
 
 while {
+    return KW_RESERVED;
+}
+
+delete {
     return KW_RESERVED;
 }
 
@@ -237,6 +249,14 @@ while {
 
 [$]result {
     return PIPE_RESULT;
+}
+
+[$]e {
+    return EXCEPTION_OBJ;
+}
+
+[$]exception {
+    return EXCEPTION_OBJ;
 }
 
 [%][%] {

@@ -20,11 +20,10 @@ TEST_F(AutomationTest, ReduceNameDef)
     pushIdent(pos, "mio");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
-
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
-    ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
+
+    clause.compile().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -109,11 +108,10 @@ TEST_F(AutomationTest, BreakAfterColon)
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
     finish(pos);
     ASSERT_TRUE(stack->empty());
-
-    clause.compile();
-    clause.filter->deliver().compile(semantic::CompilingSpace());
-    ASSERT_FALSE(error::hasError());
     ASSERT_TRUE(stack->empty());
+
+    clause.compile().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)

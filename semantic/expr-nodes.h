@@ -413,6 +413,16 @@ namespace semantic {
         util::sptr<output::Expression const> _compileAsync(BaseCompilingSpace& space) const;
     };
 
+    struct ExceptionObj
+        : Expression
+    {
+        explicit ExceptionObj(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    };
+
 }
 
 #endif /* __STEKIN_SEMANTIC_EXPRESSION_NODES_H__ */

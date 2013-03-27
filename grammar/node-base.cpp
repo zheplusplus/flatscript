@@ -8,7 +8,12 @@ using namespace grammar;
 
 void Statement::acceptElse(misc::position const& else_pos, Block&&)
 {
-    error::elseNotMatchIf(else_pos);
+    error::partialStmtNotMatch(else_pos, "else", "if");
+}
+
+void Statement::acceptCatch(misc::position const& catch_pos, Block&&)
+{
+    error::partialStmtNotMatch(catch_pos, "catch", "try");
 }
 
 bool Expression::empty() const

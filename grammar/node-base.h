@@ -13,8 +13,9 @@ namespace grammar {
     struct Statement {
         misc::position const pos;
 
-        virtual void compile(util::sref<semantic::Filter> filter) const = 0;
+        virtual util::sptr<semantic::Statement const> compile() const = 0;
         virtual void acceptElse(misc::position const& else_pos, Block&& block);
+        virtual void acceptCatch(misc::position const& catch_pos, Block&& block);
 
         virtual ~Statement() {}
 

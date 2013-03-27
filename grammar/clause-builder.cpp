@@ -1,13 +1,9 @@
 #include <algorithm>
 
-#include <semantic/filter.h>
-#include <semantic/node-base.h>
-#include <semantic/function.h>
 #include <report/errors.h>
 
 #include "clause-builder.h"
 #include "stmt-nodes.h"
-#include "function.h"
 #include "clauses.h"
 
 using namespace grammar;
@@ -82,14 +78,14 @@ void ClauseBuilder::addExport(int indent_len
     _pushSequence(pos, sequence);
 }
 
-void ClauseBuilder::addIfnot(int indent_len
+void ClauseBuilder::addThrow(int indent_len
                            , misc::position const& pos
                            , std::vector<util::sptr<Token>> const& sequence)
 {
-    if (!_prepareLevel(indent_len, pos, "ifnot")) {
+    if (!_prepareLevel(indent_len, pos, "throw")) {
         return;
     }
-    _clauses.push_back(util::mkptr(new IfnotClause(indent_len, pos, *_clauses.back())));
+    _clauses.back()->prepareThrow();
     _pushSequence(pos, sequence);
 }
 
@@ -99,7 +95,7 @@ semantic::Block ClauseBuilder::buildAndClear()
         error::unexpectedEof();
     }
     _clauses[0]->tryFinish(misc::position(), _clauses);
-    return _global->compile()->deliver();
+    return _global->compile();
 }
 
 bool ClauseBuilder::_shrinkTo(int level, misc::position const& pos)

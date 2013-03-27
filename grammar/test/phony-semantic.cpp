@@ -1,6 +1,5 @@
 #include <algorithm>
 
-#include <semantic/filter.h>
 #include <semantic/block.h>
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
@@ -22,61 +21,6 @@ namespace {
         return util::sptr<output::Expression const>(nullptr);
     }
 
-    struct BranchConsequence
-        : Statement
-    {
-        BranchConsequence(misc::position const& pos, util::sptr<Expression const> p, Block c)
-            : Statement(pos)
-            , predicate(std::move(p))
-            , consequence(std::move(c))
-        {}
-
-        void compile(BaseCompilingSpace&) const
-        {
-            DataTree::actualOne()(pos, BRANCH_CONSQ_ONLY);
-            predicate->compile(nulSpace());
-            DataTree::actualOne()(CONSEQUENCE);
-            consequence.compile(CompilingSpace());
-        }
-
-        util::sptr<Expression const> const predicate;
-        Block const consequence;
-    };
-
-    struct BranchAlternative
-        : Statement
-    {
-        BranchAlternative(misc::position const& pos, util::sptr<Expression const> p, Block a)
-            : Statement(pos)
-            , predicate(std::move(p))
-            , alternative(std::move(a))
-        {}
-
-        void compile(BaseCompilingSpace&) const
-        {
-            DataTree::actualOne()(pos, BRANCH_ALTER_ONLY);
-            predicate->compile(nulSpace());
-            DataTree::actualOne()(ALTERNATIVE);
-            alternative.compile(CompilingSpace());
-        }
-
-        util::sptr<Expression const> const predicate;
-        Block const alternative;
-    };
-
-    struct ReturnNothing
-        : Statement
-    {
-        explicit ReturnNothing(misc::position const& pos)
-            : Statement(pos)
-        {}
-
-        void compile(BaseCompilingSpace&) const
-        {
-            DataTree::actualOne()(pos, RETURN_NOTHING);
-        }
-    };
-
 }
 
 util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) const
@@ -88,7 +32,7 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) co
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body.compile(CompilingSpace());
+    body.compile(nulSpace());
     return util::sptr<output::Function const>(nullptr);
 }
 
@@ -108,7 +52,7 @@ void Block::addFunc(util::sptr<Function const> func)
     _funcs.append(std::move(func));
 }
 
-util::sptr<output::Statement const> Block::compile(BaseCompilingSpace&&) const
+void Block::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(BLOCK_BEGIN);
     _funcs.iter([&](util::sptr<Function const> const& func, int)
@@ -120,85 +64,6 @@ util::sptr<output::Statement const> Block::compile(BaseCompilingSpace&&) const
                     stmt->compile(nulSpace());
                 });
     DataTree::actualOne()(BLOCK_END);
-    return util::sptr<output::Statement const>(nullptr);
-}
-
-void Filter::addReturn(misc::position const& pos, util::sptr<Expression const> ret_val)
-{
-    _block.addStmt(util::mkptr(new Return(pos, std::move(ret_val))));
-}
-
-void Filter::addReturnNothing(misc::position const& pos)
-{
-    _block.addStmt(util::mkptr(new ReturnNothing(pos)));
-}
-
-void Filter::addArith(misc::position const& pos, util::sptr<Expression const> expr)
-{
-    _block.addStmt(util::mkptr(new Arithmetics(pos, std::move(expr))));
-}
-
-void Filter::addImport(misc::position const& pos, std::vector<std::string> const& names)
-{
-    _block.addStmt(util::mkptr(new Import(pos, names)));
-}
-
-void Filter::addExport(misc::position const& pos
-                     , std::vector<std::string> const& export_point
-                     , util::sptr<Expression const> value)
-{
-    _block.addStmt(util::mkptr(new Export(pos, export_point, std::move(value))));
-}
-
-void Filter::addAttrSet(misc::position const& pos
-                      , util::sptr<Expression const> set_point
-                      , util::sptr<Expression const> value)
-{
-    _block.addStmt(util::mkptr(new AttrSet(pos, std::move(set_point), std::move(value))));
-}
-
-void Filter::addBranch(misc::position const& pos
-                     , util::sptr<Expression const> predicate
-                     , util::sptr<Filter> consequence
-                     , util::sptr<Filter> alternative)
-{
-    _block.addStmt(util::mkptr(new Branch(pos
-                                        , std::move(predicate)
-                                        , std::move(consequence->_block)
-                                        , std::move(alternative->_block))));
-}
-
-void Filter::addBranch(misc::position const& pos
-                     , util::sptr<Expression const> predicate
-                     , util::sptr<Filter> consequence)
-{
-    _block.addStmt(util::mkptr(
-                new BranchConsequence(pos, std::move(predicate), std::move(consequence->_block))));
-}
-
-void Filter::addBranchAlterOnly(misc::position const& pos
-                              , util::sptr<Expression const> predicate
-                              , util::sptr<Filter> alternative)
-{
-    _block.addStmt(util::mkptr(
-                new BranchAlternative(pos, std::move(predicate), std::move(alternative->_block))));
-}
-
-Block Filter::deliver()
-{
-    return std::move(_block);
-}
-
-void Filter::defName(misc::position const& pos
-                   , std::string const& name
-                   , util::sptr<Expression const> init)
-{
-    _block.addStmt(util::mkptr(new NameDef(pos, name, std::move(init))));
-}
-
-void Filter::defFunc(util::sptr<Function const> func)
-{
-    _block.addFunc(std::move(func));
 }
 
 void Arithmetics::compile(BaseCompilingSpace&) const
@@ -212,9 +77,9 @@ void Branch::compile(BaseCompilingSpace&) const
     DataTree::actualOne()(pos, BRANCH);
     predicate->compile(nulSpace());
     DataTree::actualOne()(CONSEQUENCE);
-    consequence.compile(CompilingSpace());
+    consequence.compile(nulSpace());
     DataTree::actualOne()(ALTERNATIVE);
-    alternative.compile(CompilingSpace());
+    alternative.compile(nulSpace());
 }
 
 void NameDef::compile(BaseCompilingSpace&) const
@@ -258,6 +123,20 @@ void Return::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, RETURN);
     ret_val->compile(nulSpace());
+}
+
+void ExceptionStall::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, TRY);
+    try_block.compile(nulSpace());
+    DataTree::actualOne()(pos, CATCH);
+    catch_block.compile(nulSpace());
+}
+
+void Throw::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, THROW);
+    exception->compile(nulSpace());
 }
 
 util::sptr<output::Expression const> PreUnaryOp::compile(BaseCompilingSpace&) const
@@ -429,7 +308,7 @@ util::sptr<output::Expression const> Lambda::compile(BaseCompilingSpace&) const
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body.compile(CompilingSpace());
+    body.compile(nulSpace());
     return nulOutputExpr();
 }
 
@@ -488,12 +367,18 @@ util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace&) c
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> ExceptionObj::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, EXCEPTION_OBJ);
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> Pipeline::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ pipeline ]")(pos, OPERAND);
     list->compile(nulSpace());
     DataTree::actualOne()(pos, OPERAND);
-    section.compile(CompilingSpace());
+    section.compile(nulSpace());
     return nulOutputExpr();
 }
 
@@ -511,37 +396,6 @@ util::sptr<Expression const> Pipeline::createFilter(misc::position const& pos
     return util::mkptr(new BinaryOp(pos, std::move(list), "[ |? ]", std::move(section)));
 }
 
-BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable>)
-    : _symbols(nullptr)
-    , _main_block(nullptr)
-    , _current_block(nullptr)
-{}
-
-util::sptr<output::Expression const> BaseCompilingSpace::ret(util::sref<Expression const>)
-{
-    return nulOutputExpr();
-}
-
-output::Method BaseCompilingSpace::raiseMethod() const
-{
-    return output::Method(nullptr);
-}
-
-util::sptr<output::Block> BaseCompilingSpace::deliver()
-{
-    return util::sptr<output::Block>(nullptr);
-}
-
-CompilingSpace::CompilingSpace()
-    : BaseCompilingSpace(util::sptr<SymbolTable>(nullptr))
-{}
-
-util::sptr<output::Block> CompilingSpace::deliver()
-{
-    return util::sptr<output::Block>(nullptr);
-}
-
-void CompilingSpace::referenceThis() {}
 bool Expression::boolValue(util::sref<SymbolTable const>) const { return false; }
 bool Reference::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Reference::literalType(util::sref<SymbolTable const>) const { return ""; }
@@ -584,6 +438,7 @@ bool NameDef::isAsync() const { return false; }
 bool Return::isAsync() const { return false; }
 bool Export::isAsync() const { return false; }
 bool AttrSet::isAsync() const { return false; }
+bool ExceptionStall::isAsync() const { return false; }
 bool Conditional::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Conditional::literalType(util::sref<SymbolTable const>) const { return ""; }
 bool Conditional::boolValue(util::sref<SymbolTable const>) const { return false; }

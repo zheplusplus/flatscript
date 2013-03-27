@@ -14,12 +14,12 @@ typedef GrammarTest StmtNodesTest;
 TEST_F(StmtNodesTest, Arithmetics)
 {
     misc::position pos(1);
-    util::sptr<semantic::Filter> filter(std::move(mkfilter()));
+    semantic::Block block;
     grammar::Arithmetics arith0(pos, util::mkptr(new grammar::IntLiteral(pos, "1840")));
     grammar::Arithmetics arith1(pos, util::mkptr(new grammar::BoolLiteral(pos, false)));
-    arith0.compile(*filter);
-    arith1.compile(*filter);
-    filter->deliver().compile(semantic::CompilingSpace());
+    block.addStmt(arith0.compile());
+    block.addStmt(arith1.compile());
+    block.compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -35,12 +35,12 @@ TEST_F(StmtNodesTest, Arithmetics)
 TEST_F(StmtNodesTest, NameDef)
 {
     misc::position pos(2);
-    util::sptr<semantic::Filter> filter(std::move(mkfilter()));
+    semantic::Block block;
     grammar::NameDef def0(pos, "Shinji", util::mkptr(new grammar::FloatLiteral(pos, "18.47")));
     grammar::NameDef def1(pos, "Asuka", util::mkptr(new grammar::Identifier(pos, "tsundere")));
-    def0.compile(*filter);
-    def1.compile(*filter);
-    filter->deliver().compile(semantic::CompilingSpace());
+    block.addStmt(def0.compile());
+    block.addStmt(def1.compile());
+    block.compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -56,19 +56,20 @@ TEST_F(StmtNodesTest, NameDef)
 TEST_F(StmtNodesTest, Returns)
 {
     misc::position pos(3);
-    util::sptr<semantic::Filter> filter(std::move(mkfilter()));
+    semantic::Block block;
     grammar::Return ret0(pos, util::mkptr(new grammar::Identifier(pos, "KaworuNagisa")));
     grammar::ReturnNothing ret1(pos);
-    ret0.compile(*filter);
-    ret1.compile(*filter);
-    filter->deliver().compile(semantic::CompilingSpace());
+    block.addStmt(ret0.compile());
+    block.addStmt(ret1.compile());
+    block.compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, RETURN)
             (pos, IDENTIFIER, "KaworuNagisa")
-        (pos, RETURN_NOTHING)
+        (pos, RETURN)
+            (pos, UNDEFINED)
         (BLOCK_END)
     ;
 }
@@ -80,14 +81,15 @@ TEST_F(StmtNodesTest, Block)
     block.addStmt(util::mkptr(new grammar::NameDef(
                     pos, "Misato", util::mkptr(new grammar::Identifier(pos, "Katsuragi")))));
     block.addStmt(util::mkptr(new grammar::ReturnNothing(pos)));
-    block.compile()->deliver().compile(semantic::CompilingSpace());
+    block.compile().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
         (pos, NAME_DEF, "Misato")
             (pos, IDENTIFIER, "Katsuragi")
-        (pos, RETURN_NOTHING)
+        (pos, RETURN)
+            (pos, UNDEFINED)
         (BLOCK_END)
     ;
 }
@@ -95,27 +97,28 @@ TEST_F(StmtNodesTest, Block)
 TEST_F(StmtNodesTest, Branch)
 {
     misc::position pos(6);
-    util::sptr<semantic::Filter> filter(std::move(mkfilter()));
+    semantic::Block block;
     grammar::Branch branch0(pos
                           , util::mkptr(new grammar::BoolLiteral(pos, true))
                           , std::move(grammar::Block()));
     branch0.acceptElse(pos, grammar::Block());
-    branch0.compile(*filter);
+    block.addStmt(branch0.compile());
 
     grammar::Block block0;
     block0.addStmt(util::mkptr(new grammar::Arithmetics(
                     pos, util::mkptr(new grammar::Identifier(pos, "Kaji")))));
     block0.addStmt(util::mkptr(new grammar::ReturnNothing(pos)));
-    grammar::Branch(pos, util::mkptr(new grammar::BoolLiteral(pos, false)), std::move(block0))
-        .compile(*filter);
+    block.addStmt(grammar::Branch(
+                pos, util::mkptr(new grammar::BoolLiteral(pos, false)), std::move(block0))
+            .compile());
 
     grammar::Block block1;
     block1.addStmt(util::mkptr(new grammar::Arithmetics(
                             pos, util::mkptr(new grammar::Identifier(pos, "Ryoji")))));
     block1.addStmt(util::mkptr(new grammar::ReturnNothing(pos)));
-    grammar::BranchAlterOnly(
+    block.addStmt(grammar::BranchAlterOnly(
                 pos, util::mkptr(new grammar::BoolLiteral(pos, true)), std::move(block1))
-        .compile(*filter);
+            .compile());
 
     grammar::Block block2;
     block2.addStmt(util::mkptr(new grammar::Arithmetics(
@@ -128,8 +131,8 @@ TEST_F(StmtNodesTest, Branch)
                           , util::mkptr(new grammar::BoolLiteral(pos, false))
                           , std::move(block2));
     branch1.acceptElse(pos, std::move(block3));
-    branch1.compile(*filter);
-    filter->deliver().compile(semantic::CompilingSpace());
+    block.addStmt(branch1.compile());
+    block.compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -143,22 +146,30 @@ TEST_F(StmtNodesTest, Branch)
             (BLOCK_BEGIN)
             (BLOCK_END)
 
-        (pos, BRANCH_CONSQ_ONLY)
+        (pos, BRANCH)
         (pos, BOOLEAN, "false")
         (CONSEQUENCE)
             (BLOCK_BEGIN)
             (pos, ARITHMETICS)
                 (pos, IDENTIFIER, "Kaji")
-            (pos, RETURN_NOTHING)
+            (pos, RETURN)
+                (pos, UNDEFINED)
+            (BLOCK_END)
+        (ALTERNATIVE)
+            (BLOCK_BEGIN)
             (BLOCK_END)
 
-        (pos, BRANCH_ALTER_ONLY)
+        (pos, BRANCH)
         (pos, BOOLEAN, "true")
+        (CONSEQUENCE)
+            (BLOCK_BEGIN)
+            (BLOCK_END)
         (ALTERNATIVE)
             (BLOCK_BEGIN)
             (pos, ARITHMETICS)
                 (pos, IDENTIFIER, "Ryoji")
-            (pos, RETURN_NOTHING)
+            (pos, RETURN)
+                (pos, UNDEFINED)
             (BLOCK_END)
 
         (pos, BRANCH)
@@ -167,7 +178,8 @@ TEST_F(StmtNodesTest, Branch)
             (BLOCK_BEGIN)
             (pos, ARITHMETICS)
                 (pos, INTEGER, "7")
-            (pos, RETURN_NOTHING)
+            (pos, RETURN)
+                (pos, UNDEFINED)
             (BLOCK_END)
         (ALTERNATIVE)
             (BLOCK_BEGIN)
@@ -181,10 +193,10 @@ TEST_F(StmtNodesTest, Branch)
 TEST_F(StmtNodesTest, Functions)
 {
     misc::position pos(8);
-    util::sptr<semantic::Filter> filter(std::move(mkfilter()));
+    semantic::Block block;
     grammar::Function func0(
             pos, "func0", std::vector<std::string>(), -1, std::move(grammar::Block()));
-    func0.compile(*filter);
+    block.addFunc(func0.compile());
 
     grammar::Block body;
     body.addStmt(util::mkptr(new grammar::Arithmetics(
@@ -195,8 +207,8 @@ TEST_F(StmtNodesTest, Functions)
                           , std::vector<std::string>({ "Konata", "Kagami", "Tsukasa", "Miyuki" })
                           , -1
                           , std::move(body));
-    func1.compile(*filter);
-    filter->deliver().compile(semantic::CompilingSpace());
+    block.addFunc(func1.compile());
+    block.compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -212,7 +224,8 @@ TEST_F(StmtNodesTest, Functions)
             (BLOCK_BEGIN)
             (pos, ARITHMETICS)
                 (pos, IDENTIFIER, "Kuroi")
-            (pos, RETURN_NOTHING)
+            (pos, RETURN)
+                (pos, UNDEFINED)
             (BLOCK_END)
         (BLOCK_END)
     ;
@@ -221,7 +234,7 @@ TEST_F(StmtNodesTest, Functions)
 TEST_F(StmtNodesTest, Mixed)
 {
     misc::position pos(9);
-    util::sptr<semantic::Filter> filter(std::move(mkfilter()));
+    semantic::Block block;
 
     grammar::Block block_nested;
     block_nested.addStmt(util::mkptr(new grammar::Arithmetics(
@@ -243,8 +256,8 @@ TEST_F(StmtNodesTest, Mixed)
                          , std::vector<std::string>({ "Suzumiya", "Koizumi", "Nagato", "Asahina" })
                          , -1
                          , std::move(body));
-    func.compile(*filter);
-    filter->deliver().compile(semantic::CompilingSpace());
+    block.addFunc(func.compile());
+    block.compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -266,7 +279,8 @@ TEST_F(StmtNodesTest, Mixed)
                 (BLOCK_END)
             (pos, ARITHMETICS)
                 (pos, IDENTIFIER, "Kyon")
-            (pos, RETURN_NOTHING)
+            (pos, RETURN)
+                (pos, UNDEFINED)
             (BLOCK_END)
         (BLOCK_END)
     ;

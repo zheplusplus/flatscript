@@ -11,7 +11,7 @@ TEST_F(ClauseBuilderTest, Empty)
     misc::position pos(1);
 
     grammar::ClauseBuilder builder;
-    builder.buildAndClear().compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -40,12 +40,12 @@ TEST_F(ClauseBuilderTest, IfBranch)
                         pos, util::mkptr(new grammar::Identifier(pos, "mayoi")), "mayoi")))
                                   ->deliver());
 
-    builder.buildAndClear().compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
-        (pos, BRANCH_CONSQ_ONLY)
+        (pos, BRANCH)
             (pos, BINARY_OP, "+")
             (pos, OPERAND)
                 (pos, IDENTIFIER, "kaeri")
@@ -53,8 +53,11 @@ TEST_F(ClauseBuilderTest, IfBranch)
                 (pos, IDENTIFIER, "miti")
         (CONSEQUENCE)
             (BLOCK_BEGIN)
-            (pos, ARITHMETICS)
-                (pos, IDENTIFIER, "mayoi")
+                (pos, ARITHMETICS)
+                    (pos, IDENTIFIER, "mayoi")
+            (BLOCK_END)
+        (ALTERNATIVE)
+            (BLOCK_BEGIN)
             (BLOCK_END)
         (BLOCK_END)
     ;
@@ -93,9 +96,12 @@ TEST_F(ClauseBuilderTest, IfBranchErrorElseAlreadyMatched)
     builder.buildAndClear();
 
     ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(1, getIfAlreadyMatchElseRecs().size());
-    ASSERT_EQ(else_pos_a, getIfAlreadyMatchElseRecs()[0].prev_else_pos);
-    ASSERT_EQ(else_pos_b, getIfAlreadyMatchElseRecs()[0].this_else_pos);
+    std::vector<PartialStmtDupMatchRec> recs(getPartialStmtDupMatchRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(else_pos_a, recs[0].prev_pos);
+    ASSERT_EQ(else_pos_b, recs[0].this_pos);
+    ASSERT_EQ("else", recs[0].successor);
+    ASSERT_EQ("if", recs[0].match);
 }
 
 TEST_F(ClauseBuilderTest, ClauseBuilder)
@@ -117,10 +123,11 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
           ->add(new grammar::FactorToken(
                       item_pos1, util::mkptr(new grammar::IntLiteral(item_pos1, "13571")), "13571"))
           ->deliver());
-        builder0.addIfnot(1, item_pos2, (new grammar::TokenSequence(
-                new grammar::FactorToken(item_pos2, util::mkptr(
-                                new grammar::Identifier(item_pos2, "raven_claw")), "raven_claw")))
-                                          ->deliver());
+        builder0.addArith(1, item_pos2, (new grammar::TokenSequence(
+                      new grammar::TypedToken(item_pos2, "ifnot", grammar::IFNOT)))
+                ->add(new grammar::FactorToken(item_pos2, util::mkptr(
+                                new grammar::Identifier(item_pos2, "raven_claw")), "raven_claw"))
+                ->deliver());
             builder0.addReturn(2, item_pos0, (new grammar::TokenSequence(
                 new grammar::FactorToken(item_pos0, util::mkptr(
                                 new grammar::FloatLiteral(item_pos0, "0.000123")), "0.000123")))
@@ -129,14 +136,16 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
     builder0.addArith(0, item_pos2, (new grammar::TokenSequence(
                     new grammar::TypedToken(item_pos2, "else", grammar::ELSE)))
                   ->deliver());
-        builder0.addIfnot(1, item_pos2, (new grammar::TokenSequence(
-                new grammar::FactorToken(item_pos2, util::mkptr(
-                                new grammar::Identifier(item_pos2, "cliffkiller")), "cliffkiller")))
-                                          ->deliver());
-            builder0.addIfnot(2, item_pos0, (new grammar::TokenSequence(
-                new grammar::FactorToken(item_pos0, util::mkptr(
-                                new grammar::Identifier(item_pos0, "skystrike")), "skystrike")))
-                                              ->deliver());
+        builder0.addArith(1, item_pos2, (new grammar::TokenSequence(
+                      new grammar::TypedToken(item_pos2, "ifnot", grammar::IFNOT)))
+                ->add(new grammar::FactorToken(item_pos2, util::mkptr(
+                                new grammar::Identifier(item_pos2, "cliffkiller")), "cliffkiller"))
+                ->deliver());
+            builder0.addArith(2, item_pos0, (new grammar::TokenSequence(
+                      new grammar::TypedToken(item_pos2, "ifnot", grammar::IFNOT)))
+                ->add(new grammar::FactorToken(item_pos0, util::mkptr(
+                                new grammar::Identifier(item_pos0, "skystrike")), "skystrike"))
+                ->deliver());
     builder0.addArith(0, item_pos1, (new grammar::TokenSequence(
                     new grammar::TypedToken(item_pos1, "func", grammar::FUNC)))
                   ->add(new grammar::FactorToken(item_pos1, util::mkptr(
@@ -155,7 +164,7 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
                                 new grammar::Identifier(item_pos1, "widowmaker")), "widowmaker")))
                               ->deliver());
 
-    builder0.buildAndClear().compile(semantic::CompilingSpace());
+    builder0.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -175,24 +184,34 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
             (item_pos1, NAME_DEF, "wind_force")
                 (item_pos1, INTEGER, "13571")
 
-            (item_pos2, BRANCH_ALTER_ONLY)
+            (item_pos2, BRANCH)
             (item_pos2, IDENTIFIER, "raven_claw")
+            (CONSEQUENCE)
+                (BLOCK_BEGIN)
+                (BLOCK_END)
             (ALTERNATIVE)
                 (BLOCK_BEGIN)
                 (item_pos0, RETURN)
                     (item_pos0, FLOATING, "0.000123")
                 (BLOCK_END)
 
-            (item_pos1, RETURN_NOTHING)
+            (item_pos1, RETURN)
+                (item_pos1, UNDEFINED)
             (BLOCK_END)
         (ALTERNATIVE)
             (BLOCK_BEGIN)
-            (item_pos2, BRANCH_ALTER_ONLY)
+            (item_pos2, BRANCH)
             (item_pos2, IDENTIFIER, "cliffkiller")
+            (CONSEQUENCE)
+                (BLOCK_BEGIN)
+                (BLOCK_END)
             (ALTERNATIVE)
                 (BLOCK_BEGIN)
-                (item_pos0, BRANCH_ALTER_ONLY)
+                (item_pos0, BRANCH)
                 (item_pos0, IDENTIFIER, "skystrike")
+                (CONSEQUENCE)
+                    (BLOCK_BEGIN)
+                    (BLOCK_END)
                 (ALTERNATIVE)
                     (BLOCK_BEGIN)
                     (BLOCK_END)
@@ -215,7 +234,7 @@ TEST_F(ClauseBuilderTest, PushExprSequence)
                             pos, util::mkptr(new grammar::Identifier(pos, "kirisiki")), "kirisiki"))
           ->deliver());
 
-    builder.buildAndClear().compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -236,9 +255,10 @@ TEST_F(ClauseBuilderTest, IfnotBranchErrorMatchElse)
     misc::position else_pos(600);
 
     grammar::ClauseBuilder builder;
-    builder.addIfnot(0, pos, (new grammar::TokenSequence(
-              new grammar::FactorToken(
-                        pos, util::mkptr(new grammar::Identifier(pos, "morikawa")), "morikawa")))
+    builder.addArith(0, pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(pos, "ifnot", grammar::IFNOT)))
+              ->add(new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "morikawa")), "morikawa"))
                                   ->deliver());
     builder.addArith(1, pos, (new grammar::TokenSequence(
               new grammar::FactorToken(
@@ -250,8 +270,11 @@ TEST_F(ClauseBuilderTest, IfnotBranchErrorMatchElse)
     builder.buildAndClear();
 
     ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(1, getElseNotMatchIfRecs().size());
-    ASSERT_EQ(else_pos, getElseNotMatchIfRecs()[0].else_pos);
+    std::vector<PartialStmtNotMatchRec> recs(getPartialStmtNotMatchRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(else_pos, recs[0].pos);
+    ASSERT_EQ("else", recs[0].successor);
+    ASSERT_EQ("if", recs[0].match);
 }
 
 TEST_F(ClauseBuilderTest, ErrorElseNotMatched)
@@ -275,8 +298,11 @@ TEST_F(ClauseBuilderTest, ErrorElseNotMatched)
     builder.buildAndClear();
 
     ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(1, getElseNotMatchIfRecs().size());
-    ASSERT_EQ(else_pos, getElseNotMatchIfRecs()[0].else_pos);
+    std::vector<PartialStmtNotMatchRec> recs(getPartialStmtNotMatchRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(else_pos, recs[0].pos);
+    ASSERT_EQ("else", recs[0].successor);
+    ASSERT_EQ("if", recs[0].match);
 }
 
 TEST_F(ClauseBuilderTest, UnterminatedExprInGlobalScope)
@@ -339,8 +365,11 @@ TEST_F(ClauseBuilderTest, IfReducedElseNotMatched)
     builder.buildAndClear();
 
     ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(1, getElseNotMatchIfRecs().size());
-    ASSERT_EQ(item_pos2, getElseNotMatchIfRecs()[0].else_pos);
+    std::vector<PartialStmtNotMatchRec> recs(getPartialStmtNotMatchRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(item_pos2, recs[0].pos);
+    ASSERT_EQ("else", recs[0].successor);
+    ASSERT_EQ("if", recs[0].match);
 }
 
 TEST_F(ClauseBuilderTest, RegularAsyncFunc)
@@ -361,7 +390,7 @@ TEST_F(ClauseBuilderTest, RegularAsyncFunc)
         ->deliver());
     builder.addReturn(1, pos, (new grammar::TokenSequence(id(pos, "meiling")))->deliver());
 
-    builder.buildAndClear().compile(semantic::CompilingSpace());
+    builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -402,4 +431,130 @@ TEST_F(ClauseBuilderTest, RegularAsyncParamOccurMoreThanOnce)
 
     ASSERT_EQ(1, getMoreThanOneAsyncPlaceholderRecs().size());
     ASSERT_EQ(pos_a, getMoreThanOneAsyncPlaceholderRecs()[0].pos);
+}
+
+TEST_F(ClauseBuilderTest, TryOnlyIsInvalid)
+{
+    misc::position pos(13);
+    misc::position try_pos(1300);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, try_pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(try_pos, "try", grammar::TRY)))
+                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "wanyuudou")), "wanyuudou")))
+                                  ->deliver());
+    builder.buildAndClear();
+
+    ASSERT_TRUE(error::hasError());
+    std::vector<TryWithoutCatchRec> recs(getTryWithoutCatchRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(try_pos, recs[0].try_pos);
+}
+
+TEST_F(ClauseBuilderTest, CatchErrorMatchTry)
+{
+    misc::position pos(14);
+    misc::position catch_pos(1400);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, catch_pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(catch_pos, "catch", grammar::CATCH)))
+                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "reina")), "reina")))
+                                  ->deliver());
+    builder.buildAndClear();
+
+    ASSERT_TRUE(error::hasError());
+    std::vector<PartialStmtNotMatchRec> recs(getPartialStmtNotMatchRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(catch_pos, recs[0].pos);
+    ASSERT_EQ("catch", recs[0].successor);
+    ASSERT_EQ("try", recs[0].match);
+}
+
+TEST_F(ClauseBuilderTest, TryWithCatch)
+{
+    misc::position pos(15);
+    misc::position try_pos(1500);
+    misc::position catch_pos(1501);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, try_pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(try_pos, "try", grammar::TRY)))
+                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "amefuri")), "amefuri")))
+                                  ->deliver());
+    builder.addArith(0, catch_pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(catch_pos, "catch", grammar::CATCH)))
+                  ->deliver());
+    builder.addArith(2, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "kozou")), "kozou")))
+                                  ->deliver());
+
+    builder.buildAndClear().compile(nulSpace());
+    ASSERT_FALSE(error::hasError());
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+            (try_pos, TRY)
+                (BLOCK_BEGIN)
+                    (pos, ARITHMETICS)
+                        (pos, IDENTIFIER, "amefuri")
+                (BLOCK_END)
+            (try_pos, CATCH)
+                (BLOCK_BEGIN)
+                    (pos, ARITHMETICS)
+                        (pos, IDENTIFIER, "kozou")
+                (BLOCK_END)
+        (BLOCK_END)
+    ;
+}
+
+TEST_F(ClauseBuilderTest, TryWithMultipleCatches)
+{
+    misc::position pos(15);
+    misc::position try_pos(1500);
+    misc::position catch_pos_x(1501);
+    misc::position catch_pos_y(1502);
+
+    grammar::ClauseBuilder builder;
+    builder.addArith(0, try_pos, (new grammar::TokenSequence(
+                    new grammar::TypedToken(try_pos, "try", grammar::TRY)))
+                  ->deliver());
+    builder.addArith(1, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "amefuri")), "amefuri")))
+                                  ->deliver());
+    builder.addArith(0, catch_pos_x, (new grammar::TokenSequence(
+                    new grammar::TypedToken(catch_pos_x, "catch", grammar::CATCH)))
+                  ->deliver());
+    builder.addArith(2, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::Identifier(pos, "kozou")), "kozou")))
+                                  ->deliver());
+    builder.addArith(0, catch_pos_y, (new grammar::TokenSequence(
+                    new grammar::TypedToken(catch_pos_y, "catch", grammar::CATCH)))
+                  ->deliver());
+    builder.addArith(2, pos, (new grammar::TokenSequence(
+              new grammar::FactorToken(
+                        pos, util::mkptr(new grammar::BoolLiteral(pos, true)), "true")))
+                                  ->deliver());
+
+    builder.buildAndClear();
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<PartialStmtDupMatchRec> recs(getPartialStmtDupMatchRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(catch_pos_x, recs[0].prev_pos);
+    ASSERT_EQ(catch_pos_y, recs[0].this_pos);
+    ASSERT_EQ("catch", recs[0].successor);
+    ASSERT_EQ("try", recs[0].match);
 }

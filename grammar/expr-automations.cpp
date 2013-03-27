@@ -44,7 +44,7 @@ void PipelineAutomation::accepted(AutomationStack&, util::sptr<Expression const>
     }
 }
 
-void PipelineAutomation::accepted(AutomationStack& stack, misc::position const& pos, Block&& block)
+void PipelineAutomation::accepted(AutomationStack& stack, misc::position const& pos, Block block)
 {
     checkEmptyExpr(*_cache_list);
     stack.reduced(util::mkptr(new BlockPipeline(pos, std::move(_cache_list), std::move(block))));
@@ -65,7 +65,7 @@ void PipelineAutomation::finish(
             ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos)
 {
     if ("|:" == _cache_pipe_op && _cache_section.not_nul() && _cache_section->empty()) {
-        return wrapper.pushBlockReceiver(util::mkref(*this));
+        return wrapper.pushBlockReceiver(this);
     }
     _reduce(stack);
     stack.top()->finish(wrapper, stack, pos);
@@ -719,7 +719,7 @@ void NestedOrParamsAutomation::accepted(AutomationStack&, util::sptr<Expression 
 }
 
 void NestedOrParamsAutomation::accepted(
-                                AutomationStack& stack, misc::position const& pos, Block&& body)
+                                AutomationStack& stack, misc::position const& pos, Block body)
 {
     _reduceAsLambda(stack, pos, std::move(body));
 }
@@ -740,7 +740,7 @@ void NestedOrParamsAutomation::finish(
 {
     if (_afterColon()) {
         if (_lambda_ret_val->empty()) {
-            wrapper.pushBlockReceiver(util::mkref(*this));
+            wrapper.pushBlockReceiver(this);
         } else {
             _reduceAsLambda(stack);
             stack.top()->finish(wrapper, stack, pos);

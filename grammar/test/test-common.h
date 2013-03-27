@@ -2,7 +2,6 @@
 #define __STEKIN_GRAMMAR_TEST_TEST_COMMON_H__
 
 #include <semantic/function.h>
-#include <semantic/filter.h>
 #include <semantic/compiling-space.h>
 #include <output/node-base.h>
 #include <output/function.h>
@@ -18,7 +17,6 @@ namespace test {
 
     extern std::map<std::string, grammar::TokenType> const IMAGE_TYPE_MAP;
 
-    util::sptr<semantic::Filter> mkfilter();
     util::sref<semantic::SymbolTable> nulSymbols();
     semantic::CompilingSpace& nulSpace();
 
@@ -27,15 +25,12 @@ namespace test {
     {
         TestClause()
             : grammar::ClauseBase(-1)
-            , filter(nullptr)
         {}
 
-        void compile()
+        semantic::Block compile() const
         {
-            filter = std::move(_block.compile());
+            return _block.compile();
         }
-
-        util::sptr<semantic::Filter> filter;
 
         void deliver() {}
     };
@@ -120,7 +115,6 @@ namespace test {
     extern NodeType const NAME_DEF;
     extern NodeType const ARITHMETICS;
     extern NodeType const RETURN;
-    extern NodeType const RETURN_NOTHING;
     extern NodeType const IMPORT;
     extern NodeType const EXPORT;
     extern NodeType const EXPORT_VALUE;
@@ -131,10 +125,13 @@ namespace test {
     extern NodeType const PARAMETER;
 
     extern NodeType const BRANCH;
-    extern NodeType const BRANCH_CONSQ_ONLY;
-    extern NodeType const BRANCH_ALTER_ONLY;
     extern NodeType const CONSEQUENCE;
     extern NodeType const ALTERNATIVE;
+
+    extern NodeType const TRY;
+    extern NodeType const CATCH;
+    extern NodeType const EXCEPTION_OBJ;
+    extern NodeType const THROW;
 
     extern NodeType const BLOCK_BEGIN;
     extern NodeType const BLOCK_END;
