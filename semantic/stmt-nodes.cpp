@@ -72,10 +72,8 @@ void NameDef::compile(BaseCompilingSpace& space) const
         return space.sym()->defConst(pos, name, *init);
     }
     space.sym()->defName(pos, name);
-    space.addStmt(pos, util::mkptr(new output::Arithmetics(util::mkptr(new output::Assignment(
-                                                pos
-                                              , util::mkptr(new output::Reference(pos, name))
-                                              , std::move(init_value))))));
+    space.addStmt(pos, util::mkptr(new output::Arithmetics(util::mkptr(
+        new output::Assignment(pos, space.makeReference(pos, name), std::move(init_value))))));
 }
 
 bool NameDef::isAsync() const
@@ -97,12 +95,7 @@ bool Return::isAsync() const
 
 void Import::compile(BaseCompilingSpace& space) const
 {
-    std::for_each(names.begin()
-                , names.end()
-                , [&](std::string const& name)
-                  {
-                      space.sym()->imported(pos, name);
-                  });
+    space.sym()->importNames(pos, names);
 }
 
 void Export::compile(BaseCompilingSpace& space) const
@@ -130,6 +123,14 @@ bool AttrSet::isAsync() const
     return set_point->isAsync() || value->isAsync();
 }
 
+static util::sptr<output::Statement> _catch_stmt(
+    misc::position const& pos, util::sref<output::AsyncCatcher> catch_func)
+{
+    util::ptrarr<output::Expression const> args;
+    args.append(util::mkptr(new output::ExceptionObj(pos)));
+    return util::mkptr(new output::Arithmetics(catch_func->callMe(pos, std::move(args))));
+}
+
 void ExceptionStall::compile(BaseCompilingSpace& space) const
 {
     if (!isAsync()) {
@@ -146,20 +147,18 @@ void ExceptionStall::compile(BaseCompilingSpace& space) const
     }
 
     util::sptr<output::AsyncCatcher> catch_func(new output::AsyncCatcher);
+    util::sref<output::AsyncCatcher> catch_func_ref = *catch_func;
+    space.block()->addFunc(std::move(catch_func));
+
     CatcherSpace catch_space(space);
-    catch_space.setAsyncSpace(pos, std::vector<std::string>(), catch_func->bodyFlow());
+    catch_space.setAsyncSpace(pos, std::vector<std::string>(), catch_func_ref->bodyFlow());
     catch_block.compile(catch_space);
 
-    AsyncTrySpace try_space(space, *catch_func);
+    AsyncTrySpace try_space(space, catch_func_ref);
     try_block.compile(try_space);
 
     util::sptr<output::Block> staller(new output::Block);
-    util::ptrarr<output::Expression const> args;
-    args.append(util::mkptr(new output::ExceptionObj(pos)));
-    staller->addStmt(util::mkptr(
-            new output::Arithmetics(catch_func->callMe(pos, std::move(args)))));
-
-    space.block()->addFunc(std::move(catch_func));
+    staller->addStmt(_catch_stmt(pos, catch_func_ref));
     space.addStmt(pos, util::mkptr(new output::ExceptionStall(
                                     try_space.deliver(), std::move(staller))));
     if (try_space.terminated() && catch_space.terminated()) {
@@ -170,17 +169,26 @@ void ExceptionStall::compile(BaseCompilingSpace& space) const
         util::sptr<output::NoParamCallback> succession(new output::NoParamCallback);
         if (!try_space.terminated()) {
             try_space.addStmt(pos, util::mkptr(
-                    new output::Arithmetics(succession->callMe(
-                        pos, util::ptrarr<output::Expression const>()))));
+                new output::Arithmetics(succession->callMe(
+                    pos, util::ptrarr<output::Expression const>()))));
         }
         if (!catch_space.terminated()) {
             catch_space.addStmt(pos, util::mkptr(
-                    new output::Arithmetics(succession->callMe(
-                        pos, util::ptrarr<output::Expression const>()))));
+                new output::Arithmetics(succession->callMe(
+                    pos, util::ptrarr<output::Expression const>()))));
         }
-        util::sref<output::Block> sf(succession->bodyFlow());
+
+        util::sptr<output::Block> succ_try(new output::Block);
+        util::sref<output::Block> succ_try_ref = *succ_try;
+
+        util::sptr<output::Block> succ_catch(new output::Block);
+        succ_catch->addStmt(util::mkptr(new output::Throw(
+            space.raiseMethod(), util::mkptr(new output::ExceptionObj(pos)))));
+
+        succession->bodyFlow()->addStmt(util::mkptr(
+            new output::ExceptionStall(std::move(succ_try), std::move(succ_catch))));
         space.block()->addFunc(std::move(succession));
-        space.setAsyncSpace(pos, std::vector<std::string>(), sf);
+        space.setAsyncSpace(pos, std::vector<std::string>(), succ_try_ref);
     }
 }
 

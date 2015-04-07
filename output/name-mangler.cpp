@@ -27,6 +27,11 @@ std::vector<std::string> output::formNames(std::vector<std::string> const& names
     return mapStrings(names, formName);
 }
 
+std::string output::formSubName(std::string const& name, util::id space_id)
+{
+    return "$s_" + name + '$' + space_id.str();
+}
+
 std::string output::formTransientParam(std::string const& param)
 {
     return "$tp_" + param;
@@ -47,8 +52,6 @@ std::string output::formAnonymousFunc(util::id const& id)
     return "$anf_" + id.str();
 }
 
-std::string const& term::regularAsyncCallback()
-{
-    static std::string const V("$_racb");
-    return V;
-}
+std::string const output::TERM_REGULAR_ASYNC_CALLBACK("$racb");
+std::string const output::TERM_EXCEPTION("$exception");
+std::string const output::TERM_CONDITIONAL_CALLBACK_PARAMETER("$ccp");

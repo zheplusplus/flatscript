@@ -9,8 +9,8 @@ using namespace output;
 void Block::write(std::ostream& os) const
 {
     if (!_local_decls.empty()) {
-        os << "var " << util::join(",", formNames(std::vector<std::string>(_local_decls.begin()
-                                                                         , _local_decls.end())))
+        os << "var " << util::join(",", std::vector<std::string>(_local_decls.begin()
+                                                               , _local_decls.end()))
            << ";" << std::endl;
     }
     _funcs.iter([&](util::sptr<Function const> const& func, int)

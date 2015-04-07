@@ -187,7 +187,7 @@ TEST_F(SymbolTableTest, ImportBeforeDef)
     ASSERT_EQ("yuri", redefs[0].name);
 }
 
-TEST_F(SymbolTableTest, ImportBeforeRef)
+TEST_F(SymbolTableTest, ImportAfterRef)
 {
     misc::position pos(9);
     misc::position ref_pos(900);
@@ -210,7 +210,7 @@ TEST_F(SymbolTableTest, CompileRef)
     misc::position pos(10);
     misc::position ref_pos(1000);
 
-    refSym()->imported(pos, "akemi");
+    refSym()->importNames(pos, {"akemi"});
     util::sptr<semantic::Expression const> i(new semantic::IntLiteral(pos, 20121115));
     refSym()->defConst(pos, "kaname", *i);
     refSym()->defName(pos, "miki");
@@ -231,16 +231,13 @@ TEST_F(SymbolTableTest, CompileRef)
 TEST_F(SymbolTableTest, ForbidDef)
 {
     misc::position pos(11);
-    misc::position def_pos_a(1100);
-    misc::position def_pos_b(1101);
+    misc::position def_pos(1100);
 
     semantic::Block block;
     refSym()->defName(pos, "ryou");
     semantic::Block consq_block;
-    consq_block.addStmt(util::mkptr(
-                new semantic::Import(def_pos_a, std::vector<std::string>({ "nagisa", "fuuko" }))));
-    consq_block.addStmt(util::mkptr(new semantic::NameDef(def_pos_b, "tomoya", util::mkptr(
-                                                    new semantic::Reference(pos, "kyou")))));
+    consq_block.addFunc(util::mkptr(new semantic::Function(
+        def_pos, "leela", std::vector<std::string>(), semantic::Block())));
     block.addStmt(util::mkptr(new semantic::Branch(
                      pos
                    , util::mkptr(new semantic::Reference(pos, "ryou"))
@@ -251,12 +248,8 @@ TEST_F(SymbolTableTest, ForbidDef)
 
     ASSERT_TRUE(error::hasError());
 
-    std::vector<ForbidDefNameRec> forbidDefs = getForbidDefNameRecs();
-    ASSERT_EQ(3, forbidDefs.size());
-    ASSERT_EQ(def_pos_a, forbidDefs[0].pos);
-    ASSERT_EQ("nagisa", forbidDefs[0].name);
-    ASSERT_EQ(def_pos_a, forbidDefs[1].pos);
-    ASSERT_EQ("fuuko", forbidDefs[1].name);
-    ASSERT_EQ(def_pos_b, forbidDefs[2].pos);
-    ASSERT_EQ("tomoya", forbidDefs[2].name);
+    std::vector<ForbidDefFuncRec> forbidDefs = getForbidDefFuncRecs();
+    ASSERT_EQ(1, forbidDefs.size());
+    ASSERT_EQ(def_pos, forbidDefs[0].pos);
+    ASSERT_EQ("leela", forbidDefs[0].name);
 }

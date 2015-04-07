@@ -6,6 +6,7 @@
 #include <output/list-pipe.h>
 #include <output/function.h>
 #include <output/methods.h>
+#include <output/name-mangler.h>
 #include <util/string.h>
 
 #include "test-common.h"
@@ -75,11 +76,6 @@ void Function::write(std::ostream&) const
     body()->write(dummyos());
 }
 
-std::string Function::mangledParameters() const
-{
-    return "";
-}
-
 util::sptr<Expression const> Function::callMe(
         misc::position const& pos, util::ptrarr<Expression const> args) const
 {
@@ -145,11 +141,6 @@ std::vector<std::string> NoParamCallback::parameters() const
 std::vector<std::string> AsyncCatcher::parameters() const
 {
     return std::vector<std::string>({ "AsyncCatcher # Parameter" });
-}
-
-std::string AsyncCatcher::mangledParameters() const
-{
-    return "AsyncCatcher # MangledParameter";
 }
 
 std::string MemberAccess::str() const
@@ -298,6 +289,18 @@ std::string Reference::str() const
     return "";
 }
 
+std::string SubReference::str() const
+{
+    DataTree::actualOne()(pos, SUB_REFERENCE, name);
+    return "";
+}
+
+std::string TransientParamReference::str() const
+{
+    DataTree::actualOne()(pos, TRANSIENT_PARAMETER, name);
+    return "";
+}
+
 std::string ImportedName::str() const
 {
     DataTree::actualOne()(pos, IMPORTED_NAME, name);
@@ -375,8 +378,8 @@ std::string Lambda::str() const
                   {
                       DataTree::actualOne()(PARAMETER, pn);
                   });
-    if (copy_decls) {
-        DataTree::actualOne()(COPY_PARAM_DECL);
+    if (mangle_as_param) {
+        DataTree::actualOne()(MANGLE_AS_PARAM);
     }
     body->write(dummyos());
     return "";
@@ -415,6 +418,12 @@ std::string Conditional::str() const
 std::string ExceptionObj::str() const
 {
     DataTree::actualOne()(pos, EXCEPTION_OBJ);
+    return "";
+}
+
+std::string ConditionalCallbackParameter::str() const
+{
+    DataTree::actualOne()(pos, COND_CALLBACK_PARAM);
     return "";
 }
 
@@ -481,3 +490,5 @@ Method method::asyncCatcher(std::string const& s)
 int Block::count() const { return 0; }
 int Export::count() const { return 0; }
 int ExceptionStall::count() const { return 0; }
+std::string output::formName(std::string const& name) { return name; }
+std::string output::formSubName(std::string const& name, util::id) { return name + '$'; }

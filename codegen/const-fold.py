@@ -139,6 +139,7 @@ IMPL_BEGIN = lineno() + '''
 
 #include <output/expr-nodes.h>
 #include <util/string.h>
+#include <util/typetraits.h>
 #include <report/errors.h>
 
 #include "const-fold.h"
@@ -291,20 +292,19 @@ def build_op_funcs():
         mpz_class int_bitwise_shl_operate(
                 misc::position const&, mpz_class const& lhs, mpz_class const& rhs)
         $(
-            return mpz_class(lhs.get_si() << rhs.get_si());
+            return mpz_class(tp::sh_int(lhs.get_si()) << rhs.get_si());
         )$
 
         mpz_class int_bitwise_shr_operate(
                 misc::position const&, mpz_class const& lhs, mpz_class const& rhs)
         $(
-            return mpz_class(lhs.get_si() >> rhs.get_si());
+            return mpz_class(tp::sh_int(lhs.get_si()) >> rhs.get_si());
         )$
 
         mpz_class int_bitwise_ushr_operate(
                 misc::position const&, mpz_class const& lhs, mpz_class const& rhs)
         $(
-            typedef unsigned long ulong;
-            return mpz_class(ulong(lhs.get_si()) >> rhs.get_si());
+            return mpz_class(tp::sh_uint(lhs.get_si()) >> rhs.get_si());
         )$
     ''')
     return ''.join(op_funcs)

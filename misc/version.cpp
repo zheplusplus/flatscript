@@ -2,6 +2,6 @@
 
 std::string const& misc::version()
 {
-    static std::string V("2015-02-12-Asuka");
+    static std::string V("0.4.0-2015-04-07-Kameko");
     return V;
 }

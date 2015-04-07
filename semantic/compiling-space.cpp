@@ -5,6 +5,7 @@
 #include <output/stmt-nodes.h>
 #include <output/list-pipe.h>
 #include <output/function.h>
+#include <output/name-mangler.h>
 #include <report/errors.h>
 
 #include "compiling-space.h"
@@ -14,28 +15,11 @@ using namespace semantic;
 
 namespace {
 
-    struct RegularSymbolTable
+    struct BasicSymbolTable
         : SymbolTable
     {
-        explicit RegularSymbolTable(util::sref<SymbolTable const> ext_sym)
+        explicit BasicSymbolTable(util::sref<SymbolTable> ext_sym)
             : ext_symbols(ext_sym)
-        {}
-
-        RegularSymbolTable(misc::position const& pos
-                         , util::sref<SymbolTable const> ext_sym
-                         , std::vector<std::string> const& params)
-            : ext_symbols(ext_sym)
-        {
-            std::for_each(params.begin()
-                        , params.end()
-                        , [&](std::string const& param)
-                          {
-                              defParam(pos, param);
-                          });
-        }
-
-        RegularSymbolTable()
-            : ext_symbols(nullptr)
         {}
 
         void defName(misc::position const& pos, std::string const& name)
@@ -45,21 +29,11 @@ namespace {
             _name_defs.insert(std::make_pair(name, pos));
         }
 
-        void defFunc(misc::position const& pos, std::string const& name)
-        {
-            defName(pos, name);
-            _exclude_decls.insert(name);
-        }
-
-        void defParam(misc::position const& pos, std::string const& name)
-        {
-            defName(pos, name);
-            _exclude_decls.insert(name);
-        }
-
         void defAsyncParam(misc::position const& pos, std::string const& name)
         {
-            defName(pos, name);
+            _checkNoRef(pos, name);
+            _checkNoDef(pos, name);
+            _async_param_defs.insert(std::make_pair(name, pos));
         }
 
         void defConst(misc::position const& pos
@@ -71,21 +45,16 @@ namespace {
             _const_defs.insert(std::make_pair(name, std::make_pair(pos, value)));
         }
 
-        void imported(misc::position const& pos, std::string const& name)
+        void importNames(misc::position const& pos, std::vector<std::string> const&)
         {
-            _checkNoRef(pos, name);
-            _checkNoDef(pos, name);
-            _imported.insert(std::make_pair(name, pos));
+            error::importOnlyInGlobal(pos);
         }
 
         void refNames(misc::position const& pos, std::vector<std::string> const& names)
         {
-            std::for_each(names.begin()
-                        , names.end()
-                        , [&](std::string const& name)
-                          {
-                              _reference(pos, name);
-                          });
+            for (auto const& name: names) {
+                _references[name].push_back(pos);
+            }
         }
 
         util::sref<Expression const> literalOrNul(std::string const& name) const
@@ -94,68 +63,44 @@ namespace {
             if (find_result != _const_defs.end()) {
                 return find_result->second.second;
             }
+            if (_localDefPosOrNul(name).not_nul()) {
+                return util::sref<Expression const>(nullptr);
+            }
             if (ext_symbols.nul()) {
                 return util::sref<Expression const>(nullptr);
             }
             return ext_symbols->literalOrNul(name);
         }
 
-        bool isImported(std::string const& name) const
-        {
-            if (_imported.find(name) != _imported.end()) {
-                return true;
-            }
-            if (ext_symbols.nul()) {
-                return false;
-            }
-            return ext_symbols->isImported(name);
-        }
-
         util::sptr<output::Expression const> compileRef(misc::position const& pos
                                                       , std::string const& name)
         {
-            _reference(pos, name);
-            util::sref<Expression const> literal(literalOrNul(name));
-            if (literal.not_nul()) {
-                return compileLiteral(literal, util::mkref(*this));
+            _references[name].push_back(pos);
+            auto const_find_result = _const_defs.find(name);
+            if (_const_defs.end() != const_find_result) {
+                return compileLiteral(const_find_result->second.second, util::mkref(*this));
             }
-            if (isImported(name)) {
+            if (_imported.end() != _imported.find(name)) {
                 return util::mkptr(new output::ImportedName(pos, name));
             }
-            return util::mkptr(new output::Reference(pos, name));
-        }
-
-        void checkDefinition(misc::position const& pos, std::string const& name) const
-        {
-            if (_localDefPosOrNul(name).nul()) {
-                if (ext_symbols.nul()) {
-                    error::nameNotDef(pos, name);
-                } else {
-                    ext_symbols->checkDefinition(pos, name);
-                }
+            if (_async_param_defs.find(name) != _async_param_defs.end()) {
+                return util::mkptr(new output::TransientParamReference(pos, name));
             }
+            if (_name_defs.end() != _name_defs.find(name)) {
+                return _makeReference(pos, name);
+            }
+            if (ext_symbols.not_nul()) {
+                return ext_symbols->compileRef(pos, name);
+            }
+            error::nameNotDef(pos, name);
+            return _makeReference(pos, name);
         }
+    protected:
+        util::sref<SymbolTable> const ext_symbols;
 
-        std::set<std::string> localNames() const
-        {
-            std::set<std::string> names;
-            std::for_each(_name_defs.begin()
-                        , _name_defs.end()
-                        , [&](std::pair<std::string, misc::position> const& def)
-                          {
-                              names.insert(def.first);
-                          });
-            std::for_each(_exclude_decls.begin()
-                        , _exclude_decls.end()
-                        , [&](std::string const& e)
-                          {
-                              names.erase(e);
-                          });
-            return names;
-        }
-    public:
-        util::sref<SymbolTable const> const ext_symbols;
-    private:
+        virtual util::sptr<output::Expression const> _makeReference(
+            misc::position const& pos, std::string const& name) = 0;
+
         util::sref<misc::position const> _localDefPosOrNul(std::string const& name) const
         {
             if (_name_defs.end() != _name_defs.find(name)) {
@@ -167,15 +112,18 @@ namespace {
             if (_imported.end() != _imported.find(name)) {
                 return util::mkref(_imported.find(name)->second);
             }
+            if (_async_param_defs.end() != _async_param_defs.find(name)) {
+                return util::mkref(_async_param_defs.find(name)->second);
+            }
             return util::sref<misc::position const>(nullptr);
         }
 
         void _checkNoRef(misc::position const& pos, std::string const& name)
         {
-            auto local_refs = _external_name_refs.find(name);
-            if (_external_name_refs.end() != local_refs) {
+            auto local_refs = _references.find(name);
+            if (_references.end() != local_refs) {
                 error::nameRefBeforeDef(pos, std::vector<misc::position>(
-                                    local_refs->second.begin(), local_refs->second.end()), name);
+                    local_refs->second.begin(), local_refs->second.end()), name);
             }
         }
 
@@ -186,110 +134,112 @@ namespace {
                 error::nameAlreadyInLocal(misc::position(local_pos->line), pos, name);
             }
         }
-
-        void _reference(misc::position const& pos, std::string const& name)
-        {
-            if (_name_defs.end() == _name_defs.find(name)) {
-                _external_name_refs[name].push_back(pos);
-                checkDefinition(pos, name);
-            }
-        }
-    private:
-        std::map<std::string, std::vector<misc::position>> _external_name_refs;
+    protected:
+        std::map<std::string, std::vector<misc::position>> _references;
         std::map<std::string, misc::position> _name_defs;
+        std::map<std::string, misc::position> _async_param_defs;
         std::map<std::string, misc::position> _imported;
         std::map<std::string, std::pair<misc::position, util::sref<Expression const>>> _const_defs;
         std::vector<std::string> const _parameters;
-        std::set<std::string> _exclude_decls;
     };
 
-    struct ReferralSymbolTable
-        : SymbolTable
+    struct RegularSymbolTable
+        : BasicSymbolTable
     {
-        explicit ReferralSymbolTable(util::sref<SymbolTable> ext_sym)
-            : _ext_sym(ext_sym)
+        explicit RegularSymbolTable(util::sref<SymbolTable> ext_sym)
+            : BasicSymbolTable(ext_sym)
         {}
 
-        void defName(misc::position const& pos, std::string const& name)
+        RegularSymbolTable(misc::position const& pos
+                         , util::sref<SymbolTable> ext_sym
+                         , std::vector<std::string> const& params)
+            : BasicSymbolTable(ext_sym)
         {
-            error::forbidDefName(pos, name);
+            for (std::string const& p: params) {
+                defParam(pos, p);
+            }
         }
 
         void defFunc(misc::position const& pos, std::string const& name)
         {
             defName(pos, name);
+            _exclude_decls.insert(name);
         }
 
         void defParam(misc::position const& pos, std::string const& name)
         {
             defName(pos, name);
-        }
-
-        void defAsyncParam(misc::position const& pos, std::string const& name)
-        {
-            if (_async_param_defs.end() == _async_param_defs.find(name)) {
-                _async_param_defs.insert(std::make_pair(name, pos));
-            } else {
-                error::nameAlreadyInLocal(_async_param_defs.find(name)->second, pos, name);
-            }
-        }
-
-        void defConst(misc::position const& pos
-                    , std::string const& name
-                    , util::sref<Expression const>)
-        {
-            error::forbidDefName(pos, name);
-        }
-
-        void imported(misc::position const& pos, std::string const& name)
-        {
-            error::forbidDefName(pos, name);
-        }
-
-        void refNames(misc::position const& pos, std::vector<std::string> const& names)
-        {
-            _ext_sym->refNames(pos, names);
-        }
-
-        util::sref<Expression const> literalOrNul(std::string const& name) const
-        {
-            if (_async_param_defs.end() == _async_param_defs.find(name)) {
-                return _ext_sym->literalOrNul(name);
-            }
-            return util::sref<Expression const>(nullptr);
-        }
-
-        bool isImported(std::string const& name) const
-        {
-            if (_async_param_defs.end() == _async_param_defs.find(name)) {
-                return _ext_sym->isImported(name);
-            }
-            return false;
-        }
-
-        util::sptr<output::Expression const> compileRef(misc::position const& pos
-                                                      , std::string const& name)
-        {
-            if (_async_param_defs.end() == _async_param_defs.find(name)) {
-                return _ext_sym->compileRef(pos, name);
-            }
-            return util::mkptr(new output::Reference(pos, name));
-        }
-
-        void checkDefinition(misc::position const& pos, std::string const& name) const
-        {
-            if (_async_param_defs.end() == _async_param_defs.find(name)) {
-                _ext_sym->checkDefinition(pos, name);
-            }
+            _exclude_decls.insert(name);
         }
 
         std::set<std::string> localNames() const
         {
-            return std::set<std::string>();
+            std::set<std::string> names;
+            for (std::pair<std::string, misc::position> const& def: _name_defs) {
+                names.insert(output::formName(def.first));
+            }
+            for (std::string const& e: _exclude_decls) {
+                names.erase(output::formName(e));
+            }
+            return names;
+        }
+    protected:
+        RegularSymbolTable()
+            : BasicSymbolTable(util::sref<SymbolTable>(nullptr))
+        {}
+    private:
+        util::sptr<output::Expression const> _makeReference(
+            misc::position const& pos, std::string const& name)
+        {
+            return util::mkptr(new output::Reference(pos, name));
+        }
+
+        std::set<std::string> _exclude_decls;
+    };
+
+    struct GlobalSymbolTable
+        : RegularSymbolTable
+    {
+        GlobalSymbolTable() = default;
+
+        void importNames(misc::position const& pos, std::vector<std::string> const& names)
+        {
+            for (auto const& name: names) {
+                _checkNoRef(pos, name);
+                _checkNoDef(pos, name);
+                _imported.insert(std::make_pair(name, pos));
+            }
+        }
+    };
+
+    struct SubSymbolTable
+        : BasicSymbolTable
+    {
+        explicit SubSymbolTable(util::sref<SymbolTable> ext_sym)
+            : BasicSymbolTable(ext_sym)
+        {}
+
+        void defFunc(misc::position const& pos, std::string const& name)
+        {
+            error::forbidDefFunc(pos, name);
+        }
+
+        void defParam(misc::position const&, std::string const&) {}
+
+        std::set<std::string> localNames() const
+        {
+            std::set<std::string> names;
+            for (std::pair<std::string, misc::position> const& def: _name_defs) {
+                names.insert(output::formSubName(def.first, util::id(this)));
+            }
+            return names;
         }
     private:
-        util::sref<SymbolTable> const _ext_sym;
-        std::map<std::string, misc::position> _async_param_defs;
+        util::sptr<output::Expression const> _makeReference(
+            misc::position const& pos, std::string const& name)
+        {
+            return util::mkptr(new output::SubReference(pos, name, util::id(this)));
+        }
     };
 
 }
@@ -373,7 +323,7 @@ void BaseCompilingSpace::_testOrReportTerminated(misc::position const& pos)
 }
 
 CompilingSpace::CompilingSpace()
-    : BaseCompilingSpace(util::mkptr(new RegularSymbolTable))
+    : BaseCompilingSpace(util::mkptr(new GlobalSymbolTable))
     , _this_referenced(false)
 {}
 
@@ -422,6 +372,10 @@ util::sptr<output::Block> RegularAsyncCompilingSpace::deliver()
     return CompilingSpace::deliver();
 }
 
+SubCompilingSpace::SubCompilingSpace(BaseCompilingSpace& ext_space)
+    : SubCompilingSpace(util::mkptr(new SubSymbolTable(ext_space.sym())), ext_space)
+{}
+
 bool SubCompilingSpace::inPipe() const
 {
     return _ext_space.inPipe();
@@ -453,6 +407,12 @@ util::sref<output::Block> SubCompilingSpace::replaceSpace(
     return _ext_space.replaceSpace(pos, block);
 }
 
+util::sptr<output::Expression const> BaseCompilingSpace::makeReference(
+    misc::position const& pos, std::string const& name)
+{
+    return sym()->compileRef(pos, name);
+}
+
 RegularSubCompilingSpace::RegularSubCompilingSpace(BaseCompilingSpace& ext_space)
     : SubCompilingSpace(util::mkptr(new RegularSymbolTable(ext_space.sym())), ext_space)
 {}
@@ -472,10 +432,6 @@ util::sptr<output::Block> AsyncPipelineSpace::deliver()
     block()->addStmt(util::mkptr(new output::PipelineContinue));
     return BaseCompilingSpace::deliver();
 }
-
-NoSymbolCompilingSpace::NoSymbolCompilingSpace(BaseCompilingSpace& ext_space)
-    : SubCompilingSpace(util::mkptr(new ReferralSymbolTable(ext_space.sym())), ext_space)
-{}
 
 output::Method AsyncTrySpace::raiseMethod() const
 {

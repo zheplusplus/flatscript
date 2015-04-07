@@ -1,7 +1,9 @@
 Stekinscript
 ============
 
-A Javascript generator that makes it easy to write asynchronous code in a synchronous way. [Alpha Version]
+We write flat Javascript.
+
+This is a Javascript generator that makes it easy to write asynchronous code in a synchronous way. [Alpha Version]
 
 A Simple Example of Starring Features
 -----------------
@@ -10,53 +12,16 @@ Steknscript code:
 
     fs: require('fs')
     try
-        console.log(fs.readFile('a.txt', %%) + fs.readFile('b.txt', %%))
+        contentA: fs.readFile('a.txt', %%)
+        contentB: fs.readFile('b.txt', %%)
+        console.log(contentA + contentB)
     catch
         console.error($e)
     console.log('end')
 
 Program would first read "a.txt", then read "b.txt", concatenate their content successively, and output to console, or report to stderr if any error occurs. And a message "end" would get printed in the end.
 
-Though in this piece of Stekinscript code there isn't any *asynchronous* part like callbacks, but actually Stekinscript compile it into Javascript like (formatted by other tools)
-
-    (function() {
-        var $c_fs;
-        function $anf_0xa753c0($exception) {
-            console.error($exception);
-            $anf_0xa75480();
-        }
-        function $anf_0xa75480() {
-            console.log("end");
-        }
-
-        $c_fs = require("fs");
-        try {
-            $c_fs.readFile("a.txt", (function($cb_err, $ar_0xa74740) {
-                if ($cb_err) return $anf_0xa753c0($cb_err);
-                try {
-                    $c_fs.readFile("b.txt", (function($cb_err, $ar_0xa75bc0) {
-                        if ($cb_err) return $anf_0xa753c0($cb_err);
-                        try {
-                            console.log(($ar_0xa74740 + $ar_0xa75bc0));
-                            $anf_0xa75480();
-                        } catch ($exception) {
-                            $anf_0xa753c0($exception);
-                        }
-                    }));
-                } catch ($exception) {
-                    $anf_0xa753c0($exception);
-                }
-            }));
-        } catch ($exception) {
-            $anf_0xa753c0($exception);
-        }
-    })();
-
-Let me explain the generated code. Function `$anf_0xa753c0` is actually from the `catch` block in the original code, the name of which is randomly generated. But as we know in asynchronous context a try-catch wouldn't help if the exception is generated from a callback, so in Stekinscript the `catch` blockes would be translated into a function, and if an exception is thrown in a callback, the function would be called. The name `$anf_0xa753c0` would be used several times, as in each actual `catch` block it would be called in case any exception raised outside a callback. And it is also used when a callback to each `fs.readFile` is called with error.
-
-The happy path is remarkable, too. When write in Stekinscript two `fs.readFile` calls are side by side, just like function calls whose results are get added together and passed to `console.log`. But in target JS code it becomes somehow sophisticated that the are replaced by two corresponding callback parameters.
-
-Another function `$anf_0xa75480` I shall introduce is what contains codes that should be executed after the try-catch. The calls to this function is properly inserted to ensure `console.log('end')` runs at the last.
+Though in this piece of Stekinscript code there isn't any *asynchronous* part like callbacks, Stekinscript compile it into asynchronous Javascript.
 
 Other Features
 -----------------

@@ -15,7 +15,7 @@ Method method::callbackExc()
 {
     return [](std::string const& exception)
            {
-               return "return " + formName(term::regularAsyncCallback()) + "(" + exception + ");";
+               return "return " + TERM_REGULAR_ASYNC_CALLBACK + "(" + exception + ");";
            };
 }
 

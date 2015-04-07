@@ -99,6 +99,29 @@ namespace output {
         std::string const name;
     };
 
+    struct SubReference
+        : Reference
+    {
+        SubReference(misc::position const& pos, std::string const& name, util::id sid)
+            : Reference(pos, name)
+            , space_id(sid)
+        {}
+
+        std::string str() const;
+
+        util::id const space_id;
+    };
+
+    struct TransientParamReference
+        : Reference
+    {
+        TransientParamReference(misc::position const& pos, std::string const& name)
+            : Reference(pos, name)
+        {}
+
+        std::string str() const;
+    };
+
     struct ImportedName
         : Expression
     {
@@ -274,18 +297,18 @@ namespace output {
         Lambda(misc::position const& pos
              , std::vector<std::string> const& p
              , util::sptr<Statement const> b
-             , bool cp_decls)
+             , bool mp)
                 : Expression(pos)
                 , param_names(p)
                 , body(std::move(b))
-                , copy_decls(cp_decls)
+                , mangle_as_param(mp)
         {}
 
         std::string str() const;
 
         std::vector<std::string> const param_names;
         util::sptr<Statement const> const body;
-        bool const copy_decls;
+        bool const mangle_as_param;
     };
 
     struct RegularAsyncLambda
@@ -372,6 +395,16 @@ namespace output {
         : Expression
     {
         explicit ExceptionObj(misc::position const& pos)
+            : Expression(pos)
+        {}
+
+        std::string str() const;
+    };
+
+    struct ConditionalCallbackParameter
+        : Expression
+    {
+        explicit ConditionalCallbackParameter(misc::position const& pos)
             : Expression(pos)
         {}
 

@@ -1,0 +1,29 @@
+func even(x)
+    return x % 2 = 0
+
+if even(0)
+    x: 42
+    try
+        console.log(x)
+    catch
+        console.log($exception)
+
+if even(2)
+    x: 42
+    setTimeout(%, 1)
+    try
+        x: even(1)
+        console.log(x)
+    catch
+        console.log($exception)
+
+try
+    setTimeout(%, 1)
+    x: 42
+    if even(4)
+        x: even(3)
+        console.log(x)
+catch
+    console.log($exception)
+
+console.log('end')

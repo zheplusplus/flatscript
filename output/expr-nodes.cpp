@@ -73,6 +73,16 @@ std::string Reference::str() const
     return formName(name);
 }
 
+std::string SubReference::str() const
+{
+    return formSubName(name, space_id);
+}
+
+std::string TransientParamReference::str() const
+{
+    return formTransientParam(name);
+}
+
 std::string ImportedName::str() const
 {
     if (isReserved(name)) {
@@ -199,24 +209,12 @@ std::string Lambda::str() const
 {
     std::ostringstream body_os;
     body->write(body_os);
-    std::string copy_decls_str;
-    auto form_func(formNames);
-    if (copy_decls) {
-        form_func = formTransientParams;
-        std::for_each(param_names.begin()
-                    , param_names.end()
-                    , [&](std::string const& p)
-                      {
-                          copy_decls_str += (formName(p) + "=" + formTransientParam(p) + ";");
-                      });
-    }
+    auto form_func(mangle_as_param ? formTransientParams : formNames);
     return
         util::replace_all(
         util::replace_all(
-        util::replace_all(
-            "(function(#PARAMETERS) { #COPY_DECLS#BODY })"
+            "(function(#PARAMETERS) { #BODY })"
                 , "#PARAMETERS", util::join(",", form_func(param_names)))
-                , "#COPY_DECLS", copy_decls_str)
                 , "#BODY", body_os.str())
         ;
 }
@@ -225,13 +223,13 @@ std::string RegularAsyncLambda::str() const
 {
     std::ostringstream body_os;
     body->write(body_os);
-    std::vector<std::string> params(param_names);
-    params.insert(params.begin() + async_param_index, term::regularAsyncCallback());
+    std::vector<std::string> params(formNames(param_names));
+    params.insert(params.begin() + async_param_index, TERM_REGULAR_ASYNC_CALLBACK);
     return
         util::replace_all(
         util::replace_all(
             "(function(#PARAMETERS) { #BODY })"
-                , "#PARAMETERS", util::join(",", formNames(params)))
+                , "#PARAMETERS", util::join(",", params))
                 , "#BODY", body_os.str())
         ;
 }
@@ -271,5 +269,10 @@ std::string Conditional::str() const
 
 std::string ExceptionObj::str() const
 {
-    return "$exception";
+    return TERM_EXCEPTION;
+}
+
+std::string ConditionalCallbackParameter::str() const
+{
+    return TERM_CONDITIONAL_CALLBACK_PARAMETER;
 }

@@ -23,15 +23,14 @@ namespace semantic {
         virtual void defConst(misc::position const& pos
                             , std::string const& name
                             , util::sref<Expression const> value) = 0;
-        virtual void imported(misc::position const& pos, std::string const& name) = 0;
+        virtual void importNames(misc::position const& pos
+                               , std::vector<std::string> const& names) = 0;
         virtual void refNames(misc::position const& pos, std::vector<std::string> const& names) = 0;
 
         virtual util::sref<Expression const> literalOrNul(std::string const& name) const = 0;
-        virtual bool isImported(std::string const& name) const = 0;
+
         virtual util::sptr<output::Expression const> compileRef(misc::position const& pos
                                                               , std::string const& name) = 0;
-        virtual void checkDefinition(misc::position const& pos, std::string const& name) const = 0;
-
         virtual std::set<std::string> localNames() const = 0;
     };
 
@@ -50,6 +49,8 @@ namespace semantic {
         {}
 
         util::sref<SymbolTable> sym();
+        util::sptr<output::Expression const> makeReference(
+            misc::position const& pos, std::string const& name);
         void addStmt(misc::position const& pos, util::sptr<output::Statement const> stmt);
         util::sref<output::Block> block() const;
         void terminate(misc::position const& pos);
@@ -126,13 +127,15 @@ namespace semantic {
             , _ext_space(ext_space)
         {}
 
+        SubCompilingSpace(BaseCompilingSpace& ext_space);
+
         bool inPipe() const;
         bool inCatch() const;
         util::sptr<output::Expression const> ret(util::sref<Expression const> val);
         output::Method raiseMethod() const;
-        void referenceThis();
         util::sref<output::Block> replaceSpace(
                 misc::position const& pos, util::sref<output::Block> block);
+        void referenceThis();
     private:
         BaseCompilingSpace& _ext_space;
     };
@@ -162,35 +165,29 @@ namespace semantic {
         util::sptr<output::Block> deliver();
     };
 
-    struct NoSymbolCompilingSpace
+    struct BranchCompilingSpace
         : SubCompilingSpace
     {
-        explicit NoSymbolCompilingSpace(BaseCompilingSpace& ext_space);
-    };
-
-    struct BranchCompilingSpace
-        : NoSymbolCompilingSpace
-    {
         explicit BranchCompilingSpace(BaseCompilingSpace& ext_space)
-            : NoSymbolCompilingSpace(ext_space)
+            : SubCompilingSpace(ext_space)
         {}
     };
 
     struct CatcherSpace
-        : NoSymbolCompilingSpace
+        : SubCompilingSpace
     {
         explicit CatcherSpace(BaseCompilingSpace& ext_space)
-            : NoSymbolCompilingSpace(ext_space)
+            : SubCompilingSpace(ext_space)
         {}
 
         bool inCatch() const { return true; }
     };
 
     struct AsyncTrySpace
-        : NoSymbolCompilingSpace
+        : SubCompilingSpace
     {
         AsyncTrySpace(BaseCompilingSpace& ext_space, util::sref<output::Function const> cf)
-            : NoSymbolCompilingSpace(ext_space)
+            : SubCompilingSpace(ext_space)
             , catch_func(cf)
         {}
 

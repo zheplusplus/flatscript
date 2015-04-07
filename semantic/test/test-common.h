@@ -74,7 +74,10 @@ namespace test {
     extern NodeType const PRE_UNARY_OP;
     extern NodeType const CONDITIONAL;
     extern NodeType const EXCEPTION_OBJ;
+    extern NodeType const COND_CALLBACK_PARAM;
     extern NodeType const REFERENCE;
+    extern NodeType const SUB_REFERENCE;
+    extern NodeType const TRANSIENT_PARAMETER;
     extern NodeType const IMPORTED_NAME;
     extern NodeType const PIPE_ELEMENT;
     extern NodeType const PIPE_INDEX;
@@ -110,7 +113,7 @@ namespace test {
     extern NodeType const FUNCTION;
     extern NodeType const PARAMETER;
     extern NodeType const FWD_DECL;
-    extern NodeType const COPY_PARAM_DECL;
+    extern NodeType const MANGLE_AS_PARAM;
     extern NodeType const REGULAR_ASYNC_RETURN;
 
     extern NodeType const EXC_THROW;

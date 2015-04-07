@@ -13,7 +13,6 @@ namespace output {
         : Statement
     {
         Block() = default;
-        Block(Block const&) = delete;
 
         void write(std::ostream& os) const;
         int count() const;
@@ -21,7 +20,7 @@ namespace output {
         void addFunc(util::sptr<Function const> func);
         void append(util::sptr<Block> b);
         void setLocalDecls(std::set<std::string> const& decls);
-    private:
+    protected:
         util::ptrarr<Statement const> _stmts;
         util::ptrarr<Function const> _funcs;
         std::set<std::string> _local_decls;

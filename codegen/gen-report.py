@@ -276,17 +276,17 @@ ReportFunc(
 'forbidDefFunc',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    " << "attempt define Function `" << name << "' but forbidden here." << std::endl;
+std::cerr << "    attempt define Function `" << name << "' but forbidden here." << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
 
 ReportFunc(
-'forbidDefName',
+'importOnlyInGlobal',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    " << "attempt define name `" << name << "' but forbidden here." << std::endl;
+std::cerr << "    names could only imported into global space" << std::endl;
 '''
-, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
+, Param(POS_TYPE, 'pos')),
 
 ReportFunc(
 'nameAlreadyInLocal',

@@ -16,13 +16,8 @@
 static semantic::CompilingSpace globalSpace()
 {
     semantic::CompilingSpace space;
-    misc::position pos(0);
-    std::for_each(stekin::preImported().begin()
-                , stekin::preImported().end()
-                , [&](std::string const& name)
-                  {
-                      space.sym()->imported(pos, name);
-                  });
+    space.sym()->importNames(misc::position(0), std::vector<std::string>(
+            stekin::preImported().begin(), stekin::preImported().end()));
     return std::move(space);
 }
 

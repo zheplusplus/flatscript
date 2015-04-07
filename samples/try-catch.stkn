@@ -24,8 +24,8 @@ func g()
 
 g()
 
-x: []
 try
+    x: []
     x.push(false)
     x.push(true)
     x |: asyncThrowFunc($, $i, %%)
@@ -33,7 +33,7 @@ catch
     console.log($e)
 
 try
-    x.length: 0
+    x: []
     x.push(false)
     x.push(false)
     x.push(true)
@@ -43,7 +43,7 @@ catch
 
 try
     try
-        x.length: 0
+        x: []
         x.push(true)
         x |: syncThrowFunc($, 0)
     catch
@@ -51,6 +51,31 @@ try
         throw 'throw in catch'
 catch
     setTimeout(%, 1)
+    console.log($e)
+
+func throwAfterTryCatchSync(t, i)
+    try
+        console.log('try+')
+    catch
+        console.log('catch+')
+    syncThrowFunc(t, i)
+
+func throwAfterTryCatchAsync(t, i, %%)
+    try
+        setTimeout(%, 1)
+        console.log('try*')
+    catch
+        console.log('catch*')
+    syncThrowFunc(t, i)
+
+try
+    throwAfterTryCatchSync(true, 72)
+catch
+    console.log($e)
+
+try
+    throwAfterTryCatchAsync(true, 77, %%)
+catch
     console.log($e)
 
 console.log('end')

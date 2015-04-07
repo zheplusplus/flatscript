@@ -52,7 +52,7 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
                         (pos, CALL, 1)
                             (pos, REFERENCE, "f")
                             (pos, FUNCTION, 0)
-                                (COPY_PARAM_DECL)
+                                (MANGLE_AS_PARAM)
                                 (SCOPE_BEGIN)
                                     (ARITHMETICS)
                                         (pos, CALL, 1)
@@ -84,15 +84,15 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
     util::ptrarr<semantic::Expression const> largs;
 
     space.sym()->defName(pos, "f");
-    space.sym()->defName(pos, "g");
-    space.sym()->defName(pos, "h");
+    space.sym()->importNames(pos, { "g" });
     space.sym()->defName(pos, "list");
 
     fargs.append(util::mkptr(new semantic::AsyncCall(pos
                                                    , util::mkptr(new semantic::Reference(pos, "g"))
                                                    , util::ptrarr<semantic::Expression const>()
-                                                   , std::vector<std::string>({ "h" })
+                                                   , std::vector<std::string>({ "k" })
                                                    , util::ptrarr<semantic::Expression const>())));
+    block.addStmt(util::mkptr(new semantic::Import(pos, std::vector<std::string>{ "h" })));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, semantic::Pipeline::createMapper(
                     pos
                   , util::mkptr(new semantic::Reference(pos, "list"))
@@ -104,22 +104,24 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
                                   , util::mkptr(new semantic::Reference(pos, "h"))
                                   , util::ptrarr<semantic::Expression const>())))));
 
-    compile(block, space.sym())->write(dummyos());
+    block.compile(space);
+    space.deliver()->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
+            (FWD_DECL, "f")
+            (FWD_DECL, "list")
             (ASYNC_RESULT_DEF)
                 (pos, ASYNC_PIPELINE)
                     (pos, REFERENCE, "list")
                     (SCOPE_BEGIN)
-                        (FWD_DECL, "h")
                         (ASYNC_RESULT_DEF)
                         (pos, CALL, 1)
-                            (pos, REFERENCE, "g")
+                            (pos, IMPORTED_NAME, "g")
                             (pos, FUNCTION, 1)
-                                (PARAMETER, "h")
-                                (COPY_PARAM_DECL)
+                                (PARAMETER, "k")
+                                (MANGLE_AS_PARAM)
                                 (SCOPE_BEGIN)
                                     (ARITHMETICS)
                                         (pos, CALL, 1)
@@ -137,7 +139,7 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
                             (pos, PIPE_RESULT)
                         (ARITHMETICS)
                             (pos, CALL, 0)
-                                (pos, REFERENCE, "h")
+                                (pos, IMPORTED_NAME, "h")
                     (SCOPE_END)
                     (EXC_THROW)
         (SCOPE_END)
@@ -268,18 +270,17 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
                 (pos, ASYNC_PIPELINE)
                     (pos, REFERENCE, "merin")
                     (SCOPE_BEGIN)
-                        (FWD_DECL, "scarlet")
                         (ASYNC_RESULT_DEF)
                             (pos, CALL, 1)
                                 (pos, REFERENCE, "sakuya")
                                 (pos, FUNCTION, 1)
                                     (PARAMETER, "scarlet")
-                                    (COPY_PARAM_DECL)
+                                    (MANGLE_AS_PARAM)
                                     (SCOPE_BEGIN)
                                         (ARITHMETICS)
                                             (pos, ASYNC_REFERENCE)
                                         (ARITHMETICS)
-                                            (pos, REFERENCE, "scarlet")
+                                            (pos, TRANSIENT_PARAMETER, "scarlet")
                                         (PIPELINE_CONTINUE)
                                     (SCOPE_END)
                     (SCOPE_END)
@@ -324,4 +325,66 @@ TEST_F(PipelinesTest, ReturnInPipelineContext)
     std::vector<ReturnNotAllowedInPipeRec> recs(getReturnNotAllowedInPipeRecs());
     ASSERT_EQ(1, recs.size());
     ASSERT_EQ(pos_a, recs[0].pos);
+}
+
+TEST_F(PipelinesTest, RedefineImportNameSameAsAsyncParam)
+{
+    misc::position pos(6);
+    misc::position pos_ap(600);
+    misc::position pos_import(601);
+    semantic::CompilingSpace space;
+    semantic::Block block;
+
+    block.addStmt(util::mkptr(new semantic::Import(pos, std::vector<std::string>{ "g" })));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                new semantic::AsyncCall(pos_ap
+                                      , util::mkptr(new semantic::Reference(pos, "g"))
+                                      , util::ptrarr<semantic::Expression const>()
+                                      , std::vector<std::string>({ "h" })
+                                      , util::ptrarr<semantic::Expression const>())))));
+    block.addStmt(util::mkptr(new semantic::Import(pos_import, std::vector<std::string>{ "h" })));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                new semantic::Call(pos
+                                 , util::mkptr(new semantic::Reference(pos, "h"))
+                                 , util::ptrarr<semantic::Expression const>())))));
+
+    block.compile(space);
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
+    ASSERT_EQ(1, redefs.size());
+    ASSERT_EQ(pos_ap, redefs[0].prev_def_pos);
+    ASSERT_EQ(pos_import, redefs[0].this_def_pos);
+    ASSERT_EQ("h", redefs[0].name);
+}
+
+TEST_F(PipelinesTest, RedefineAsyncParamSameAsImportName)
+{
+    misc::position pos(7);
+    misc::position pos_import(700);
+    misc::position pos_ap(701);
+    semantic::CompilingSpace space;
+    semantic::Block block;
+
+    block.addStmt(util::mkptr(new semantic::Import(pos, std::vector<std::string>{ "g" })));
+    block.addStmt(util::mkptr(new semantic::Import(pos_import, std::vector<std::string>{ "h" })));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                new semantic::AsyncCall(pos_ap
+                                      , util::mkptr(new semantic::Reference(pos, "g"))
+                                      , util::ptrarr<semantic::Expression const>()
+                                      , std::vector<std::string>({ "h" })
+                                      , util::ptrarr<semantic::Expression const>())))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+                new semantic::Call(pos
+                                 , util::mkptr(new semantic::Reference(pos, "h"))
+                                 , util::ptrarr<semantic::Expression const>())))));
+
+    block.compile(space);
+    ASSERT_TRUE(error::hasError());
+
+    std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
+    ASSERT_EQ(1, redefs.size());
+    ASSERT_EQ(pos_import, redefs[0].prev_def_pos);
+    ASSERT_EQ(pos_ap, redefs[0].this_def_pos);
+    ASSERT_EQ("h", redefs[0].name);
 }

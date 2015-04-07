@@ -18,7 +18,6 @@ namespace output {
         virtual util::sref<Statement const> body() const = 0;
         virtual std::string mangledName() const = 0;
         virtual std::vector<std::string> parameters() const = 0;
-        virtual std::string mangledParameters() const;
     };
 
     struct RegularFunction
@@ -107,7 +106,6 @@ namespace output {
         AsyncCatcher() = default;
 
         std::vector<std::string> parameters() const;
-        std::string mangledParameters() const;
     };
 
 }

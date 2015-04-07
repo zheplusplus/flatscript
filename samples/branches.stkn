@@ -1,0 +1,32 @@
+func f(a, b, cb)
+    setTimeout(%, 1)
+    cb(a * a + b * b, a * a - b * b)
+
+f(0, 1, %(x, y))
+
+if x > y
+    setTimeout(%, 1)
+    m: x + y
+    n: x - y
+    console.log(m, n)
+
+    f(m, n, %(p, q))
+    console.log(p, q)
+
+m: 10
+n: 42
+
+f(m, n, %(p, q))
+
+if p > q
+    m: p + q
+    n: p - q
+    console.log(m, n)
+
+console.log(m, n)
+
+if p > q
+    f(10, 42, %(m, n))
+    console.log(m, n)
+
+console.log(m, n)

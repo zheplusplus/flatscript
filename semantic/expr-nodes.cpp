@@ -456,8 +456,6 @@ util::sptr<output::Expression const> Conditional::_compileAsync(BaseCompilingSpa
     util::sptr<output::Expression const> compl_pred(predicate->compile(space));
 
     util::sptr<output::ConditionalCallback> cb(new output::ConditionalCallback);
-    std::string param_name(cb->parameters()[0]);
-
     util::sptr<output::Block const> consq_flow(compileConditionalBranch(space, *consequence, *cb));
     util::sptr<output::Block const> alter_flow(compileConditionalBranch(space, *alternative, *cb));
 
@@ -466,7 +464,7 @@ util::sptr<output::Expression const> Conditional::_compileAsync(BaseCompilingSpa
     space.addStmt(pos, util::mkptr(new output::Branch(
                         std::move(compl_pred), std::move(consq_flow), std::move(alter_flow))));
     space.setAsyncSpace(pos, std::vector<std::string>(), cb_body_flow);
-    return util::mkptr(new output::Reference(pos, param_name));
+    return util::mkptr(new output::ConditionalCallbackParameter(pos));
 }
 
 util::sptr<output::Expression const> ExceptionObj::compile(BaseCompilingSpace& space) const

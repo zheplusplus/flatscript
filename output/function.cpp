@@ -28,7 +28,7 @@ namespace {
 
 void Function::write(std::ostream& os) const
 {
-    os << "function " << mangledName() << "(" << mangledParameters() << ") {" << std::endl;
+    os << "function " << mangledName() << "(" << util::join(",", parameters()) << "){" << std::endl;
     body()->write(os);
     os << "}" << std::endl;
 }
@@ -39,11 +39,6 @@ util::sptr<Expression const> Function::callMe(
     return util::mkptr(new output::Call(
                 pos, util::mkptr(new MangledReference(pos, mangledName())),
                 std::move(args)));
-}
-
-std::string Function::mangledParameters() const
-{
-    return util::join(",", formNames(parameters()));
 }
 
 util::sref<Statement const> RegularFunction::body() const
@@ -58,19 +53,19 @@ std::string RegularFunction::mangledName() const
 
 std::vector<std::string> RegularFunction::parameters() const
 {
-    return params;
+    return formNames(params);
 }
 
 std::vector<std::string> RegularAsyncFunction::parameters() const
 {
-    std::vector<std::string> p(params);
-    p.insert(p.begin() + async_param_index, term::regularAsyncCallback());
+    std::vector<std::string> p(formNames(params));
+    p.insert(p.begin() + async_param_index, TERM_REGULAR_ASYNC_CALLBACK);
     return p;
 }
 
 std::string RegularAsyncReturnCall::str() const
 {
-    return formName(term::regularAsyncCallback()) + "(null," + val->str() + ")";
+    return TERM_REGULAR_ASYNC_CALLBACK + "(null," + val->str() + ")";
 }
 
 util::sref<Statement const> AnonymousCallback::body() const
@@ -90,7 +85,7 @@ util::sref<Block> AnonymousCallback::bodyFlow()
 
 std::vector<std::string> ConditionalCallback::parameters() const
 {
-    return std::vector<std::string>({ "$ccp" });
+    return std::vector<std::string>({ TERM_CONDITIONAL_CALLBACK_PARAMETER });
 }
 
 std::vector<std::string> NoParamCallback::parameters() const
@@ -100,10 +95,5 @@ std::vector<std::string> NoParamCallback::parameters() const
 
 std::vector<std::string> AsyncCatcher::parameters() const
 {
-    return std::vector<std::string>({ "$exception" });
-}
-
-std::string AsyncCatcher::mangledParameters() const
-{
-    return "$exception";
+    return std::vector<std::string>({ TERM_EXCEPTION });
 }
