@@ -53,6 +53,7 @@ verify async-pipes
 verify branches
 verify branch-with-async-sub
 verify ref-this
+verify deliver-space-with-this-decl
 verify async-fib
 verify try-catch
 verify throw-in-pipeline

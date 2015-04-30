@@ -42,6 +42,7 @@ void Block::append(util::sptr<Block> b)
 {
     _stmts.append(std::move(b->_stmts));
     _funcs.append(std::move(b->_funcs));
+    _local_decls.insert(b->_local_decls.begin(), b->_local_decls.end());
 }
 
 void Block::setLocalDecls(std::set<std::string> const& decls)
