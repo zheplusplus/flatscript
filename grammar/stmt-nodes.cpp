@@ -4,6 +4,7 @@
 
 #include "stmt-nodes.h"
 #include "function.h"
+#include "class.h"
 
 using namespace grammar;
 

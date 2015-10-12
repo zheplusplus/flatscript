@@ -1,5 +1,6 @@
 #include "function.h"
 #include "node-base.h"
+#include "class.h"
 
 using namespace grammar;
 

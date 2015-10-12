@@ -10,6 +10,7 @@ semantic:$(WORKDIR)/const-fold.h $(WORKDIR)/const-fold.cpp \
          const-fold.d \
          block.d \
          compiling-space.d \
+         class.d \
          function.d
 
 $(WORKDIR)/const-fold.%:$(CODEGEN)/const-fold.py

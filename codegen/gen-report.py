@@ -203,9 +203,26 @@ std::cerr << "    another `" << successor << "' already matches the `" << match 
 , Param(STR_TYPE, 'match')),
 
 ReportFunc(
+'duplicateCtor',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    a constructor already defined at " << def_pos.str() << std::endl;
+'''
+, Param(POS_TYPE, 'def_pos'), Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'stmtNotAllowedInClass',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    only functions or the constructor allowed in a function, invalid statement" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'tryWithoutCatch',
 lineno() + '''
-std::cerr << "    no `catch' clause matching `try' clause at " << try_pos.str() << std::endl;
+std::cerr << try_pos.str() << std::endl;
+std::cerr << "    no `catch' clause matching `try' clause" << std::endl;
 '''
 , Param(POS_TYPE, 'try_pos')),
 
@@ -376,6 +393,14 @@ ReportFunc(
 lineno() + '''
 std::cerr << pos.str() << std::endl;
 std::cerr << "    exception not in `catch' context." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'contructorNotInClass',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    `ctor' clause not belonging to a `class'" << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 

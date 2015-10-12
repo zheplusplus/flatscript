@@ -7,6 +7,7 @@
 #include <report/errors.h>
 
 #include "function.h"
+#include "class.h"
 #include "expr-nodes.h"
 #include "compiling-space.h"
 #include "const-fold.h"

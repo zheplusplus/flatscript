@@ -24,13 +24,26 @@ namespace semantic {
 
         void compile(BaseCompilingSpace& space) const;
         bool isAsync() const;
-
-        void addStmt(util::sptr<Statement const> stmt);
-        void addFunc(util::sptr<Function const> func);
         void append(Block following);
+
+        void addStmt(util::sptr<Statement const> stmt)
+        {
+            _stmts.append(std::move(stmt));
+        }
+
+        void addFunc(util::sptr<Function const> func)
+        {
+            _funcs.append(std::move(func));
+        }
+
+        void addClass(util::sptr<Class const> cls)
+        {
+            _classes.append(std::move(cls));
+        }
     private:
         util::ptrarr<Statement const> _stmts;
         util::ptrarr<Function const> _funcs;
+        util::ptrarr<Class const> _classes;
     };
 
 }

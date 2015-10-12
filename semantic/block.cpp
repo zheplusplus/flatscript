@@ -3,20 +3,11 @@
 
 #include "block.h"
 #include "function.h"
+#include "class.h"
 #include "node-base.h"
 #include "compiling-space.h"
 
 using namespace semantic;
-
-void Block::addStmt(util::sptr<Statement const> stmt)
-{
-    _stmts.append(std::move(stmt));
-}
-
-void Block::addFunc(util::sptr<Function const> func)
-{
-    _funcs.append(std::move(func));
-}
 
 void Block::compile(BaseCompilingSpace& space) const
 {
@@ -48,4 +39,5 @@ void Block::append(Block following)
 {
     _funcs.append(std::move(following._funcs));
     _stmts.append(std::move(following._stmts));
+    _classes.append(std::move(following._classes));
 }

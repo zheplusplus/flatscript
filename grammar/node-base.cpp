@@ -1,5 +1,6 @@
 #include <semantic/expr-nodes.h>
 #include <semantic/function.h>
+#include <semantic/class.h>
 #include <report/errors.h>
 
 #include "node-base.h"

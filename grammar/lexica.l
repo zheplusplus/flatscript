@@ -125,8 +125,12 @@ gen {
     return KW_RESERVED;
 }
 
+class {
+    return KW_CLASS;
+}
+
 ctor {
-    return KW_RESERVED;
+    return KW_CONSTRUCTOR;
 }
 
 while {

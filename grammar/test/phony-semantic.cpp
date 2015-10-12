@@ -42,16 +42,6 @@ util::sptr<output::Function const> RegularAsyncFunction::compile(util::sref<Symb
     return Function::compile(nulSymbols());
 }
 
-void Block::addStmt(util::sptr<Statement const> stmt)
-{
-    _stmts.append(std::move(stmt));
-}
-
-void Block::addFunc(util::sptr<Function const> func)
-{
-    _funcs.append(std::move(func));
-}
-
 void Block::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(BLOCK_BEGIN);

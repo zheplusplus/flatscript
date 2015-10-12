@@ -167,6 +167,41 @@ namespace grammar {
         util::sptr<ClauseBase> createClause(ClauseStackWrapper& wrapper);
     };
 
+    struct ClassAutomation
+        : AutomationBase
+    {
+        explicit ClassAutomation(misc::position const& pos)
+            : _pos(pos)
+            , _before_colon(true)
+        {}
+
+        void pushFactor(AutomationStack&, util::sptr<Expression const> factor,
+                        std::string const& image);
+        void accepted(AutomationStack&, util::sptr<Expression const>) {};
+        bool finishOnBreak(bool) const;
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+    private:
+        misc::position const _pos;
+        std::string _class_name;
+        std::string _base_class_name;
+        bool _before_colon;
+    };
+
+    struct CtorAutomation
+        : AutomationBase
+    {
+        explicit CtorAutomation(misc::position const& pos);
+
+        void accepted(AutomationStack&, util::sptr<Expression const>) {};
+        void accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list);
+        bool finishOnBreak(bool sub_empty) const;
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+    private:
+        misc::position const _pos;
+        std::vector<std::string> _params;
+        bool _finished;
+    };
+
 }
 
 #endif /* __STEKIN_GRAMMAR_STATEMENT_AUTOMATIONS_H__ */

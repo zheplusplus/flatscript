@@ -8,6 +8,7 @@
 #include "expr-automations.h"
 #include "stmt-nodes.h"
 #include "function.h"
+#include "class.h"
 
 using namespace grammar;
 
@@ -56,6 +57,14 @@ ExprStmtAutomation::ExprStmtAutomation(util::sref<ClauseBase> clause)
                       {
                           stack.replace(util::mkptr(new CatchAutomation(token.pos)));
                       };
+    _actions[CLASS] = [](AutomationStack& stack, TypedToken const& token)
+                      {
+                          stack.replace(util::mkptr(new ClassAutomation(token.pos)));
+                      };
+    _actions[CONSTRUCTOR] = [](AutomationStack& stack, TypedToken const& token)
+                            {
+                                stack.replace(util::mkptr(new CtorAutomation(token.pos)));
+                            };
 }
 
 void ExprStmtAutomation::pushFactor(AutomationStack& stack
@@ -257,4 +266,75 @@ util::sptr<ClauseBase> TryAutomation::createClause(ClauseStackWrapper& wrapper)
 util::sptr<ClauseBase> CatchAutomation::createClause(ClauseStackWrapper& wrapper)
 {
     return util::mkptr(new CatchClause(wrapper.last_indent, pos, wrapper.lastClause()));
+}
+
+void ClassAutomation::pushFactor(
+                AutomationStack&, util::sptr<Expression const> factor, std::string const& image)
+{
+    if (_class_name.empty()) {
+        _class_name = factor->reduceAsName();
+        _actions[COLON] = [this](AutomationStack&, TypedToken const&)
+                          {
+                              _actions[COLON] = AutomationBase::discardToken;
+                              _before_colon = false;
+                          };
+        return;
+    }
+    if (_base_class_name.empty()) {
+        _base_class_name = factor->reduceAsName();
+        return;
+    }
+    error::unexpectedToken(factor->pos, image);
+}
+
+bool ClassAutomation::finishOnBreak(bool) const
+{
+    return !_class_name.empty() && (_before_colon || !_base_class_name.empty());
+}
+
+void ClassAutomation::finish(
+                ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
+{
+    wrapper.pushClause(util::mkptr(new ClassClause(
+            wrapper.last_indent, _pos, _class_name, _base_class_name, wrapper.lastClause())));
+    stack.pop();
+}
+
+CtorAutomation::CtorAutomation(misc::position const& pos)
+    : _pos(pos)
+    , _finished(false)
+{
+    _actions[OPEN_PAREN] = [this](AutomationStack& stack, TypedToken const&)
+                           {
+                               _actions[OPEN_PAREN] = AutomationBase::discardToken;
+                               stack.push(util::mkptr(new ExprListAutomation));
+                           };
+}
+
+void CtorAutomation::accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list)
+{
+    for (auto const& e: list) {
+        this->_params.push_back(e->reduceAsName());
+    }
+    this->_finished = true;
+}
+
+bool CtorAutomation::finishOnBreak(bool) const
+{
+    return this->_finished;
+}
+
+void CtorAutomation::finish(
+            ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
+{
+    misc::position ct_pos(_pos);
+    std::vector<std::string> params(std::move(_params));
+    util::sref<ClauseBase> parent_clause(wrapper.lastClause());
+    wrapper.pushClause(util::mkptr(new InlineClause(
+        wrapper.last_indent,
+        [=](Block clause_block)
+        {
+            parent_clause->acceptCtor(ct_pos, std::move(params), std::move(clause_block));
+        })));
+    stack.pop();
 }

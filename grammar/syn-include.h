@@ -15,5 +15,6 @@
 #include "automation-base.h"
 #include "expr-nodes.h"
 #include "function.h"
+#include "class.h"
 
 #endif /* __STEKIN_GRAMMAR_SYN_INCLUDE_H__ */

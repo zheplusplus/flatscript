@@ -2,6 +2,7 @@
 #include "tokens.h"
 #include "automation-base.h"
 #include "function.h"
+#include "class.h"
 
 using namespace grammar;
 

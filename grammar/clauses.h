@@ -7,6 +7,7 @@
 #include "node-base.h"
 #include "automation-base.h"
 #include "function.h"
+#include "class.h"
 #include "tokens.h"
 
 namespace grammar {
@@ -23,7 +24,10 @@ namespace grammar {
         int const indent;
 
         void acceptFunc(util::sptr<Function const> func);
-        void acceptStmt(util::sptr<Statement> stmt);
+        void acceptClass(util::sptr<Class const> cls);
+        void acceptCtor(misc::position const& ct_pos,
+                        std::vector<std::string> ct_params, Block ct_bl);
+        virtual void acceptStmt(util::sptr<Statement> stmt);
         void acceptElse(misc::position const& else_pos, Block block);
         void acceptCatch(misc::position const& catch_pos, Block block);
 
@@ -43,6 +47,22 @@ namespace grammar {
         AutomationStack _stack;
         int _member_indent;
         Block _block;
+    };
+
+    struct InlineClause
+        : ClauseBase
+    {
+        InlineClause(int indent_len, std::function<void(Block)> deliver_f)
+            : ClauseBase(indent_len)
+            , _deliver(std::move(deliver_f))
+        {}
+
+        void deliver()
+        {
+            _deliver(std::move(_block));
+        }
+    private:
+        std::function<void(Block)> _deliver;
     };
 
     struct IfClause
@@ -112,6 +132,28 @@ namespace grammar {
         std::vector<std::string> const param_names;
         int const async_param_index;
     private:
+        util::sref<ClauseBase> const _parent;
+    };
+
+    struct ClassClause
+        : ClauseBase
+    {
+        ClassClause(int indent_len, misc::position const& ps, std::string cls_name,
+                    std::string base_cls_name, util::sref<ClauseBase> parent)
+            : ClauseBase(indent_len)
+            , pos(ps)
+            , _class_name(std::move(cls_name))
+            , _base_class_name(std::move(base_cls_name))
+            , _parent(parent)
+        {}
+
+        void deliver();
+        void acceptStmt(util::sptr<Statement> stmt);
+
+        misc::position const pos;
+    private:
+        std::string const _class_name;
+        std::string const _base_class_name;
         util::sref<ClauseBase> const _parent;
     };
 

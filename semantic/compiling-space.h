@@ -58,6 +58,7 @@ namespace semantic {
 
         virtual bool inPipe() const = 0;
         virtual bool inCatch() const = 0;
+        virtual bool inClass() const = 0;
 
         void setAsyncSpace(misc::position const& pos
                          , std::vector<std::string> const& params
@@ -95,11 +96,18 @@ namespace semantic {
 
         bool inPipe() const { return false; }
         bool inCatch() const { return false; }
+        bool inClass() const { return false; }
 
         void referenceThis();
         util::sptr<output::Block> deliver();
     private:
         bool _this_referenced;
+    };
+
+    struct ClassSpace
+        : CompilingSpace
+    {
+        bool inClass() const { return true; }
     };
 
     struct RegularAsyncCompilingSpace
@@ -131,6 +139,7 @@ namespace semantic {
 
         bool inPipe() const;
         bool inCatch() const;
+        bool inClass() const { return false; }
         util::sptr<output::Expression const> ret(util::sref<Expression const> val);
         output::Method raiseMethod() const;
         util::sref<output::Block> replaceSpace(

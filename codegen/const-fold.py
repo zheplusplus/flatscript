@@ -144,6 +144,7 @@ IMPL_BEGIN = lineno() + '''
 
 #include "const-fold.h"
 #include "function.h"
+#include "class.h"
 #include "expr-nodes.h"
 
 using namespace semantic;

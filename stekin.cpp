@@ -5,6 +5,7 @@
 #include <grammar/yy-misc.h>
 #include <grammar/node-base.h>
 #include <grammar/function.h>
+#include <grammar/class.h>
 #include <semantic/function.h>
 #include <semantic/compiling-space.h>
 #include <output/function.h>

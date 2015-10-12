@@ -1,6 +1,7 @@
 #include <output/function.h>
 
 #include "function.h"
+#include "class.h"
 #include "node-base.h"
 #include "compiling-space.h"
 

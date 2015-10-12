@@ -2,6 +2,7 @@
 #define __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 
 #include <semantic/function.h>
+#include <semantic/class.h>
 #include <output/node-base.h>
 #include <output/block.h>
 #include <output/function.h>

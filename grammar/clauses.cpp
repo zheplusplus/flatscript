@@ -4,6 +4,7 @@
 #include "clauses.h"
 #include "stmt-nodes.h"
 #include "function.h"
+#include "class.h"
 #include "stmt-automations.h"
 
 using namespace grammar;
@@ -11,6 +12,16 @@ using namespace grammar;
 void ClauseBase::acceptFunc(util::sptr<Function const> func)
 {
     _block.addFunc(std::move(func));
+}
+
+void ClauseBase::acceptClass(util::sptr<Class const> cls)
+{
+    _block.addClass(std::move(cls));
+}
+
+void ClauseBase::acceptCtor(misc::position const& ct_pos, std::vector<std::string> params, Block body)
+{
+    _block.setCtor(ct_pos, std::move(params), std::move(body));
 }
 
 void ClauseBase::acceptStmt(util::sptr<Statement> stmt)
@@ -101,6 +112,17 @@ void FunctionClause::deliver()
 {
     return _parent->acceptFunc(util::mkptr(
                     new Function(pos, name, param_names, async_param_index, std::move(_block))));
+}
+
+void ClassClause::deliver()
+{
+    _parent->acceptClass(util::mkptr(
+            new Class(pos, _class_name, _base_class_name, std::move(_block))));
+}
+
+void ClassClause::acceptStmt(util::sptr<Statement> stmt)
+{
+    error::stmtNotAllowedInClass(stmt->pos);
 }
 
 void TryClause::deliver()

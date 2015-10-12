@@ -7,6 +7,7 @@
 
 #include "stmt-nodes.h"
 #include "function.h"
+#include "class.h"
 #include "compiling-space.h"
 
 using namespace semantic;
