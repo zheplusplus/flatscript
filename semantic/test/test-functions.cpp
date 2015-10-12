@@ -35,7 +35,7 @@ TEST_F(FunctionTest, RegularAsyncFunction)
     semantic::RegularAsyncFunction af(
                 pos, "li", std::vector<std::string>({ "light", "dark" }), 1, std::move(body));
 
-    af.compile(space.sym())->write(dummyos());
+    af.compile(space.sym(), false)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -80,7 +80,7 @@ TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
     semantic::RegularAsyncFunction af(
                 pos, "yukito", std::vector<std::string>({ "touya" }), 1, std::move(body));
 
-    af.compile(space.sym())->write(dummyos());
+    af.compile(space.sym(), false)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

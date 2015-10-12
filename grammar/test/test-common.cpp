@@ -75,6 +75,7 @@ NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
 NodeType const test::IDENTIFIER("identifier");
 NodeType const test::THIS("this");
+NodeType const test::SUPER_FUNC("super func");
 NodeType const test::LIST_BEGIN("list begin");
 NodeType const test::LIST_END("list end");
 
@@ -105,7 +106,7 @@ NodeType const test::DICT_ITEM("dictionary item");
 NodeType const test::NAME_DEF("name def");
 NodeType const test::ARITHMETICS("arithmetics");
 NodeType const test::RETURN("return");
-NodeType const test::IMPORT("import");
+NodeType const test::EXTERN("extern");
 NodeType const test::EXPORT("export");
 NodeType const test::EXPORT_VALUE("exported value");
 NodeType const test::ATTR_SET("attribute set");

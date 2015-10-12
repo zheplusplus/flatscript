@@ -181,64 +181,6 @@ TEST_F(ExprNodesTest, FoldBinaryOp)
     ;
 }
 
-TEST_F(ExprNodesTest, LiteralBoolValueError)
-{
-    misc::position pos(7);
-    semantic::CompilingSpace space;
-    semantic::IntLiteral int0(pos, "20110409");
-    int0.boolValue(space.sym());
-
-    semantic::FloatLiteral float0(pos, "10.58");
-    float0.boolValue(space.sym());
-
-    ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(2, getCondNotBoolRecs().size());
-    EXPECT_EQ(pos, getCondNotBoolRecs()[0].pos);
-    EXPECT_EQ("int", getCondNotBoolRecs()[0].actual_type);
-    EXPECT_EQ(pos, getCondNotBoolRecs()[1].pos);
-    EXPECT_EQ("float", getCondNotBoolRecs()[1].actual_type);
-}
-
-TEST_F(ExprNodesTest, OperationLiteralBoolValueError)
-{
-    misc::position pos(8);
-    semantic::CompilingSpace space;
-    semantic::BinaryOp conj(pos
-                          , util::mkptr(new semantic::BoolLiteral(pos, true))
-                          , "&&"
-                          , util::mkptr(new semantic::FloatLiteral(pos, "20110.4")));
-    conj.boolValue(space.sym());
-    semantic::BinaryOp disj(pos
-                          , util::mkptr(new semantic::BoolLiteral(pos, false))
-                          , "||"
-                          , util::mkptr(new semantic::IntLiteral(pos, "2")));
-    disj.boolValue(space.sym());
-    semantic::PreUnaryOp nega(pos, "!", util::mkptr(new semantic::FloatLiteral(pos, "1.12")));
-    nega.boolValue(space.sym());
-
-    semantic::BinaryOp binary(pos
-                            , util::mkptr(new semantic::IntLiteral(pos, "1"))
-                            , "*"
-                            , util::mkptr(new semantic::FloatLiteral(pos, "11235.8")));
-    binary.boolValue(space.sym());
-
-    semantic::PreUnaryOp pre_unary(pos, "+", util::mkptr(new semantic::FloatLiteral(pos, ".13")));
-    pre_unary.boolValue(space.sym());
-
-    ASSERT_TRUE(error::hasError());
-    ASSERT_EQ(5, getCondNotBoolRecs().size());
-    EXPECT_EQ(pos, getCondNotBoolRecs()[0].pos);
-    EXPECT_EQ("float", getCondNotBoolRecs()[0].actual_type);
-    EXPECT_EQ(pos, getCondNotBoolRecs()[1].pos);
-    EXPECT_EQ("int", getCondNotBoolRecs()[1].actual_type);
-    EXPECT_EQ(pos, getCondNotBoolRecs()[2].pos);
-    EXPECT_EQ("float", getCondNotBoolRecs()[2].actual_type);
-    EXPECT_EQ(pos, getCondNotBoolRecs()[3].pos);
-    EXPECT_EQ("float", getCondNotBoolRecs()[3].actual_type);
-    EXPECT_EQ(pos, getCondNotBoolRecs()[4].pos);
-    EXPECT_EQ("float", getCondNotBoolRecs()[4].actual_type);
-}
-
 TEST_F(ExprNodesTest, ListAppending)
 {
     misc::position pos(8);

@@ -1,3 +1,4 @@
+#include <globals.h>
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
 #include <util/string.h>
@@ -5,6 +6,7 @@
 
 #include "expr-nodes.h"
 #include "function.h"
+#include "class.h"
 
 using namespace grammar;
 
@@ -191,11 +193,10 @@ util::sptr<semantic::Expression const> Lookup::reduceAsLeftValue() const
 
 util::sptr<semantic::Expression const> ListSlice::reduceAsExpr() const
 {
-    return util::mkptr(new semantic::ListSlice(pos
-                                             , list->reduceAsExpr()
-                                             , begin->reduceAsExpr()
-                                             , end->reduceAsExpr()
-                                             , step->reduceAsExpr()));
+    flats::Globals::g.use_list_slice = true;
+    return util::mkptr(new semantic::ListSlice(
+            this->pos, this->list->reduceAsExpr(), this->begin->reduceAsExpr()
+          , this->end->reduceAsExpr(), this->step->reduceAsExpr()));
 }
 
 util::sptr<semantic::Expression const> Dictionary::reduceAsExpr() const
@@ -234,6 +235,11 @@ util::sptr<semantic::Expression const> AsyncPlaceholder::reduceAsArg(
 util::sptr<semantic::Expression const> This::reduceAsExpr() const
 {
     return util::mkptr(new semantic::This(pos));
+}
+
+util::sptr<semantic::Expression const> SuperFunc::reduceAsExpr() const
+{
+    return util::mkptr(new semantic::SuperFunc(pos, property));
 }
 
 util::sptr<semantic::Expression const> Pipeline::reduceAsExpr() const

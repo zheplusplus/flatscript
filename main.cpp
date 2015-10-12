@@ -5,25 +5,28 @@
 #include <grammar/yy-misc.h>
 #include <grammar/node-base.h>
 #include <grammar/function.h>
+#include <grammar/class.h>
 #include <semantic/function.h>
 #include <semantic/compiling-space.h>
 #include <output/function.h>
+#include <output/class.h>
 #include <output/global.h>
 #include <report/errors.h>
 
 #include "env.h"
+#include "globals.h"
 
 static semantic::CompilingSpace globalSpace()
 {
     semantic::CompilingSpace space;
-    space.sym()->importNames(misc::position(0), std::vector<std::string>(
-            stekin::preImported().begin(), stekin::preImported().end()));
+    space.sym()->addExternNames(misc::position(0), std::vector<std::string>(
+            flats::Globals::g.external_syms.begin(), flats::Globals::g.external_syms.end()));
     return std::move(space);
 }
 
 int main(int argc, char* argv[])
 {
-    stekin::initEnv(argc, argv);
+    flats::initEnv(argc, argv);
     yyparse();
     if (error::hasError()) {
         return 1;

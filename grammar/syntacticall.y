@@ -26,13 +26,14 @@
 %type <token_sequence_type> token_sequence
 
 %token INDENT EOL
-%token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_IMPORT KW_EXPORT KW_RESERVED
+%token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_EXTERN KW_EXPORT KW_RESERVED
 %token KW_TRY KW_CATCH KW_TRHOW
-%token PROP_SEP OPERATOR PIPE_SEP
+%token OPERATOR PIPE_SEP
 %token BOOL_TRUE BOOL_FALSE
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
 %token IDENT
 %token PIPE_ELEMENT PIPE_INDEX PIPE_KEY PIPE_RESULT EXCEPTION_OBJ REGULAR_ASYNC_PARAM
+%token KW_CLASS KW_THIS KW_SUPER KW_CONSTRUCTOR
 
 %%
 
@@ -72,7 +73,7 @@ stmt:
     |
     func_return {}
     |
-    import {}
+    extern {}
     |
     export {}
 ;
@@ -104,10 +105,10 @@ func_return:
     }
 ;
 
-import:
-    indent KW_IMPORT name_list eol
+extern:
+    indent KW_EXTERN name_list eol
     {
-        grammar::builder.addImport($1, misc::position($4), $3->deliver());
+        grammar::builder.addExtern($1, misc::position($4), $3->deliver());
     }
 ;
 
@@ -177,6 +178,27 @@ token:
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::ELSE);
     }
     |
+    KW_CLASS
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CLASS);
+    }
+    |
+    KW_THIS
+    {
+        $$ = new grammar::FactorToken(
+            grammar::here(), util::mkptr(new grammar::This(grammar::here())), "this");
+    }
+    |
+    KW_SUPER
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::SUPER);
+    }
+    |
+    KW_CONSTRUCTOR
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CONSTRUCTOR);
+    }
+    |
     OPERATOR
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::OPERATOR);
@@ -190,11 +212,6 @@ token:
     PIPE_SEP
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::PIPE_SEP);
-    }
-    |
-    PROP_SEP
-    {
-        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::PROP_SEP);
     }
     |
     BOOL_TRUE
@@ -321,11 +338,6 @@ token:
     ','
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::COMMA);
-    }
-    |
-    '@'
-    {
-        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::THIS);
     }
 ;
 

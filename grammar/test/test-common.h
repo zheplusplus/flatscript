@@ -85,6 +85,7 @@ namespace test {
     extern NodeType const STRING;
     extern NodeType const IDENTIFIER;
     extern NodeType const THIS;
+    extern NodeType const SUPER_FUNC;
     extern NodeType const LIST_BEGIN;
     extern NodeType const LIST_END;
 
@@ -115,7 +116,7 @@ namespace test {
     extern NodeType const NAME_DEF;
     extern NodeType const ARITHMETICS;
     extern NodeType const RETURN;
-    extern NodeType const IMPORT;
+    extern NodeType const EXTERN;
     extern NodeType const EXPORT;
     extern NodeType const EXPORT_VALUE;
     extern NodeType const ATTR_SET;

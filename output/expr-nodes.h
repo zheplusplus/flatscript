@@ -371,6 +371,19 @@ namespace output {
         std::string str() const;
     };
 
+    struct SuperFunc
+        : Expression
+    {
+        SuperFunc(misc::position const& pos, std::string prop)
+            : Expression(pos)
+            , property(prop)
+        {}
+
+        std::string str() const;
+
+        std::string const property;
+    };
+
     struct Conditional
         : Expression
     {
@@ -409,6 +422,22 @@ namespace output {
         {}
 
         std::string str() const;
+    };
+
+    struct SuperConstructorCall
+        : Expression
+    {
+        SuperConstructorCall(misc::position const& pos, std::string cn
+                           , util::ptrarr<Expression const> a)
+            : Expression(pos)
+            , class_name(std::move(cn))
+            , args(std::move(a))
+        {}
+
+        std::string str() const;
+
+        std::string const class_name;
+        util::ptrarr<Expression const> const args;
     };
 
 }

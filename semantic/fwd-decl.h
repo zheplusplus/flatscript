@@ -8,6 +8,7 @@ namespace semantic {
     struct PipeBase;
     struct Block;
     struct Function;
+    struct Class;
     struct SymbolTable;
     struct BaseCompilingSpace;
     struct CompilingSpace;

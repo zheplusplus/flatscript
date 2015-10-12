@@ -9,6 +9,7 @@ output:block.d \
        methods.d \
        name-mangler.d \
        function.d \
+       class.d \
        global.d
 
 clean:

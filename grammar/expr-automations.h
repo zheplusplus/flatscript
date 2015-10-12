@@ -201,21 +201,26 @@ namespace grammar {
         bool _reduce(AutomationStack& stack, Token const&);
     };
 
-    struct ThisPropertyAutomation
+    struct SuperCallAutomation
         : AutomationBase
     {
-        explicit ThisPropertyAutomation(misc::position const& ps);
+        explicit SuperCallAutomation(misc::position const& ps);
 
         void pushFactor(AutomationStack& stack
                       , util::sptr<Expression const> factor
                       , std::string const& image);
         void accepted(AutomationStack&, util::sptr<Expression const>) {}
-        bool finishOnBreak(bool sub_empty) const;
-        void finish(ClauseStackWrapper& clauses, AutomationStack& stack, misc::position const& pos);
+        void accepted(AutomationStack& stack, std::vector<util::sptr<Expression const>> list);
+        bool finishOnBreak(bool) const;
+        void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&);
 
         misc::position const pos;
     protected:
-        bool _reduce(AutomationStack& stack, Token const&);
+        bool _wait_property;
+        std::string _property;
+
+        void _reportNotCalled(AutomationStack& stack, TypedToken const& token);
+        void _setInterrupting(std::set<TokenType> types);
     };
 
 }

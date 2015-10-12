@@ -1,4 +1,0 @@
-if 0
-    console.log(false)
-if 'abc'
-    console.log(false)

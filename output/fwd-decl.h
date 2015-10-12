@@ -7,6 +7,7 @@ namespace output {
     struct Statement;
     struct Block;
     struct Function;
+    struct Class;
 
 }
 

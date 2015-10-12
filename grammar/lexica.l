@@ -57,8 +57,8 @@ return {
     return KW_RETURN;
 }
 
-import {
-    return KW_IMPORT;
+extern {
+    return KW_EXTERN;
 }
 
 export {
@@ -125,8 +125,20 @@ gen {
     return KW_RESERVED;
 }
 
+class {
+    return KW_CLASS;
+}
+
+this {
+    return KW_THIS;
+}
+
+super {
+    return KW_SUPER;
+}
+
 ctor {
-    return KW_RESERVED;
+    return KW_CONSTRUCTOR;
 }
 
 while {
@@ -219,10 +231,6 @@ delete {
     return PIPE_SEP;
 }
 
-:: {
-    return PROP_SEP;
-}
-
 [$] {
     return PIPE_ELEMENT;
 }
@@ -267,7 +275,7 @@ delete {
     return OPERATOR;
 }
 
-[()\[\],:.{}@] {
+[()\[\],:.{}] {
     return *yytext;
 }
 

@@ -313,6 +313,19 @@ namespace grammar {
         util::sptr<semantic::Expression const> reduceAsExpr() const;
     };
 
+    struct SuperFunc
+        : Expression
+    {
+        SuperFunc(misc::position const& pos, std::string prop)
+            : Expression(pos)
+            , property(prop)
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr() const;
+
+        std::string const property;
+    };
+
     struct Pipeline
         : BinaryOp
     {

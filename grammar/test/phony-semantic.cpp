@@ -21,9 +21,22 @@ namespace {
         return util::sptr<output::Expression const>(nullptr);
     }
 
+    util::sptr<output::Statement const> nulOutputStmt()
+    {
+        return util::sptr<output::Statement const>(nullptr);
+    }
+
 }
 
-util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) const
+Constructor::Constructor(misc::position const& ps, std::vector<std::string> params, Block b
+                       , std::string const&, bool, util::ptrarr<Expression const>)
+    : pos(ps)
+    , param_names(std::move(params))
+    , super_init(nullptr)
+    , body(std::move(b))
+{}
+
+util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bool) const
 {
     DataTree::actualOne()(pos, FUNC_DEF, name);
     std::for_each(param_names.begin()
@@ -36,20 +49,11 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) co
     return util::sptr<output::Function const>(nullptr);
 }
 
-util::sptr<output::Function const> RegularAsyncFunction::compile(util::sref<SymbolTable>) const
+util::sptr<output::Function const> RegularAsyncFunction::compile(
+        util::sref<SymbolTable>, bool) const
 {
     DataTree::actualOne()(pos, REGULAR_ASYNC_PARAM_INDEX, async_param_index);
-    return Function::compile(nulSymbols());
-}
-
-void Block::addStmt(util::sptr<Statement const> stmt)
-{
-    _stmts.append(std::move(stmt));
-}
-
-void Block::addFunc(util::sptr<Function const> func)
-{
-    _funcs.append(std::move(func));
+    return Function::compile(nulSymbols(), false);
 }
 
 void Block::compile(BaseCompilingSpace&) const
@@ -101,9 +105,9 @@ void Export::compile(BaseCompilingSpace&) const
     value->compile(nulSpace());
 }
 
-void Import::compile(BaseCompilingSpace&) const
+void Extern::compile(BaseCompilingSpace&) const
 {
-    DataTree::actualOne()(pos, IMPORT);
+    DataTree::actualOne()(pos, EXTERN);
     std::for_each(names.begin()
                 , names.end()
                 , [&](std::string const& name)
@@ -251,6 +255,15 @@ util::sptr<output::Expression const> Call::compile(BaseCompilingSpace&) const
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> SuperConstructorCall::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, CALL_BEGIN, "SUPER");
+    DataTree::actualOne()(pos, ARGUMENTS);
+    compileList(args);
+    DataTree::actualOne()(pos, CALL_END);
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> MemberAccess::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ . ]")(pos, OPERAND);
@@ -356,6 +369,12 @@ util::sptr<output::Expression const> This::compile(BaseCompilingSpace&) const
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> SuperFunc::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, SUPER_FUNC, property);
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, CONDITIONAL)(pos, OPERAND);
@@ -396,7 +415,10 @@ util::sptr<Expression const> Pipeline::createFilter(misc::position const& pos
     return util::mkptr(new BinaryOp(pos, std::move(list), "[ |? ]", std::move(section)));
 }
 
-bool Expression::boolValue(util::sref<SymbolTable const>) const { return false; }
+util::sptr<output::Statement const> Function::_compileBody(
+        util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
+util::sptr<output::Statement const> RegularAsyncFunction::_compileBody(
+        util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
 bool Reference::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Reference::literalType(util::sref<SymbolTable const>) const { return ""; }
 bool Reference::boolValue(util::sref<SymbolTable const>) const { return false; }
@@ -427,6 +449,7 @@ std::string StringLiteral::stringValue(util::sref<SymbolTable const>) const { re
 bool ListLiteral::isAsync() const { return false; }
 bool ListAppend::isAsync() const { return false; }
 bool Call::isAsync() const { return false; }
+bool SuperConstructorCall::isAsync() const { return false; }
 bool MemberAccess::isAsync() const { return false; }
 bool Lookup::isAsync() const { return false; }
 bool ListSlice::isAsync() const { return false; }
@@ -446,3 +469,7 @@ mpz_class Conditional::intValue(util::sref<SymbolTable const>) const { return 0;
 mpf_class Conditional::floatValue(util::sref<SymbolTable const>) const { return 0; }
 std::string Conditional::stringValue(util::sref<SymbolTable const>) const { return ""; }
 bool Conditional::isAsync() const { return false; }
+util::sptr<output::Expression const> Function::compileToLambda(
+        util::sref<SymbolTable>, bool) const { return nulOutputExpr(); }
+util::sptr<output::Expression const> RegularAsyncFunction::compileToLambda(
+        util::sref<SymbolTable>, bool) const { return nulOutputExpr(); }

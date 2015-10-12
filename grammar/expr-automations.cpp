@@ -9,6 +9,7 @@
 #include "stmt-nodes.h"
 #include "expr-nodes.h"
 #include "function.h"
+#include "class.h"
 
 using namespace grammar;
 
@@ -23,7 +24,7 @@ PipelineAutomation::PipelineAutomation()
     : _cache_list(nullptr)
     , _cache_section(nullptr)
 {
-    _setFollowings({ COMMA, COLON, PROP_SEP, CLOSE_PAREN, CLOSE_BRACKET, CLOSE_BRACE });
+    _setFollowings({ COMMA, COLON, CLOSE_PAREN, CLOSE_BRACKET, CLOSE_BRACE });
     _actions[PIPE_SEP] = [&](AutomationStack& stack, Token const& token)
                          {
                              _pushPipeSep(stack, token);
@@ -113,7 +114,7 @@ ConditionalAutomation::ConditionalAutomation()
     , _cache_consq(nullptr)
     , _cache_pred(nullptr)
 {
-    _setFollowings({ PIPE_SEP, COMMA, COLON, PROP_SEP, CLOSE_PAREN, CLOSE_BRACKET, CLOSE_BRACE });
+    _setFollowings({ PIPE_SEP, COMMA, COLON, CLOSE_PAREN, CLOSE_BRACKET, CLOSE_BRACE });
     _actions[IF] = [&](AutomationStack& stack, TypedToken const& token)
                    {
                        if (!_before_if) {
@@ -389,16 +390,16 @@ ArithAutomation::ArithAutomation()
 {
     _op_stack.push_back(util::mkptr(new PlaceholderOp));
     _setFollowings({
-        IF, ELSE, PIPE_SEP, COMMA, COLON, PROP_SEP, CLOSE_PAREN, CLOSE_BRACKET, CLOSE_BRACE
+        IF, ELSE, PIPE_SEP, COMMA, COLON, CLOSE_PAREN, CLOSE_BRACKET, CLOSE_BRACE
     });
-    _actions[THIS] = [&](AutomationStack& stack, TypedToken const& token)
-                     {
-                         if (!_need_factor) {
-                             return error::unexpectedToken(token.pos, token.image);
-                         }
-                         _need_factor = false;
-                         stack.push(util::mkptr(new ThisPropertyAutomation(token.pos)));
-                     };
+    _actions[SUPER] = [&](AutomationStack& stack, TypedToken const& token)
+                      {
+                          if (!this->_need_factor) {
+                              return error::unexpectedToken(token.pos, token.image);
+                          }
+                          this->_need_factor = false;
+                          stack.push(util::mkptr(new SuperCallAutomation(token.pos)));
+                      };
     _actions[OPEN_PAREN] = [&](AutomationStack& stack, TypedToken const& token)
                            {
                                _pushOpenParen(stack, token.pos);
@@ -791,10 +792,6 @@ DictAutomation::DictAutomation()
                       {
                           _pushColon(stack, token.pos);
                       };
-    _actions[PROP_SEP] = [&](AutomationStack& stack, TypedToken const& token)
-                         {
-                             _pushPropertySeparator(stack, token.pos);
-                         };
     _actions[CLOSE_BRACE] = [&](AutomationStack& stack, TypedToken const& token)
                             {
                                 _matchCloseBrace(stack, token);
@@ -911,37 +908,81 @@ bool AsyncPlaceholderAutomation::_reduce(AutomationStack& stack, Token const&)
     return true;
 }
 
-ThisPropertyAutomation::ThisPropertyAutomation(misc::position const& ps)
+SuperCallAutomation::SuperCallAutomation(misc::position const& ps)
     : pos(ps)
+    , _wait_property(false)
 {
-    _setFollowings({
-        PIPE_SEP, COMMA, COLON, PROP_SEP, OPEN_PAREN, OPEN_BRACKET, CLOSE_PAREN, CLOSE_BRACKET,
-        CLOSE_BRACE, OPERATOR
+    this->_actions[OPERATOR] =
+        [this](AutomationStack& stack, TypedToken const& token)
+        {
+            if (token.image == ".") {
+                this->_wait_property = true;
+                this->_setInterrupting({OPERATOR});
+                return;
+            }
+            this->_reportNotCalled(stack, token);
+        };
+    this->_setInterrupting({
+        IF, ELSE, PIPE_SEP, COMMA, COLON, CLOSE_PAREN, CLOSE_BRACKET, CLOSE_BRACE,
+        OPEN_PAREN, OPEN_BRACKET, OPEN_BRACE
     });
 }
 
-void ThisPropertyAutomation::pushFactor(AutomationStack& stack
-                                      , util::sptr<Expression const> factor
-                                      , std::string const& image)
+void SuperCallAutomation::pushFactor(AutomationStack&
+                                   , util::sptr<Expression const> factor
+                                   , std::string const& image)
 {
-    stack.reduced(util::mkptr(new Lookup(util::mkptr(new This(pos))
-                                       , util::mkptr(new StringLiteral(factor->pos, image)))));
+    if (!this->_wait_property) {
+        return error::unexpectedToken(factor->pos, image);
+    }
+    this->_property = factor->reduceAsProperty();
+    this->_actions[OPEN_PAREN] =
+        [this](AutomationStack& stack, TypedToken const&)
+        {
+            stack.push(util::mkptr(new ExprListAutomation));
+        };
 }
 
-bool ThisPropertyAutomation::finishOnBreak(bool) const
+void SuperCallAutomation::accepted(AutomationStack& stack
+                                 , std::vector<util::sptr<Expression const>> list)
 {
-    return _previous->finishOnBreak(false);
+    util::ptrarr<Expression const> args;
+    args.append(util::mkptr(new This(pos)));
+    for (util::sptr<Expression const>& a: list) {
+        args.append(std::move(a));
+    }
+    stack.reduced(util::mkptr(new Call(
+            util::mkptr(new SuperFunc(pos, std::move(this->_property)))
+          , std::move(args))));
 }
 
-void ThisPropertyAutomation::finish(
-                ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos)
+bool SuperCallAutomation::finishOnBreak(bool) const
 {
-    stack.reduced(util::mkptr(new This(pos)));
-    stack.top()->finish(wrapper, stack, pos);
+    return !this->_property.empty();
 }
 
-bool ThisPropertyAutomation::_reduce(AutomationStack& stack, Token const&)
+void SuperCallAutomation::finish(ClauseStackWrapper& wrapper
+                               , AutomationStack& stack
+                               , misc::position const& p)
 {
-    stack.reduced(util::mkptr(new This(pos)));
-    return true;
+    error::superWithoutCall(this->pos);
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->finish(wrapper, stack, p);
+}
+
+void SuperCallAutomation::_reportNotCalled(AutomationStack& stack, TypedToken const& token)
+{
+    error::superWithoutCall(pos);
+    stack.reduced(util::mkptr(new This(this->pos)));
+    stack.top()->nextToken(stack, token);
+}
+
+void SuperCallAutomation::_setInterrupting(std::set<TokenType> types)
+{
+    for (TokenType tp: types) {
+        this->_actions[tp] = [this](AutomationStack& s, TypedToken const& t)
+                             {
+                                 this->_reportNotCalled(s, t);
+                             };
+    }
 }

@@ -17,7 +17,7 @@ namespace grammar {
         void addReturn(int indent_len
                      , misc::position const& pos
                      , std::vector<util::sptr<Token>> const& sequence);
-        void addImport(int indent_len
+        void addExtern(int indent_len
                      , misc::position const& pos
                      , std::vector<std::string> const& names);
         void addExport(int indent_len

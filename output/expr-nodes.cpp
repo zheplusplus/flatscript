@@ -10,6 +10,7 @@
 #include "expr-nodes.h"
 #include "name-mangler.h"
 #include "function.h"
+#include "class.h"
 #include "block.h"
 
 using namespace output;
@@ -109,32 +110,6 @@ std::string Lookup::str() const
     return collection->str() + "[" + key->str() + "]";
 }
 
-static std::string const LIST_SLICE(
-"(function(list, begin, end, step) {\n"
-"    function round(x) {\n"
-"        if (x > list.length) return list.length;\n"
-"        if (x < 0) return x % list.length + list.length;\n"
-"        return x;\n"
-"    }\n"
-"    var r = [];\n"
-"    step = step || 1;\n"
-"    if (step > 0) {\n"
-"        begin = round(begin || 0);\n"
-"        end = (end === undefined) ? list.length : round(end);\n"
-"        for (; begin < end; begin += step) {\n"
-"            r.push(list[begin]);\n"
-"        }\n"
-"        return r;\n"
-"    }\n"
-"    begin = (begin === undefined) ? list.length - 1 : round(begin);\n"
-"    end = (end === undefined) ? -1 : round(end)\n"
-"    for (; begin > end; begin += step) {\n"
-"        r.push(list[begin]);\n"
-"    }\n"
-"    return r;\n"
-"})($LIST, $BEGIN, $END, $STEP)\n"
-);
-
 std::string ListSlice::str() const
 {
     return
@@ -142,7 +117,7 @@ std::string ListSlice::str() const
         util::replace_all(
         util::replace_all(
         util::replace_all(
-            LIST_SLICE
+            "$listslice($LIST, $BEGIN, $END, $STEP)"
                 , "$LIST", list->str())
                 , "$BEGIN", begin->str())
                 , "$END", end->str())
@@ -262,6 +237,11 @@ std::string This::str() const
     return "$this";
 }
 
+std::string SuperFunc::str() const
+{
+    return "$super." + this->property + ".call";
+}
+
 std::string Conditional::str() const
 {
     return "(" + predicate->str() + "?" + consequence->str() + ":" + alternative->str() + ")";
@@ -275,4 +255,10 @@ std::string ExceptionObj::str() const
 std::string ConditionalCallbackParameter::str() const
 {
     return TERM_CONDITIONAL_CALLBACK_PARAMETER;
+}
+
+std::string SuperConstructorCall::str() const
+{
+    return this->class_name + ".$super.constructor.apply($this,["
+         + util::join(",", ::strList(this->args)) + "]);";
 }

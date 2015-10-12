@@ -78,6 +78,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return true; }
         bool isLiteral(util::sref<SymbolTable const> st) const;
         std::string literalType(util::sref<SymbolTable const>) const { return "string"; }
         std::string stringValue(util::sref<SymbolTable const> st) const;
@@ -134,6 +135,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return this->value != 0; }
         bool isLiteral(util::sref<SymbolTable const>) const { return true; }
         std::string literalType(util::sref<SymbolTable const>) const { return "int"; }
         mpz_class intValue(util::sref<SymbolTable const>) const;
@@ -155,6 +157,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return this->value != 0; }
         bool isLiteral(util::sref<SymbolTable const>) const { return true; }
         std::string literalType(util::sref<SymbolTable const>) const { return "float"; }
         mpf_class floatValue(util::sref<SymbolTable const>) const;
@@ -188,6 +191,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return true; }
         bool isAsync() const;
 
         util::ptrarr<Expression const> const value;
@@ -226,6 +230,23 @@ namespace semantic {
         bool isAsync() const;
 
         util::sptr<Expression const> const callee;
+        util::ptrarr<Expression const> const args;
+    };
+
+    struct SuperConstructorCall
+        : Expression
+    {
+        SuperConstructorCall(misc::position const& pos, std::string cn
+                           , util::ptrarr<Expression const> a)
+                : Expression(pos)
+                , class_name(std::move(cn))
+                , args(std::move(a))
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
+
+        std::string const class_name;
         util::ptrarr<Expression const> const args;
     };
 
@@ -380,6 +401,19 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    };
+
+    struct SuperFunc
+        : Expression
+    {
+        SuperFunc(misc::position const& pos, std::string prop)
+            : Expression(pos)
+            , property(prop)
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+
+        std::string const property;
     };
 
     struct Conditional

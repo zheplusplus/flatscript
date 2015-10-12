@@ -42,25 +42,11 @@ void Block::write(std::ostream&) const
     DataTree::actualOne()(SCOPE_END);
 }
 
-void Block::addStmt(util::sptr<Statement const> stmt)
-{
-    _stmts.append(std::move(stmt));
-}
-
-void Block::addFunc(util::sptr<Function const> func)
-{
-    _funcs.append(std::move(func));
-}
-
 void Block::append(util::sptr<Block> b)
 {
     _stmts.append(std::move(b->_stmts));
     _funcs.append(std::move(b->_funcs));
-}
-
-void Block::setLocalDecls(std::set<std::string> const& decls)
-{
-    _local_decls = decls;
+    _classes.append(std::move(b->_classes));
 }
 
 void Function::write(std::ostream&) const
@@ -315,6 +301,13 @@ std::string Call::str() const
     return "";
 }
 
+std::string SuperConstructorCall::str() const
+{
+    DataTree::actualOne()(pos, SUPER_CONSTRUCTOR_CALL, args.size());
+    writeList(args);
+    return "";
+}
+
 std::string Lookup::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[]");
@@ -403,6 +396,12 @@ std::string RegularAsyncLambda::str() const
 std::string This::str() const
 {
     DataTree::actualOne()(pos, THIS);
+    return "";
+}
+
+std::string SuperFunc::str() const
+{
+    DataTree::actualOne()(pos, SUPER_FUNC, property);
     return "";
 }
 

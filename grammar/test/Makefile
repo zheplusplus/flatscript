@@ -38,13 +38,13 @@ $(TESTDIR)/test-grammar.out:$(TEST_DEP) \
 	        $(TEST_LIBS) \
 	     -o $(TESTDIR)/test-grammar.out
 
-test-ok-%:$(TEST_DEP) test-%.dt $(TESTDIR)/%.stkn
+test-ok-%:$(TEST_DEP) test-%.dt $(TESTDIR)/%.fls
 	$(LINK) $(TEST_OBJ) $(TESTDIR)/test-$*.o $(TEST_LIBS) -o $(TESTDIR)/test-$*.out
-	$(CHKMEM) $(TESTDIR)/test-$*.out < $(TESTDIR)/$*.stkn
+	$(CHKMEM) $(TESTDIR)/test-$*.out < $(TESTDIR)/$*.fls
 
-test-err-%:$(TEST_DEP) test-err-%.dt $(ERRSAMPLEDIR)/%.stkn
+test-err-%:$(TEST_DEP) test-err-%.dt $(ERRSAMPLEDIR)/%.fls
 	$(LINK) $(TEST_OBJ) $(TESTDIR)/test-err-$*.o $(TEST_LIBS) -o $(TESTDIR)/test-err-$*.out
-	$(CHKMEM) $(TESTDIR)/test-err-$*.out < $(ERRSAMPLEDIR)/$*.stkn
+	$(CHKMEM) $(TESTDIR)/test-err-$*.out < $(ERRSAMPLEDIR)/$*.fls
 
 cleant:clean
 	rm -f $(TESTDIR)/*.o

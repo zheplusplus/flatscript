@@ -9,6 +9,8 @@ namespace grammar {
     struct ClauseBase;
     struct ClauseBuilder;
     struct Function;
+    struct Class;
+    struct Constructor;
     struct AutomationBase;
     struct AutomationStack;
 

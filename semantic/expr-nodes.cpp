@@ -7,6 +7,7 @@
 #include <report/errors.h>
 
 #include "function.h"
+#include "class.h"
 #include "expr-nodes.h"
 #include "compiling-space.h"
 #include "const-fold.h"
@@ -254,6 +255,17 @@ bool Call::isAsync() const
     return callee->isAsync() || isListAsync(args);
 }
 
+util::sptr<output::Expression const> SuperConstructorCall::compile(BaseCompilingSpace& space) const
+{
+    return util::mkptr(new output::SuperConstructorCall(
+                this->pos, this->class_name, ::compileList(this->args, space)));
+}
+
+bool SuperConstructorCall::isAsync() const
+{
+    return ::isListAsync(this->args);
+}
+
 util::sptr<output::Expression const> MemberAccess::compile(BaseCompilingSpace& space) const
 {
     return util::mkptr(new output::MemberAccess(pos, referee->compile(space), member));
@@ -371,6 +383,14 @@ util::sptr<output::Expression const> This::compile(BaseCompilingSpace& space) co
 {
     space.referenceThis();
     return util::mkptr(new output::This(pos));
+}
+
+util::sptr<output::Expression const> SuperFunc::compile(BaseCompilingSpace& space) const
+{
+    if (!space.allowSuper()) {
+        error::superNotInMember(pos);
+    }
+    return util::mkptr(new output::SuperFunc(pos, property));
 }
 
 util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace& space) const

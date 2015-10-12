@@ -203,9 +203,59 @@ std::cerr << "    another `" << successor << "' already matches the `" << match 
 , Param(STR_TYPE, 'match')),
 
 ReportFunc(
+'superWithoutCall',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    use of `super' is not a call to super property" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'superNotInMember',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    `super' not in member function or constructor" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'duplicateCtor',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    a constructor already defined at " << def_pos.str() << std::endl;
+'''
+, Param(POS_TYPE, 'def_pos'), Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'duplicateMemFunc',
+lineno() + '''
+std::cerr << this_pos.str() << std::endl;
+std::cerr << "    a member function named `" << name << "' already defined at "
+          << prev_pos.str() << std::endl;
+'''
+, Param(POS_TYPE, 'prev_pos'), Param(POS_TYPE, 'this_pos'), Param(STR_TYPE, 'name')),
+
+ReportFunc(
+'nestedClassNotAllowed',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    class not allowed as a member of another class" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'stmtNotAllowedInClass',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    only functions or the constructor allowed in a function, not a statement" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'tryWithoutCatch',
 lineno() + '''
-std::cerr << "    no `catch' clause matching `try' clause at " << try_pos.str() << std::endl;
+std::cerr << try_pos.str() << std::endl;
+std::cerr << "    no `catch' clause matching `try' clause" << std::endl;
 '''
 , Param(POS_TYPE, 'try_pos')),
 
@@ -276,15 +326,23 @@ ReportFunc(
 'forbidDefFunc',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    attempt define Function `" << name << "' but forbidden here." << std::endl;
+std::cerr << "    attempt define function `" << name << "' but forbidden here." << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
 
 ReportFunc(
-'importOnlyInGlobal',
+'forbidDefClass',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    names could only imported into global space" << std::endl;
+std::cerr << "    attempt define class `" << name << "' but forbidden here." << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
+
+ReportFunc(
+'externOnlyInGlobal',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    external names declaration only in global space" << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 
@@ -340,14 +398,6 @@ std::cerr << "    no available prefix unary operation " << op_img << " for type 
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'op_img'), Param(STR_TYPE, 'rhst_name')),
 
 ReportFunc(
-'condNotBool',
-lineno() + '''
-std::cerr << pos.str() << std::endl;
-std::cerr << "    condition type is not boolean, actual type: " << actual_type << std::endl;
-'''
-, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'actual_type')),
-
-ReportFunc(
 'returnNotAllowedInPipe',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
@@ -376,6 +426,30 @@ ReportFunc(
 lineno() + '''
 std::cerr << pos.str() << std::endl;
 std::cerr << "    exception not in `catch' context." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'contructorNotInClass',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    `ctor' clause not belonging to a `class'" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'contructorNotCallSuper',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    no call to the super class constructor" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'noSuperClass',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    no super class" << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 

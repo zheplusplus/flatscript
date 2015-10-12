@@ -2,6 +2,7 @@
 #define __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 
 #include <semantic/function.h>
+#include <semantic/class.h>
 #include <output/node-base.h>
 #include <output/block.h>
 #include <output/function.h>
@@ -70,6 +71,7 @@ namespace test {
     extern NodeType const STRING;
     extern NodeType const LIST;
     extern NodeType const THIS;
+    extern NodeType const SUPER_FUNC;
     extern NodeType const BINARY_OP;
     extern NodeType const PRE_UNARY_OP;
     extern NodeType const CONDITIONAL;
@@ -85,6 +87,7 @@ namespace test {
     extern NodeType const PIPE_RESULT;
 
     extern NodeType const CALL;
+    extern NodeType const SUPER_CONSTRUCTOR_CALL;
     extern NodeType const ASYNC_REFERENCE;
 
     extern NodeType const ASYNC_PIPELINE;

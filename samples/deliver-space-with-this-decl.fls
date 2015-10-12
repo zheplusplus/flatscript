@@ -4,7 +4,7 @@ opt: {}
 ((p):
     fns.fx: (o):
         opt: o if o else 42
-        p(opt, @ != null)
+        p(opt, this != null)
 (console.log))
 
 fns.fx(-1)

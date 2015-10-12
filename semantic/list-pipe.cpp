@@ -5,6 +5,7 @@
 
 #include "compiling-space.h"
 #include "function.h"
+#include "class.h"
 #include "list-pipe.h"
 #include "stmt-nodes.h"
 #include "expr-nodes.h"

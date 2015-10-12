@@ -83,6 +83,7 @@ NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
 NodeType const test::LIST("list");
 NodeType const test::THIS("this");
+NodeType const test::SUPER_FUNC("super func");
 NodeType const test::BINARY_OP("binary operation");
 NodeType const test::PRE_UNARY_OP("prefix unary operation");
 NodeType const test::CONDITIONAL("conditional expression");
@@ -98,6 +99,7 @@ NodeType const test::PIPE_KEY("pipe key");
 NodeType const test::PIPE_RESULT("pipe result");
 
 NodeType const test::CALL("call");
+NodeType const test::SUPER_CONSTRUCTOR_CALL("super constructor call");
 NodeType const test::ASYNC_REFERENCE("asynchronous reference");
 
 NodeType const test::ASYNC_PIPELINE("asynchronous pipeline");

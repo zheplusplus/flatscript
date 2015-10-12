@@ -7,6 +7,7 @@
 #include "node-base.h"
 #include "automation-base.h"
 #include "function.h"
+#include "class.h"
 #include "tokens.h"
 
 namespace grammar {
@@ -23,7 +24,12 @@ namespace grammar {
         int const indent;
 
         void acceptFunc(util::sptr<Function const> func);
-        void acceptStmt(util::sptr<Statement> stmt);
+        virtual void acceptClass(util::sptr<Class const> cls);
+        void acceptCtor(misc::position const& ct_pos
+                      , std::vector<std::string> ct_params
+                      , Block ct_bl, bool super_init
+                      , std::vector<util::sptr<Expression const>> super_ctor_args);
+        virtual void acceptStmt(util::sptr<Statement> stmt);
         void acceptElse(misc::position const& else_pos, Block block);
         void acceptCatch(misc::position const& catch_pos, Block block);
 
@@ -112,6 +118,53 @@ namespace grammar {
         std::vector<std::string> const param_names;
         int const async_param_index;
     private:
+        util::sref<ClauseBase> const _parent;
+    };
+
+    struct ClassClause
+        : ClauseBase
+    {
+        ClassClause(int indent_len, misc::position const& ps, std::string cls_name
+                  , std::string base_cls_name, util::sref<ClauseBase> parent)
+            : ClauseBase(indent_len)
+            , pos(ps)
+            , _class_name(std::move(cls_name))
+            , _base_class_name(std::move(base_cls_name))
+            , _parent(parent)
+        {}
+
+        void deliver();
+        void acceptClass(util::sptr<Class const> cls);
+        void acceptStmt(util::sptr<Statement> stmt);
+
+        misc::position const pos;
+    private:
+        std::string const _class_name;
+        std::string const _base_class_name;
+        util::sref<ClauseBase> const _parent;
+    };
+
+    struct CtorClause
+        : ClauseBase
+    {
+        CtorClause(int indent_len, misc::position const& ps, std::vector<std::string> params
+                 , bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args
+                 , util::sref<ClauseBase> parent)
+            : ClauseBase(indent_len)
+            , pos(ps)
+            , _params(std::move(params))
+            , _super_init(super_init)
+            , _super_ctor_args(std::move(super_ctor_args))
+            , _parent(parent)
+        {}
+
+        void deliver();
+
+        misc::position const pos;
+    private:
+        std::vector<std::string> _params;
+        bool _super_init;
+        std::vector<util::sptr<Expression const>> _super_ctor_args;
         util::sref<ClauseBase> const _parent;
     };
 

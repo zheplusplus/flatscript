@@ -1,6 +1,7 @@
 #include <util/string.h>
 
 #include "function.h"
+#include "class.h"
 #include "expr-nodes.h"
 #include "name-mangler.h"
 

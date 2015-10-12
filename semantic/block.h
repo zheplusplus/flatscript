@@ -20,17 +20,42 @@ namespace semantic {
         Block(Block&& rhs)
             : _stmts(std::move(rhs._stmts))
             , _funcs(std::move(rhs._funcs))
+            , _classes(std::move(rhs._classes))
         {}
 
         void compile(BaseCompilingSpace& space) const;
         bool isAsync() const;
-
-        void addStmt(util::sptr<Statement const> stmt);
-        void addFunc(util::sptr<Function const> func);
+        void checkNoAsync(misc::position const& check_pos) const;
         void append(Block following);
+
+        void addStmt(util::sptr<Statement const> stmt)
+        {
+            this->_stmts.append(std::move(stmt));
+        }
+
+        void addFunc(util::sptr<Function const> func)
+        {
+            this->_funcs.append(std::move(func));
+        }
+
+        void addClass(util::sptr<Class const> cls)
+        {
+            this->_classes.append(std::move(cls));
+        }
+
+        util::ptrarr<Function const> const& getFuncs() const
+        {
+            return this->_funcs;
+        }
+
+        util::ptrarr<Class const> const& getClasses() const
+        {
+            return this->_classes;
+        }
     private:
         util::ptrarr<Statement const> _stmts;
         util::ptrarr<Function const> _funcs;
+        util::ptrarr<Class const> _classes;
     };
 
 }
