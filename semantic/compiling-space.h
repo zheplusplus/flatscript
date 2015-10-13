@@ -18,6 +18,8 @@ namespace semantic {
 
         virtual void defName(misc::position const& pos, std::string const& name) = 0;
         virtual void defFunc(misc::position const& pos, std::string const& name) = 0;
+        virtual void defClass(misc::position const& pos, std::string const& name
+                            , std::string const& base_class_name) = 0;
         virtual void defParam(misc::position const& pos, std::string const& name) = 0;
         virtual void defAsyncParam(misc::position const& pos, std::string const& name) = 0;
         virtual void defConst(misc::position const& pos
@@ -38,10 +40,15 @@ namespace semantic {
         virtual ~BaseCompilingSpace() {}
         BaseCompilingSpace(BaseCompilingSpace const&) = delete;
 
-        explicit BaseCompilingSpace(util::sptr<SymbolTable> symbols);
+        BaseCompilingSpace(util::sptr<SymbolTable> symbols, bool class_space);
+
+        explicit BaseCompilingSpace(util::sptr<SymbolTable> symbols)
+            : BaseCompilingSpace(std::move(symbols), false)
+        {}
 
         BaseCompilingSpace(BaseCompilingSpace&& rhs)
-            : _terminated_err_reported(rhs._terminated_err_reported)
+            : _class_space(rhs._class_space)
+            , _terminated_err_reported(rhs._terminated_err_reported)
             , _term_pos_or_nul_if_not_term(std::move(rhs._term_pos_or_nul_if_not_term))
             , _symbols(std::move(rhs._symbols))
             , _main_block(std::move(rhs._main_block))
@@ -58,7 +65,7 @@ namespace semantic {
 
         virtual bool inPipe() const = 0;
         virtual bool inCatch() const = 0;
-        virtual bool inClass() const = 0;
+        virtual bool inClass() const { return this->_class_space; }
 
         void setAsyncSpace(misc::position const& pos
                          , std::vector<std::string> const& params
@@ -72,6 +79,7 @@ namespace semantic {
 
         virtual util::sptr<output::Block> deliver();
     private:
+        bool const _class_space;
         bool _terminated_err_reported;
         util::sptr<misc::position const> _term_pos_or_nul_if_not_term;
         util::sptr<SymbolTable> _symbols;
@@ -87,7 +95,8 @@ namespace semantic {
         CompilingSpace();
         CompilingSpace(misc::position const& pos
                      , util::sref<SymbolTable> ext_st
-                     , std::vector<std::string> const& params);
+                     , std::vector<std::string> const& params
+                     , bool class_space=false);
 
         CompilingSpace(CompilingSpace&& rhs)
             : BaseCompilingSpace(std::move(rhs))
@@ -96,7 +105,6 @@ namespace semantic {
 
         bool inPipe() const { return false; }
         bool inCatch() const { return false; }
-        bool inClass() const { return false; }
 
         void referenceThis();
         util::sptr<output::Block> deliver();
@@ -104,19 +112,14 @@ namespace semantic {
         bool _this_referenced;
     };
 
-    struct ClassSpace
-        : CompilingSpace
-    {
-        bool inClass() const { return true; }
-    };
-
     struct RegularAsyncCompilingSpace
         : CompilingSpace
     {
         RegularAsyncCompilingSpace(misc::position const& pos
                                  , util::sref<SymbolTable> ext_st
-                                 , std::vector<std::string> const& params)
-            : CompilingSpace(pos, ext_st, params)
+                                 , std::vector<std::string> const& params
+                                 , bool class_space=false)
+            : CompilingSpace(pos, ext_st, params, class_space)
             , compile_pos(pos)
         {}
 
@@ -139,7 +142,7 @@ namespace semantic {
 
         bool inPipe() const;
         bool inCatch() const;
-        bool inClass() const { return false; }
+        bool inClass() const;
         util::sptr<output::Expression const> ret(util::sref<Expression const> val);
         output::Method raiseMethod() const;
         util::sref<output::Block> replaceSpace(

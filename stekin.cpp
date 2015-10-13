@@ -9,16 +9,18 @@
 #include <semantic/function.h>
 #include <semantic/compiling-space.h>
 #include <output/function.h>
+#include <output/class.h>
 #include <output/global.h>
 #include <report/errors.h>
 
 #include "env.h"
+#include "globals.h"
 
 static semantic::CompilingSpace globalSpace()
 {
     semantic::CompilingSpace space;
     space.sym()->importNames(misc::position(0), std::vector<std::string>(
-            stekin::preImported().begin(), stekin::preImported().end()));
+            stekin::Globals::g.pre_imported.begin(), stekin::Globals::g.pre_imported.end()));
     return std::move(space);
 }
 

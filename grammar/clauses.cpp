@@ -3,8 +3,6 @@
 
 #include "clauses.h"
 #include "stmt-nodes.h"
-#include "function.h"
-#include "class.h"
 #include "stmt-automations.h"
 
 using namespace grammar;

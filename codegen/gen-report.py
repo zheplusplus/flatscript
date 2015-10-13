@@ -211,6 +211,15 @@ std::cerr << "    a constructor already defined at " << def_pos.str() << std::en
 , Param(POS_TYPE, 'def_pos'), Param(POS_TYPE, 'pos')),
 
 ReportFunc(
+'duplicateMemFunc',
+lineno() + '''
+std::cerr << this_pos.str() << std::endl;
+std::cerr << "    a member function named `" << name << "' already defined at "
+          << prev_pos.str() << std::endl;
+'''
+, Param(POS_TYPE, 'prev_pos'), Param(POS_TYPE, 'this_pos'), Param(STR_TYPE, 'name')),
+
+ReportFunc(
 'stmtNotAllowedInClass',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
@@ -293,7 +302,15 @@ ReportFunc(
 'forbidDefFunc',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    attempt define Function `" << name << "' but forbidden here." << std::endl;
+std::cerr << "    attempt define function `" << name << "' but forbidden here." << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
+
+ReportFunc(
+'forbidDefClass',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    attempt define class `" << name << "' but forbidden here." << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
 

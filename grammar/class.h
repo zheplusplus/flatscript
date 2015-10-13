@@ -1,9 +1,9 @@
 #ifndef __STEKIN_GRAMMAR_CLASS_H__
 #define __STEKIN_GRAMMAR_CLASS_H__
 
-#include "block.h"
-
 #include <semantic/class.h>
+
+#include "block.h"
 
 namespace grammar {
 

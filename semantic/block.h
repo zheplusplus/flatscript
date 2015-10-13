@@ -28,17 +28,27 @@ namespace semantic {
 
         void addStmt(util::sptr<Statement const> stmt)
         {
-            _stmts.append(std::move(stmt));
+            this->_stmts.append(std::move(stmt));
         }
 
         void addFunc(util::sptr<Function const> func)
         {
-            _funcs.append(std::move(func));
+            this->_funcs.append(std::move(func));
         }
 
         void addClass(util::sptr<Class const> cls)
         {
-            _classes.append(std::move(cls));
+            this->_classes.append(std::move(cls));
+        }
+
+        util::ptrarr<Function const> const& getFuncs() const
+        {
+            return this->_funcs;
+        }
+
+        util::ptrarr<Class const> const& getClasses() const
+        {
+            return this->_classes;
         }
     private:
         util::ptrarr<Statement const> _stmts;

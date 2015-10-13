@@ -16,11 +16,13 @@ namespace output {
 
         void write(std::ostream& os) const;
         int count() const;
+        void addClass(util::sptr<Class const> cls);
         void addStmt(util::sptr<Statement const> stmt);
         void addFunc(util::sptr<Function const> func);
         void append(util::sptr<Block> b);
         void setLocalDecls(std::set<std::string> const& decls);
     protected:
+        util::ptrarr<Class const> _classes;
         util::ptrarr<Statement const> _stmts;
         util::ptrarr<Function const> _funcs;
         std::set<std::string> _local_decls;

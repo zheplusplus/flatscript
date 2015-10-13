@@ -1,12 +1,13 @@
 #include <unistd.h>
 
 #include "env.h"
+#include "globals.h"
 
 #ifndef EOF
 #define EOF (-1)
 #endif
 
-static std::set<std::string> pre_imported({
+static std::set<std::string> const pre_imported({
     "console", "setTimeout", "setInterval", "clearTimeout", "parseInt", "parseFloat", "Number",
     "Date", "Math", "Object", "Function", "escape", "unescape", "encodeURI", "encodeURIComponent",
     "decodeURI", "decodeURIComponent", "JSON", "NaN", "null", "undefined", "isFinite", "isNaN",
@@ -19,12 +20,10 @@ void stekin::initEnv(int argc, char* argv[])
     opterr = 0;
     while ((ch = getopt(argc, argv, "i:")) != EOF) {
         if ('i' == ch) {
-            pre_imported.insert(optarg);
+            Globals::g.pre_imported.insert(optarg);
         }
     }
-}
-
-std::set<std::string> const& stekin::preImported()
-{
-    return pre_imported;
+    for (std::string const& i: pre_imported) {
+        Globals::g.pre_imported.insert(i);
+    }
 }

@@ -6,7 +6,7 @@ endif
 
 include misc/mf-template.mk
 
-all:code-gen stekin.d env.d lib
+all:code-gen stekin.d env.d globals.d lib
 	make -f report/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f grammar/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f semantic/Makefile MODE=$(MODE) COMPILER=$(COMPILER)

@@ -10,6 +10,7 @@
 #include "expr-nodes.h"
 #include "name-mangler.h"
 #include "function.h"
+#include "class.h"
 #include "block.h"
 
 using namespace output;

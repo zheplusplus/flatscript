@@ -5,6 +5,7 @@
 #include <output/stmt-nodes.h>
 #include <output/list-pipe.h>
 #include <output/function.h>
+#include <output/class.h>
 #include <output/name-mangler.h>
 #include <report/errors.h>
 
@@ -166,6 +167,15 @@ namespace {
             _exclude_decls.insert(name);
         }
 
+        void defClass(misc::position const& pos, std::string const& name
+                    , std::string const& base_class_name)
+        {
+            if (!base_class_name.empty()) {
+                this->compileRef(pos, base_class_name);
+            }
+            this->defName(pos, name);
+        }
+
         void defParam(misc::position const& pos, std::string const& name)
         {
             defName(pos, name);
@@ -224,6 +234,11 @@ namespace {
             error::forbidDefFunc(pos, name);
         }
 
+        void defClass(misc::position const& pos, std::string const& name, std::string const&)
+        {
+            error::forbidDefClass(pos, name);
+        }
+
         void defParam(misc::position const&, std::string const&) {}
 
         std::set<std::string> localNames() const
@@ -244,8 +259,9 @@ namespace {
 
 }
 
-BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable> symbols)
-    : _terminated_err_reported(false)
+BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable> symbols, bool class_space)
+    : _class_space(class_space)
+    , _terminated_err_reported(false)
     , _term_pos_or_nul_if_not_term(nullptr)
     , _symbols(std::move(symbols))
     , _main_block(new output::Block)
@@ -329,8 +345,9 @@ CompilingSpace::CompilingSpace()
 
 CompilingSpace::CompilingSpace(misc::position const& pos
                              , util::sref<SymbolTable> ext_st
-                             , std::vector<std::string> const& params)
-    : BaseCompilingSpace(util::mkptr(new RegularSymbolTable(pos, ext_st, params)))
+                             , std::vector<std::string> const& params
+                             , bool class_space)
+    : BaseCompilingSpace(util::mkptr(new RegularSymbolTable(pos, ext_st, params)), class_space)
     , _this_referenced(false)
 {}
 
@@ -384,6 +401,11 @@ bool SubCompilingSpace::inPipe() const
 bool SubCompilingSpace::inCatch() const
 {
     return _ext_space.inCatch();
+}
+
+bool SubCompilingSpace::inClass() const
+{
+    return _ext_space.inClass();
 }
 
 void SubCompilingSpace::referenceThis()

@@ -1,6 +1,8 @@
 #ifndef __STEKIN_SEMANTIC_CLASS_H__
 #define __STEKIN_SEMANTIC_CLASS_H__
 
+#include <output/class.h>
+
 #include "block.h"
 
 namespace semantic {
