@@ -98,6 +98,7 @@ NodeType const test::PIPE_KEY("pipe key");
 NodeType const test::PIPE_RESULT("pipe result");
 
 NodeType const test::CALL("call");
+NodeType const test::SUPER_CONSTRUCTOR_CALL("super constructor call");
 NodeType const test::ASYNC_REFERENCE("asynchronous reference");
 
 NodeType const test::ASYNC_PIPELINE("asynchronous pipeline");

@@ -430,6 +430,22 @@ std::cerr << "    `ctor' clause not belonging to a `class'" << std::endl;
 , Param(POS_TYPE, 'pos')),
 
 ReportFunc(
+'contructorNotCallSuper',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    no call to the super class constructor" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'noSuperClass',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    no super class" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'invalidPropertyName',
 lineno() + '''
 std::cerr << pos.str() << std::endl;

@@ -302,21 +302,21 @@ void ClassAutomation::finish(
 
 CtorAutomation::CtorAutomation(misc::position const& pos)
     : _pos(pos)
+    , _list_accepted(nullptr)
     , _finished(false)
+    , _super_init(false)
 {
-    _actions[OPEN_PAREN] = [this](AutomationStack& stack, TypedToken const&)
-                           {
-                               _actions[OPEN_PAREN] = AutomationBase::discardToken;
-                               stack.push(util::mkptr(new ExprListAutomation));
-                           };
+    this->_actions[OPEN_PAREN] = [this](AutomationStack& stack, TypedToken const&)
+                                 {
+                                     this->_actions[OPEN_PAREN] = AutomationBase::discardToken;
+                                     stack.push(util::mkptr(new ExprListAutomation));
+                                     this->_list_accepted = CtorAutomation::_acceptParams;
+                                 };
 }
 
 void CtorAutomation::accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list)
 {
-    for (auto const& e: list) {
-        this->_params.push_back(e->reduceAsName());
-    }
-    this->_finished = true;
+    this->_list_accepted(this, std::move(list));
 }
 
 bool CtorAutomation::finishOnBreak(bool) const
@@ -327,14 +327,37 @@ bool CtorAutomation::finishOnBreak(bool) const
 void CtorAutomation::finish(
             ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
 {
-    misc::position ct_pos(_pos);
-    std::vector<std::string> params(std::move(_params));
-    util::sref<ClauseBase> parent_clause(wrapper.lastClause());
-    wrapper.pushClause(util::mkptr(new InlineClause(
-        wrapper.last_indent,
-        [=](Block clause_block)
-        {
-            parent_clause->acceptCtor(ct_pos, std::move(params), std::move(clause_block));
-        })));
+    wrapper.pushClause(util::mkptr(new CtorClause(
+                wrapper.last_indent, this->_pos, std::move(this->_params)
+              , this->_super_init, std::move(this->_super_ctor_args), wrapper.lastClause())));
     stack.pop();
+}
+
+void CtorAutomation::_acceptParams(
+        CtorAutomation* self, std::vector<util::sptr<Expression const>> list)
+{
+    for (auto const& e: list) {
+        self->_params.push_back(e->reduceAsName());
+    }
+    self->_finished = true;
+    self->_actions[SUPER] =
+        [=](AutomationStack&, TypedToken const&)
+        {
+            self->_finished = false;
+            self->_actions[OPEN_PAREN] =
+                [=](AutomationStack& stack, TypedToken const&)
+                {
+                    stack.push(util::mkptr(new ExprListAutomation));
+                    self->_list_accepted = CtorAutomation::_acceptSuperArgs;
+                    self->_actions[OPEN_PAREN] = AutomationBase::discardToken;
+                };
+        };
+}
+
+void CtorAutomation::_acceptSuperArgs(
+        CtorAutomation* self, std::vector<util::sptr<Expression const>> list)
+{
+    self->_super_ctor_args = std::move(list);
+    self->_super_init = true;
+    self->_finished = true;
 }

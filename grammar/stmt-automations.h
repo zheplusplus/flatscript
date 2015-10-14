@@ -198,8 +198,17 @@ namespace grammar {
         void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
     private:
         misc::position const _pos;
+        std::function<void(CtorAutomation*, std::vector<util::sptr<Expression const>>)>
+                _list_accepted;
         std::vector<std::string> _params;
+        std::vector<util::sptr<Expression const>> _super_ctor_args;
         bool _finished;
+        bool _super_init;
+
+        static void _acceptParams(CtorAutomation* self
+                                , std::vector<util::sptr<Expression const>> list);
+        static void _acceptSuperArgs(CtorAutomation* self
+                                   , std::vector<util::sptr<Expression const>> list);
     };
 
 }

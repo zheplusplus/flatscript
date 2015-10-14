@@ -28,6 +28,14 @@ namespace {
 
 }
 
+Constructor::Constructor(misc::position const& ps, std::vector<std::string> params, Block b
+                       , std::string const&, bool si, util::ptrarr<Expression const>)
+    : pos(ps)
+    , param_names(std::move(params))
+    , body(std::move(b))
+    , super_init(si)
+{}
+
 util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bool) const
 {
     DataTree::actualOne()(pos, FUNC_DEF, name);
@@ -247,6 +255,15 @@ util::sptr<output::Expression const> Call::compile(BaseCompilingSpace&) const
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> SuperConstructorCall::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, CALL_BEGIN, "SUPER");
+    DataTree::actualOne()(pos, ARGUMENTS);
+    compileList(args);
+    DataTree::actualOne()(pos, CALL_END);
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> MemberAccess::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ . ]")(pos, OPERAND);
@@ -427,6 +444,7 @@ std::string StringLiteral::stringValue(util::sref<SymbolTable const>) const { re
 bool ListLiteral::isAsync() const { return false; }
 bool ListAppend::isAsync() const { return false; }
 bool Call::isAsync() const { return false; }
+bool SuperConstructorCall::isAsync() const { return false; }
 bool MemberAccess::isAsync() const { return false; }
 bool Lookup::isAsync() const { return false; }
 bool ListSlice::isAsync() const { return false; }

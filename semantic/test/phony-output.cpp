@@ -301,6 +301,13 @@ std::string Call::str() const
     return "";
 }
 
+std::string SuperConstructorCall::str() const
+{
+    DataTree::actualOne()(pos, SUPER_CONSTRUCTOR_CALL, args.size());
+    writeList(args);
+    return "";
+}
+
 std::string Lookup::str() const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[]");

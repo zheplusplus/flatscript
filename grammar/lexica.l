@@ -129,6 +129,10 @@ class {
     return KW_CLASS;
 }
 
+super {
+    return KW_SUPER;
+}
+
 ctor {
     return KW_CONSTRUCTOR;
 }

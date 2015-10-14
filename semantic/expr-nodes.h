@@ -229,6 +229,23 @@ namespace semantic {
         util::ptrarr<Expression const> const args;
     };
 
+    struct SuperConstructorCall
+        : Expression
+    {
+        SuperConstructorCall(misc::position const& pos, std::string cn
+                           , util::ptrarr<Expression const> a)
+                : Expression(pos)
+                , class_name(std::move(cn))
+                , args(std::move(a))
+        {}
+
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool isAsync() const;
+
+        std::string const class_name;
+        util::ptrarr<Expression const> const args;
+    };
+
     struct MemberAccess
         : Expression
     {

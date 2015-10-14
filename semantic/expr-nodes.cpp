@@ -255,6 +255,17 @@ bool Call::isAsync() const
     return callee->isAsync() || isListAsync(args);
 }
 
+util::sptr<output::Expression const> SuperConstructorCall::compile(BaseCompilingSpace& space) const
+{
+    return util::mkptr(new output::SuperConstructorCall(
+                this->pos, this->class_name, ::compileList(this->args, space)));
+}
+
+bool SuperConstructorCall::isAsync() const
+{
+    return ::isListAsync(this->args);
+}
+
 util::sptr<output::Expression const> MemberAccess::compile(BaseCompilingSpace& space) const
 {
     return util::mkptr(new output::MemberAccess(pos, referee->compile(space), member));

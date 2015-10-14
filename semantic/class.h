@@ -7,19 +7,21 @@
 
 namespace semantic {
 
+    struct Constructor {
+        Constructor(misc::position const& ps, std::vector<std::string> params, Block b
+                  , std::string const& class_name, bool si
+                  , util::ptrarr<Expression const> super_ctor_args);
+
+        util::sptr<output::Constructor const> compile(
+                util::sref<SymbolTable> st, bool has_base_class) const;
+
+        misc::position const pos;
+        std::vector<std::string> const param_names;
+        Block const body;
+        bool const super_init;
+    };
+
     struct Class {
-        struct Constructor {
-            Constructor(misc::position const& ps, std::vector<std::string> params, Block b)
-                : pos(ps)
-                , param_names(std::move(params))
-                , body(std::move(b))
-            {}
-
-            misc::position const pos;
-            std::vector<std::string> const param_names;
-            Block const body;
-        };
-
         Class(misc::position const& ps, std::string n, std::string base_n
             , Block b, util::sptr<Constructor const> ct)
                 : pos(ps)
@@ -31,11 +33,16 @@ namespace semantic {
 
         util::sptr<output::Class const> compile(util::sref<SymbolTable> st) const;
 
+        bool hasBaseClass() const
+        {
+            return !this->base_class_name.empty();
+        }
+
         misc::position const pos;
         std::string const name;
         std::string const base_class_name;
         Block const body;
-        util::sptr<Constructor const> ctor_or_nul;
+        util::sptr<Constructor const> const ctor_or_nul;
     };
 
 }

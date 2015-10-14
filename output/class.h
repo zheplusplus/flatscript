@@ -9,17 +9,17 @@
 
 namespace output {
 
+    struct Constructor {
+        Constructor(std::vector<std::string> params, util::sptr<Statement const> b)
+            : param_names(std::move(params))
+            , body(std::move(b))
+        {}
+
+        std::vector<std::string> const param_names;
+        util::sptr<Statement const> const body;
+    };
+
     struct Class {
-        struct Constructor {
-            Constructor(std::vector<std::string> params, util::sptr<Statement const> b)
-                : param_names(std::move(params))
-                , body(std::move(b))
-            {}
-
-            std::vector<std::string> const param_names;
-            util::sptr<Statement const> const body;
-        };
-
         Class(std::string n, util::sptr<Expression const> base
             , std::map<std::string, util::sptr<Lambda const>> memfns
             , util::sptr<Constructor const> ct)

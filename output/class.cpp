@@ -7,8 +7,7 @@
 
 using namespace output;
 
-static std::string constructor(std::string const& name
-                             , util::sptr<Class::Constructor const> const& ctor)
+static std::string constructor(std::string const& name, util::sptr<Constructor const> const& ctor)
 {
     if (ctor.nul()) {
         return "function " + name + "() {}";
@@ -26,6 +25,14 @@ static std::string constructor(std::string const& name
         ;
 }
 
+static std::string inherit(std::string const& name, util::sptr<Expression const> const& base)
+{
+    if (base.nul()) {
+        return "";
+    }
+    return "$extend(" + name + "," + base->str() + ");";
+}
+
 static std::string memfuncs(std::string const& name
                           , std::map<std::string, util::sptr<Lambda const>> const& fns)
 {
@@ -36,14 +43,13 @@ static std::string memfuncs(std::string const& name
     return util::join("", fno);
 }
 
-static std::string creator(std::string const& name
-                         , util::sptr<Class::Constructor const> const& ctor)
+static std::string creator(std::string const& name, util::sptr<Constructor const> const& ctor)
 {
     return
         util::replace_all(
         util::replace_all(
             "function create(#PARAMS) {"
-            "    return new #NAME(#PARAMS);"
+                "return new #NAME(#PARAMS);"
             "}"
             "create.$class = #NAME;"
             "return create;"
@@ -59,8 +65,10 @@ void Class::write(std::ostream& os) const
         util::replace_all(
         util::replace_all(
         util::replace_all(
-            "=(function(){#CONSTRUCTOR #MEMFUNCS #CREATORFN})();"
+        util::replace_all(
+            "=(function(){#CONSTRUCTOR #INHERIT #MEMFUNCS #CREATORFN})();"
                 , "#CONSTRUCTOR", ::constructor(this->name, this->ctor_or_nul))
+                , "#INHERIT", ::inherit(this->name, this->base_class_or_nul))
                 , "#MEMFUNCS", ::memfuncs(this->name, this->member_funcs))
                 , "#CREATORFN", ::creator(this->name, this->ctor_or_nul))
         ;

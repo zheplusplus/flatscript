@@ -47,12 +47,14 @@ void Block::addClass(util::sptr<Class const> cls)
     _classes.append(std::move(cls));
 }
 
-void Block::setCtor(misc::position const& pos, std::vector<std::string> params, Block body)
+void Block::setCtor(misc::position const& pos, std::vector<std::string> params, Block body
+                  , bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args)
 {
     if (this->_ctor.not_nul()) {
         return error::duplicateCtor(this->_ctor->pos, pos);
     }
-    this->_ctor = util::mkptr(new Constructor(pos, std::move(params), std::move(body)));
+    this->_ctor = util::mkptr(new Constructor(pos, std::move(params), std::move(body)
+                                            , super_init, std::move(super_ctor_args)));
 }
 
 void Block::acceptElse(misc::position const& else_pos, Block block)

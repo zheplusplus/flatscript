@@ -17,9 +17,12 @@ void ClauseBase::acceptClass(util::sptr<Class const> cls)
     _block.addClass(std::move(cls));
 }
 
-void ClauseBase::acceptCtor(misc::position const& ct_pos, std::vector<std::string> params, Block body)
+void ClauseBase::acceptCtor(
+        misc::position const& ct_pos, std::vector<std::string> params
+      , Block body, bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args)
 {
-    _block.setCtor(ct_pos, std::move(params), std::move(body));
+    _block.setCtor(ct_pos, std::move(params), std::move(body), super_init
+                 , std::move(super_ctor_args));
 }
 
 void ClauseBase::acceptStmt(util::sptr<Statement> stmt)
@@ -108,13 +111,13 @@ void IfnotClause::deliver()
 
 void FunctionClause::deliver()
 {
-    return _parent->acceptFunc(util::mkptr(
+    this->_parent->acceptFunc(util::mkptr(
                     new Function(pos, name, param_names, async_param_index, std::move(_block))));
 }
 
 void ClassClause::deliver()
 {
-    _parent->acceptClass(util::mkptr(
+    this->_parent->acceptClass(util::mkptr(
             new Class(pos, _class_name, _base_class_name, std::move(_block))));
 }
 
@@ -126,6 +129,11 @@ void ClassClause::acceptClass(util::sptr<Class const> cls)
 void ClassClause::acceptStmt(util::sptr<Statement> stmt)
 {
     error::stmtNotAllowedInClass(stmt->pos);
+}
+
+void CtorClause::deliver()
+{
+    this->_parent->acceptCtor(this->pos, std::move(this->_params), std::move(this->_block), this->_super_init, std::move(this->_super_ctor_args));
 }
 
 void TryClause::deliver()

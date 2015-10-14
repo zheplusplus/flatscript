@@ -33,7 +33,7 @@
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
 %token IDENT
 %token PIPE_ELEMENT PIPE_INDEX PIPE_KEY PIPE_RESULT EXCEPTION_OBJ REGULAR_ASYNC_PARAM
-%token KW_CLASS KW_CONSTRUCTOR
+%token KW_CLASS KW_SUPER KW_CONSTRUCTOR
 
 %%
 
@@ -181,6 +181,11 @@ token:
     KW_CLASS
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CLASS);
+    }
+    |
+    KW_SUPER
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::SUPER);
     }
     |
     KW_CONSTRUCTOR

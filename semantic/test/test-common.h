@@ -86,6 +86,7 @@ namespace test {
     extern NodeType const PIPE_RESULT;
 
     extern NodeType const CALL;
+    extern NodeType const SUPER_CONSTRUCTOR_CALL;
     extern NodeType const ASYNC_REFERENCE;
 
     extern NodeType const ASYNC_PIPELINE;

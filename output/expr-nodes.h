@@ -411,6 +411,22 @@ namespace output {
         std::string str() const;
     };
 
+    struct SuperConstructorCall
+        : Expression
+    {
+        SuperConstructorCall(misc::position const& pos, std::string cn
+                           , util::ptrarr<Expression const> a)
+            : Expression(pos)
+            , class_name(std::move(cn))
+            , args(std::move(a))
+        {}
+
+        std::string str() const;
+
+        std::string const class_name;
+        util::ptrarr<Expression const> const args;
+    };
+
 }
 
 #endif /* __STEKIN_OUTPUT_EXPRESSION_NODES_H__ */

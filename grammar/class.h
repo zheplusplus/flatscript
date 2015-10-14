@@ -8,15 +8,20 @@
 namespace grammar {
 
     struct Constructor {
-        Constructor(misc::position const& ps, std::vector<std::string> params, Block b)
+        Constructor(misc::position const& ps, std::vector<std::string> params, Block b
+                  , bool si, std::vector<util::sptr<Expression const>> sa)
             : pos(ps)
             , param_names(std::move(params))
             , body(std::move(b))
+            , super_init(si)
+            , super_ctor_args(std::move(sa))
         {}
 
         misc::position const pos;
         std::vector<std::string> const param_names;
         Block const body;
+        bool const super_init;
+        std::vector<util::sptr<Expression const>> const super_ctor_args;
     };
 
     struct Class {

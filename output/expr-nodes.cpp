@@ -251,3 +251,9 @@ std::string ConditionalCallbackParameter::str() const
 {
     return TERM_CONDITIONAL_CALLBACK_PARAMETER;
 }
+
+std::string SuperConstructorCall::str() const
+{
+    return this->class_name + ".$super.constructor.apply($this,["
+         + util::join(",", ::strList(this->args)) + "]);";
+}

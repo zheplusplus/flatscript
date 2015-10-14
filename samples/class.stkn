@@ -1,9 +1,19 @@
 class Animal
-    ctor (name)
+    ctor(name)
         @name: name
 
     func move(x)
         return @name + ' moved ' + x + ' meters'
 
+class Bird: Animal
+    ctor(name, speed) super(name)
+        @speed: speed
+
+    func move(x)
+        return @name + ' flied ' + x * @speed + ' meters'
+
 a: Animal('Alche')
 console.log(a.move(5))
+
+b: Bird('Rokh', 2)
+console.log(b.move(4))

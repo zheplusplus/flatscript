@@ -30,7 +30,8 @@ namespace grammar {
         void addStmt(util::sptr<Statement> stmt);
         void addFunc(util::sptr<Function const> func);
         void addClass(util::sptr<Class const> cls);
-        void setCtor(misc::position const& pos, std::vector<std::string> params, Block body);
+        void setCtor(misc::position const& pos, std::vector<std::string> params, Block body
+                   , bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args);
         void acceptElse(misc::position const& else_pos, Block block);
         void acceptCatch(misc::position const& catch_pos, Block block);
     private:
