@@ -259,8 +259,8 @@ namespace {
 
 }
 
-BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable> symbols, bool class_space)
-    : _class_space(class_space)
+BaseCompilingSpace::BaseCompilingSpace(util::sptr<SymbolTable> symbols, bool allow_super)
+    : _allow_super(allow_super)
     , _terminated_err_reported(false)
     , _term_pos_or_nul_if_not_term(nullptr)
     , _symbols(std::move(symbols))
@@ -346,8 +346,8 @@ CompilingSpace::CompilingSpace()
 CompilingSpace::CompilingSpace(misc::position const& pos
                              , util::sref<SymbolTable> ext_st
                              , std::vector<std::string> const& params
-                             , bool class_space)
-    : BaseCompilingSpace(util::mkptr(new RegularSymbolTable(pos, ext_st, params)), class_space)
+                             , bool allow_super)
+    : BaseCompilingSpace(util::mkptr(new RegularSymbolTable(pos, ext_st, params)), allow_super)
     , _this_referenced(false)
 {}
 
@@ -403,9 +403,9 @@ bool SubCompilingSpace::inCatch() const
     return _ext_space.inCatch();
 }
 
-bool SubCompilingSpace::inClass() const
+bool SubCompilingSpace::allowSuper() const
 {
-    return _ext_space.inClass();
+    return _ext_space.allowSuper();
 }
 
 void SubCompilingSpace::referenceThis()

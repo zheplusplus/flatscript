@@ -29,11 +29,11 @@ namespace {
 }
 
 Constructor::Constructor(misc::position const& ps, std::vector<std::string> params, Block b
-                       , std::string const&, bool si, util::ptrarr<Expression const>)
+                       , std::string const&, bool, util::ptrarr<Expression const>)
     : pos(ps)
     , param_names(std::move(params))
+    , super_init(nullptr)
     , body(std::move(b))
-    , super_init(si)
 {}
 
 util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bool) const

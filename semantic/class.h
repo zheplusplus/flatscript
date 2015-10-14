@@ -15,10 +15,15 @@ namespace semantic {
         util::sptr<output::Constructor const> compile(
                 util::sref<SymbolTable> st, bool has_base_class) const;
 
+        bool superInit() const
+        {
+            return this->super_init.not_nul();
+        }
+
         misc::position const pos;
         std::vector<std::string> const param_names;
+        util::sptr<Statement const> const super_init;
         Block const body;
-        bool const super_init;
     };
 
     struct Class {

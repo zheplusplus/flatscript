@@ -40,14 +40,14 @@ namespace semantic {
         virtual ~BaseCompilingSpace() {}
         BaseCompilingSpace(BaseCompilingSpace const&) = delete;
 
-        BaseCompilingSpace(util::sptr<SymbolTable> symbols, bool class_space);
+        BaseCompilingSpace(util::sptr<SymbolTable> symbols, bool allow_super);
 
         explicit BaseCompilingSpace(util::sptr<SymbolTable> symbols)
             : BaseCompilingSpace(std::move(symbols), false)
         {}
 
         BaseCompilingSpace(BaseCompilingSpace&& rhs)
-            : _class_space(rhs._class_space)
+            : _allow_super(rhs._allow_super)
             , _terminated_err_reported(rhs._terminated_err_reported)
             , _term_pos_or_nul_if_not_term(std::move(rhs._term_pos_or_nul_if_not_term))
             , _symbols(std::move(rhs._symbols))
@@ -65,7 +65,8 @@ namespace semantic {
 
         virtual bool inPipe() const = 0;
         virtual bool inCatch() const = 0;
-        virtual bool inClass() const { return this->_class_space; }
+        virtual bool allowSuper() const { return this->_allow_super; }
+        void allowSuper(bool allow) { this->_allow_super = allow; }
 
         void setAsyncSpace(misc::position const& pos
                          , std::vector<std::string> const& params
@@ -79,7 +80,7 @@ namespace semantic {
 
         virtual util::sptr<output::Block> deliver();
     private:
-        bool const _class_space;
+        bool _allow_super;
         bool _terminated_err_reported;
         util::sptr<misc::position const> _term_pos_or_nul_if_not_term;
         util::sptr<SymbolTable> _symbols;
@@ -96,7 +97,7 @@ namespace semantic {
         CompilingSpace(misc::position const& pos
                      , util::sref<SymbolTable> ext_st
                      , std::vector<std::string> const& params
-                     , bool class_space=false);
+                     , bool allow_super=false);
 
         CompilingSpace(CompilingSpace&& rhs)
             : BaseCompilingSpace(std::move(rhs))
@@ -118,8 +119,8 @@ namespace semantic {
         RegularAsyncCompilingSpace(misc::position const& pos
                                  , util::sref<SymbolTable> ext_st
                                  , std::vector<std::string> const& params
-                                 , bool class_space=false)
-            : CompilingSpace(pos, ext_st, params, class_space)
+                                 , bool allow_super=false)
+            : CompilingSpace(pos, ext_st, params, allow_super)
             , compile_pos(pos)
         {}
 
@@ -142,7 +143,7 @@ namespace semantic {
 
         bool inPipe() const;
         bool inCatch() const;
-        bool inClass() const;
+        bool allowSuper() const;
         util::sptr<output::Expression const> ret(util::sref<Expression const> val);
         output::Method raiseMethod() const;
         util::sref<output::Block> replaceSpace(

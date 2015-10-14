@@ -8,18 +8,15 @@
 
 using namespace semantic;
 
-static Block prependSuperCtorCall(
-        misc::position const& pos, bool call_super, Block b
+static util::sptr<Statement const> superInitCall(
+        misc::position const& pos, bool call_super
       , std::string const& class_name, util::ptrarr<Expression const> super_ctor_args)
 {
     if (!call_super) {
-        return std::move(b);
+        return util::sptr<Statement const>(nullptr);
     }
-    Block r;
-    r.addStmt(util::mkptr(new Arithmetics(pos, util::mkptr(
-                        new SuperConstructorCall(pos, class_name, std::move(super_ctor_args))))));
-    r.append(std::move(b));
-    return std::move(r);
+    return util::mkptr(new Arithmetics(pos, util::mkptr(
+                    new SuperConstructorCall(pos, class_name, std::move(super_ctor_args)))));
 }
 
 Constructor::Constructor(misc::position const& ps, std::vector<std::string> params
@@ -27,23 +24,27 @@ Constructor::Constructor(misc::position const& ps, std::vector<std::string> para
                        , util::ptrarr<Expression const> super_ctor_args)
     : pos(ps)
     , param_names(std::move(params))
-    , body(::prependSuperCtorCall(ps, si, std::move(b), class_name, std::move(super_ctor_args)))
-    , super_init(si)
+    , super_init(::superInitCall(ps, si, class_name, std::move(super_ctor_args)))
+    , body(std::move(b))
 {}
 
 util::sptr<output::Constructor const> Constructor::compile(
                     util::sref<SymbolTable> st, bool has_base_class) const
 {
-    if (has_base_class && !this->super_init) {
+    if (has_base_class && !this->superInit()) {
         error::contructorNotCallSuper(this->pos);
-    } else if (!has_base_class && this->super_init) {
+    } else if (!has_base_class && this->superInit()) {
         error::noSuperClass(this->pos);
     }
 
-    CompilingSpace ctor_space(pos, st, this->param_names, has_base_class);
+    CompilingSpace ctor_space(pos, st, this->param_names);
     if (has_base_class) {
         ctor_space.referenceThis();
     }
+    if (this->super_init.not_nul()) {
+        this->super_init->compile(ctor_space);
+    }
+    ctor_space.allowSuper(has_base_class);
     this->body.compile(ctor_space);
     return util::mkptr(new output::Constructor(this->param_names, ctor_space.deliver()));
 }
