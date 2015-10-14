@@ -21,9 +21,14 @@ namespace {
         return util::sptr<output::Expression const>(nullptr);
     }
 
+    util::sptr<output::Statement const> nulOutputStmt()
+    {
+        return util::sptr<output::Statement const>(nullptr);
+    }
+
 }
 
-util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) const
+util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bool) const
 {
     DataTree::actualOne()(pos, FUNC_DEF, name);
     std::for_each(param_names.begin()
@@ -36,10 +41,11 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>) co
     return util::sptr<output::Function const>(nullptr);
 }
 
-util::sptr<output::Function const> RegularAsyncFunction::compile(util::sref<SymbolTable>) const
+util::sptr<output::Function const> RegularAsyncFunction::compile(
+        util::sref<SymbolTable>, bool) const
 {
     DataTree::actualOne()(pos, REGULAR_ASYNC_PARAM_INDEX, async_param_index);
-    return Function::compile(nulSymbols());
+    return Function::compile(nulSymbols(), false);
 }
 
 void Block::compile(BaseCompilingSpace&) const
@@ -386,6 +392,10 @@ util::sptr<Expression const> Pipeline::createFilter(misc::position const& pos
     return util::mkptr(new BinaryOp(pos, std::move(list), "[ |? ]", std::move(section)));
 }
 
+util::sptr<output::Statement const> Function::_compileBody(
+        util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
+util::sptr<output::Statement const> RegularAsyncFunction::_compileBody(
+        util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
 bool Expression::boolValue(util::sref<SymbolTable const>) const { return false; }
 bool Reference::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Reference::literalType(util::sref<SymbolTable const>) const { return ""; }

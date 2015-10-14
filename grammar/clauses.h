@@ -24,7 +24,7 @@ namespace grammar {
         int const indent;
 
         void acceptFunc(util::sptr<Function const> func);
-        void acceptClass(util::sptr<Class const> cls);
+        virtual void acceptClass(util::sptr<Class const> cls);
         void acceptCtor(misc::position const& ct_pos,
                         std::vector<std::string> ct_params, Block ct_bl);
         virtual void acceptStmt(util::sptr<Statement> stmt);
@@ -148,6 +148,7 @@ namespace grammar {
         {}
 
         void deliver();
+        void acceptClass(util::sptr<Class const> cls);
         void acceptStmt(util::sptr<Statement> stmt);
 
         misc::position const pos;

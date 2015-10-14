@@ -220,10 +220,18 @@ std::cerr << "    a member function named `" << name << "' already defined at "
 , Param(POS_TYPE, 'prev_pos'), Param(POS_TYPE, 'this_pos'), Param(STR_TYPE, 'name')),
 
 ReportFunc(
+'nestedClassNotAllowed',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    class not allowed as a member of another class" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'stmtNotAllowedInClass',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    only functions or the constructor allowed in a function, invalid statement" << std::endl;
+std::cerr << "    only functions or the constructor allowed in a function, not a statement" << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 

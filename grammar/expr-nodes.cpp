@@ -1,3 +1,4 @@
+#include <globals.h>
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
 #include <util/string.h>
@@ -192,11 +193,10 @@ util::sptr<semantic::Expression const> Lookup::reduceAsLeftValue() const
 
 util::sptr<semantic::Expression const> ListSlice::reduceAsExpr() const
 {
-    return util::mkptr(new semantic::ListSlice(pos
-                                             , list->reduceAsExpr()
-                                             , begin->reduceAsExpr()
-                                             , end->reduceAsExpr()
-                                             , step->reduceAsExpr()));
+    stekin::Globals::g.use_list_slice = true;
+    return util::mkptr(new semantic::ListSlice(
+            this->pos, this->list->reduceAsExpr(), this->begin->reduceAsExpr()
+          , this->end->reduceAsExpr(), this->step->reduceAsExpr()));
 }
 
 util::sptr<semantic::Expression const> Dictionary::reduceAsExpr() const

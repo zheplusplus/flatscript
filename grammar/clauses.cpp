@@ -118,6 +118,11 @@ void ClassClause::deliver()
             new Class(pos, _class_name, _base_class_name, std::move(_block))));
 }
 
+void ClassClause::acceptClass(util::sptr<Class const> cls)
+{
+    error::nestedClassNotAllowed(cls->pos);
+}
+
 void ClassClause::acceptStmt(util::sptr<Statement> stmt)
 {
     error::stmtNotAllowedInClass(stmt->pos);

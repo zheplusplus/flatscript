@@ -20,6 +20,7 @@ namespace semantic {
         Block(Block&& rhs)
             : _stmts(std::move(rhs._stmts))
             , _funcs(std::move(rhs._funcs))
+            , _classes(std::move(rhs._classes))
         {}
 
         void compile(BaseCompilingSpace& space) const;

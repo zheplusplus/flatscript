@@ -1,0 +1,9 @@
+class Animal
+    ctor (name)
+        @name: name
+
+    func move(x)
+        return @name + ' moved ' + x + ' meters'
+
+a: Animal('Alche')
+console.log(a.move(5))

@@ -59,3 +59,4 @@ verify try-catch
 verify throw-in-pipeline
 verify nested-subs
 verify name-shadowing
+verify class

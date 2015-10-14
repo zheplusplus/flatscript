@@ -1,3 +1,4 @@
+#include <globals.h>
 #include <semantic/function.h>
 
 #include "node-base.h"
@@ -8,6 +9,9 @@ using namespace grammar;
 
 util::sptr<semantic::Class const> Class::compile() const
 {
+    if (!this->base_class_name.empty()) {
+        stekin::Globals::g.use_class_ext = true;
+    }
     util::sptr<semantic::Class::Constructor> ctor(nullptr);
     if (this->body.getCtor().not_nul()) {
         ctor = util::mkptr(new semantic::Class::Constructor(

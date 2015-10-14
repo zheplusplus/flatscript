@@ -14,6 +14,10 @@ void Block::write(std::ostream& os) const
            << util::join(",", std::vector<std::string>(_local_decls.begin(), _local_decls.end()))
            << ";" << std::endl;
     }
+    _classes.iter([&](util::sptr<Class const> const& cls, int)
+                  {
+                      cls->write(os);
+                  });
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
                     func->write(os);
@@ -29,29 +33,10 @@ int Block::count() const
     return _classes.size() + _stmts.size() + _funcs.size();
 }
 
-void Block::addClass(util::sptr<Class const> cls)
-{
-    _classes.append(std::move(cls));
-}
-
-void Block::addStmt(util::sptr<Statement const> stmt)
-{
-    _stmts.append(std::move(stmt));
-}
-
-void Block::addFunc(util::sptr<Function const> func)
-{
-    _funcs.append(std::move(func));
-}
-
 void Block::append(util::sptr<Block> b)
 {
     _stmts.append(std::move(b->_stmts));
     _funcs.append(std::move(b->_funcs));
+    _classes.append(std::move(b->_classes));
     _local_decls.insert(b->_local_decls.begin(), b->_local_decls.end());
-}
-
-void Block::setLocalDecls(std::set<std::string> const& decls)
-{
-    _local_decls = decls;
 }

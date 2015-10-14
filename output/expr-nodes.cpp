@@ -110,32 +110,6 @@ std::string Lookup::str() const
     return collection->str() + "[" + key->str() + "]";
 }
 
-static std::string const LIST_SLICE(
-"(function(list, begin, end, step) {\n"
-"    function round(x) {\n"
-"        if (x > list.length) return list.length;\n"
-"        if (x < 0) return x % list.length + list.length;\n"
-"        return x;\n"
-"    }\n"
-"    var r = [];\n"
-"    step = step || 1;\n"
-"    if (step > 0) {\n"
-"        begin = round(begin || 0);\n"
-"        end = (end === undefined) ? list.length : round(end);\n"
-"        for (; begin < end; begin += step) {\n"
-"            r.push(list[begin]);\n"
-"        }\n"
-"        return r;\n"
-"    }\n"
-"    begin = (begin === undefined) ? list.length - 1 : round(begin);\n"
-"    end = (end === undefined) ? -1 : round(end)\n"
-"    for (; begin > end; begin += step) {\n"
-"        r.push(list[begin]);\n"
-"    }\n"
-"    return r;\n"
-"})($LIST, $BEGIN, $END, $STEP)\n"
-);
-
 std::string ListSlice::str() const
 {
     return
@@ -143,7 +117,7 @@ std::string ListSlice::str() const
         util::replace_all(
         util::replace_all(
         util::replace_all(
-            LIST_SLICE
+            "$listslice($LIST, $BEGIN, $END, $STEP)"
                 , "$LIST", list->str())
                 , "$BEGIN", begin->str())
                 , "$END", end->str())
