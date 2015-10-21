@@ -75,6 +75,7 @@ NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
 NodeType const test::IDENTIFIER("identifier");
 NodeType const test::THIS("this");
+NodeType const test::SUPER_FUNC("super func");
 NodeType const test::LIST_BEGIN("list begin");
 NodeType const test::LIST_END("list end");
 

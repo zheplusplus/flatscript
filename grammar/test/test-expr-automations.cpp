@@ -536,7 +536,7 @@ TEST_F(AutomationTest, ReduceDictionary)
 
     open(pos, "{");
     pushIdent(pos, "no");
-    pushPropSep(pos);
+    pushColon(pos);
     open(pos, "(");
     pushIdent(pos, "miyako");
     close(pos, ")");
@@ -572,7 +572,7 @@ TEST_F(AutomationTest, ReduceDictionary)
                 (pos, DICT_END)
                 (pos, DICT_BEGIN)
                 (pos, DICT_ITEM)
-                    (pos, IDENTIFIER, "no")
+                    (pos, STRING, "no")
                     (pos, FUNC_DEF)
                         (pos, PARAMETER, "miyako")
                         (BLOCK_BEGIN)
@@ -620,6 +620,7 @@ TEST_F(AutomationTest, ReduceThisAndProperty)
     stack->push(util::mkptr(new grammar::ExprStmtAutomation(util::mkref(clause))));
 
     pushThis(pos);
+    pushOp(pos, ".");
     pushIdent(pos, "higurasi");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
 
@@ -655,8 +656,6 @@ TEST_F(AutomationTest, ReduceThisAndProperty)
     pushOp(pos, "+");
     ASSERT_FALSE(stack->top()->finishOnBreak(true));
 
-    pushThis(pos);
-    ASSERT_TRUE(stack->top()->finishOnBreak(true));
     pushInteger(pos, "20130121");
     ASSERT_TRUE(stack->top()->finishOnBreak(true));
 
@@ -673,11 +672,11 @@ TEST_F(AutomationTest, ReduceThisAndProperty)
             (pos, OPERAND)
                 (pos, BINARY_OP, "+")
                 (pos, OPERAND)
-                    (pos, BINARY_OP, "[]")
+                    (pos, BINARY_OP, "[ . ]")
                     (pos, OPERAND)
                         (pos, THIS)
                     (pos, OPERAND)
-                        (pos, STRING, "higurasi")
+                        (pos, IDENTIFIER, "higurasi")
                 (pos, OPERAND)
                     (pos, CALL_BEGIN)
                         (pos, THIS)
@@ -691,11 +690,7 @@ TEST_F(AutomationTest, ReduceThisAndProperty)
                         (pos, THIS)
                     (pos, CALL_END)
             (pos, OPERAND)
-                (pos, BINARY_OP, "[]")
-                (pos, OPERAND)
-                    (pos, THIS)
-                (pos, OPERAND)
-                    (pos, STRING, "20130121")
+                (pos, INTEGER, "20130121")
         (BLOCK_END)
     ;
 }

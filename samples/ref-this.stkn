@@ -5,11 +5,11 @@ func hex2(n)
     return s
 
 func Color(r, g, b)
-    @r: Math.floor(r)
-    @g: Math.floor(g)
-    @b: Math.floor(b)
-    @"to-string": (): '#' + hex2(@r) + hex2(@g) + hex2(@b)
-    @toString: @'to-string'
+    this.r: Math.floor(r)
+    this.g: Math.floor(g)
+    this.b: Math.floor(b)
+    this["to-string"]: (): '#' + hex2(this.r) + hex2(this.g) + hex2(this.b)
+    this.toString: this['to-string']
 
 red: *Color(255, 0, 0)
 console.log(red.toString())
@@ -22,10 +22,10 @@ console.log(whatTheHell["to-string"]())
 
 func logLines(lines)
     lines |:
-        @line: $
+        this.line: $
         setTimeout(%, 1)
-        console.log(@line)
-    console.log(@line)
+        console.log(this.line)
+    console.log(this.line)
     console.log('Done')
 
 logLines(['a', 'b', 'c'])

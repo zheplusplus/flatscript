@@ -48,6 +48,7 @@ static std::string creator(std::string const& name, util::sptr<Constructor const
     return
         util::replace_all(
         util::replace_all(
+            "var $super=#NAME.$super;"
             "function create(#PARAMS) {"
                 "return new #NAME(#PARAMS);"
             "}"

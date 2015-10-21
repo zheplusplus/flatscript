@@ -385,6 +385,14 @@ util::sptr<output::Expression const> This::compile(BaseCompilingSpace& space) co
     return util::mkptr(new output::This(pos));
 }
 
+util::sptr<output::Expression const> SuperFunc::compile(BaseCompilingSpace& space) const
+{
+    if (!space.allowSuper()) {
+        error::superNotInMember(pos);
+    }
+    return util::mkptr(new output::SuperFunc(pos, property));
+}
+
 util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace& space) const
 {
     if (predicate->isLiteral(space.sym())) {

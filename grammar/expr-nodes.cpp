@@ -237,6 +237,11 @@ util::sptr<semantic::Expression const> This::reduceAsExpr() const
     return util::mkptr(new semantic::This(pos));
 }
 
+util::sptr<semantic::Expression const> SuperFunc::reduceAsExpr() const
+{
+    return util::mkptr(new semantic::SuperFunc(pos, property));
+}
+
 util::sptr<semantic::Expression const> Pipeline::reduceAsExpr() const
 {
     if ("|:" == op_img) {

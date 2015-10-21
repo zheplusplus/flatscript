@@ -35,6 +35,11 @@ struct AutomationTest
         stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::IntLiteral(pos, image)), image);
     }
 
+    void pushString(misc::position const& pos, std::string const& image)
+    {
+        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::StringLiteral(pos, image)), image);
+    }
+
     void pushIdent(misc::position const& pos, std::string const& image)
     {
         stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::Identifier(pos, image)), image);
@@ -55,6 +60,11 @@ struct AutomationTest
         stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::RegularAsyncParam(pos)), "%%");
     }
 
+    void pushThis(misc::position const& pos)
+    {
+        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::This(pos)), "this");
+    }
+
     void pushPipeSep(misc::position const& pos, std::string const& op)
     {
         stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, op, grammar::PIPE_SEP));
@@ -65,19 +75,9 @@ struct AutomationTest
         stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, ":", grammar::COLON));
     }
 
-    void pushPropSep(misc::position const& pos)
-    {
-        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, "::", grammar::PROP_SEP));
-    }
-
     void pushComma(misc::position const& pos)
     {
         stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, ",", grammar::COMMA));
-    }
-
-    void pushThis(misc::position const& pos)
-    {
-        stack->top()->nextToken(*stkptr, grammar::TypedToken(pos, "this", grammar::THIS));
     }
 
     void pushIf(misc::position const& pos)

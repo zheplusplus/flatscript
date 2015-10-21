@@ -71,6 +71,7 @@ namespace test {
     extern NodeType const STRING;
     extern NodeType const LIST;
     extern NodeType const THIS;
+    extern NodeType const SUPER_FUNC;
     extern NodeType const BINARY_OP;
     extern NodeType const PRE_UNARY_OP;
     extern NodeType const CONDITIONAL;

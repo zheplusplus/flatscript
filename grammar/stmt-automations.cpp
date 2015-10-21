@@ -22,7 +22,7 @@ ExprStmtAutomation::ExprStmtAutomation(util::sref<ClauseBase> clause)
                 return util::mkptr(new PipelineAutomation);
             });
     _setShifts({
-        { THIS, { createPipeline, true } },
+        { SUPER, { createPipeline, true } },
         { OPEN_PAREN, { createPipeline, true } },
         { OPEN_BRACKET, { createPipeline, true } },
         { OPEN_BRACE, { createPipeline, true } },

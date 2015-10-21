@@ -203,6 +203,22 @@ std::cerr << "    another `" << successor << "' already matches the `" << match 
 , Param(STR_TYPE, 'match')),
 
 ReportFunc(
+'superWithoutCall',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    use of `super' is not a call to super property" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'superNotInMember',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    `super' not in member function or constructor" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'duplicateCtor',
 lineno() + '''
 std::cerr << pos.str() << std::endl;

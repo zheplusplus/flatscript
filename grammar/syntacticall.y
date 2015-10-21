@@ -28,12 +28,12 @@
 %token INDENT EOL
 %token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_IMPORT KW_EXPORT KW_RESERVED
 %token KW_TRY KW_CATCH KW_TRHOW
-%token PROP_SEP OPERATOR PIPE_SEP
+%token OPERATOR PIPE_SEP
 %token BOOL_TRUE BOOL_FALSE
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
 %token IDENT
 %token PIPE_ELEMENT PIPE_INDEX PIPE_KEY PIPE_RESULT EXCEPTION_OBJ REGULAR_ASYNC_PARAM
-%token KW_CLASS KW_SUPER KW_CONSTRUCTOR
+%token KW_CLASS KW_THIS KW_SUPER KW_CONSTRUCTOR
 
 %%
 
@@ -183,6 +183,12 @@ token:
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CLASS);
     }
     |
+    KW_THIS
+    {
+        $$ = new grammar::FactorToken(
+            grammar::here(), util::mkptr(new grammar::This(grammar::here())), "this");
+    }
+    |
     KW_SUPER
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::SUPER);
@@ -206,11 +212,6 @@ token:
     PIPE_SEP
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::PIPE_SEP);
-    }
-    |
-    PROP_SEP
-    {
-        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::PROP_SEP);
     }
     |
     BOOL_TRUE
@@ -337,11 +338,6 @@ token:
     ','
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::COMMA);
-    }
-    |
-    '@'
-    {
-        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::THIS);
     }
 ;
 

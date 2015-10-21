@@ -85,6 +85,7 @@ namespace test {
     extern NodeType const STRING;
     extern NodeType const IDENTIFIER;
     extern NodeType const THIS;
+    extern NodeType const SUPER_FUNC;
     extern NodeType const LIST_BEGIN;
     extern NodeType const LIST_END;
 

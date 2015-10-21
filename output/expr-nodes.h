@@ -371,6 +371,19 @@ namespace output {
         std::string str() const;
     };
 
+    struct SuperFunc
+        : Expression
+    {
+        SuperFunc(misc::position const& pos, std::string prop)
+            : Expression(pos)
+            , property(prop)
+        {}
+
+        std::string str() const;
+
+        std::string const property;
+    };
+
     struct Conditional
         : Expression
     {

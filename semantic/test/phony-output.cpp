@@ -399,6 +399,12 @@ std::string This::str() const
     return "";
 }
 
+std::string SuperFunc::str() const
+{
+    DataTree::actualOne()(pos, SUPER_FUNC, property);
+    return "";
+}
+
 std::string Conditional::str() const
 {
     DataTree::actualOne()(pos, CONDITIONAL);

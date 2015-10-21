@@ -83,6 +83,7 @@ NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
 NodeType const test::LIST("list");
 NodeType const test::THIS("this");
+NodeType const test::SUPER_FUNC("super func");
 NodeType const test::BINARY_OP("binary operation");
 NodeType const test::PRE_UNARY_OP("prefix unary operation");
 NodeType const test::CONDITIONAL("conditional expression");

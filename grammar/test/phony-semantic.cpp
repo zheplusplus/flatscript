@@ -369,6 +369,12 @@ util::sptr<output::Expression const> This::compile(BaseCompilingSpace&) const
     return nulOutputExpr();
 }
 
+util::sptr<output::Expression const> SuperFunc::compile(BaseCompilingSpace&) const
+{
+    DataTree::actualOne()(pos, SUPER_FUNC, property);
+    return nulOutputExpr();
+}
+
 util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace&) const
 {
     DataTree::actualOne()(pos, CONDITIONAL)(pos, OPERAND);

@@ -1,19 +1,24 @@
 class Animal
     ctor(name)
-        @name: name
+        this.name: name
 
     func move(x)
-        return @name + ' moved ' + x + ' meters'
+        return this.name + ' moved ' + x + ' meters'
 
 class Bird: Animal
     ctor(name, speed) super(name)
-        @speed: speed
+        this.speed: speed
 
     func move(x)
-        return @name + ' flied ' + x * @speed + ' meters'
+        if this.speed = 1
+            return 'Bird ' + super.move(x)
+        return 'Bird ' + this.name + ' flied ' + x * this.speed + ' meters'
 
 a: Animal('Alche')
 console.log(a.move(5))
 
 b: Bird('Rokh', 2)
 console.log(b.move(4))
+
+d: Bird('Duck', 1)
+console.log(d.move(3))

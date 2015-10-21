@@ -129,6 +129,10 @@ class {
     return KW_CLASS;
 }
 
+this {
+    return KW_THIS;
+}
+
 super {
     return KW_SUPER;
 }
@@ -227,10 +231,6 @@ delete {
     return PIPE_SEP;
 }
 
-:: {
-    return PROP_SEP;
-}
-
 [$] {
     return PIPE_ELEMENT;
 }
@@ -275,7 +275,7 @@ delete {
     return OPERATOR;
 }
 
-[()\[\],:.{}@] {
+[()\[\],:.{}] {
     return *yytext;
 }
 

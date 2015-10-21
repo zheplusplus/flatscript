@@ -237,6 +237,11 @@ std::string This::str() const
     return "$this";
 }
 
+std::string SuperFunc::str() const
+{
+    return "$super." + this->property + ".call";
+}
+
 std::string Conditional::str() const
 {
     return "(" + predicate->str() + "?" + consequence->str() + ":" + alternative->str() + ")";
