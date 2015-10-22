@@ -133,7 +133,8 @@ void ClassClause::acceptStmt(util::sptr<Statement> stmt)
 
 void CtorClause::deliver()
 {
-    this->_parent->acceptCtor(this->pos, std::move(this->_params), std::move(this->_block), this->_super_init, std::move(this->_super_ctor_args));
+    this->_parent->acceptCtor(this->pos, std::move(this->_params), std::move(this->_block)
+                                       , this->_super_init, std::move(this->_super_ctor_args));
 }
 
 void TryClause::deliver()

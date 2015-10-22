@@ -18,7 +18,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
     struct PreUnaryOp
@@ -210,7 +209,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         util::sptr<Expression const> const lhs;
@@ -229,7 +227,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         util::sptr<Expression const> const callee;
@@ -247,7 +244,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         std::string const class_name;
@@ -266,7 +262,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         util::sptr<Expression const> const referee;
@@ -285,7 +280,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         util::sptr<Expression const> const collection;
@@ -308,7 +302,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         util::sptr<Expression const> const list;
@@ -326,7 +319,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         util::ptrkvarr<Expression const> const items;
@@ -342,7 +334,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
 
         std::vector<std::string> const param_names;
         Block const body;
@@ -360,7 +351,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
 
         int const async_param_index;
     };
@@ -383,7 +373,6 @@ namespace semantic {
         util::ptrarr<Expression const> const latter_args;
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const { return true; }
     };
 
@@ -402,7 +391,6 @@ namespace semantic {
         std::vector<std::string> const async_params;
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
     struct This
@@ -413,7 +401,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
     struct SuperFunc
@@ -425,7 +412,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
 
         std::string const property;
     };
@@ -469,7 +455,6 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
-        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
 }

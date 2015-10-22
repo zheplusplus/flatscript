@@ -35,7 +35,7 @@ namespace semantic {
         virtual bool isLiteral(util::sref<SymbolTable const>) const { return false; }
         virtual std::string literalType(util::sref<SymbolTable const>) const { return ""; }
 
-        virtual bool boolValue(util::sref<SymbolTable const> st) const = 0;
+        virtual bool boolValue(util::sref<SymbolTable const>) const { return false; }
         virtual mpz_class intValue(util::sref<SymbolTable const>) const { return 0; }
         virtual mpf_class floatValue(util::sref<SymbolTable const>) const { return 0; }
         virtual std::string stringValue(util::sref<SymbolTable const>) const { return "";}

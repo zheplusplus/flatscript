@@ -42,5 +42,6 @@ console.log(d.move(3))
 
 Neko: makeClass()
 c: Neko('Cherry')
+console.log(c.name)
 console.log(c.move(10))
 c.meow(3, %%)
