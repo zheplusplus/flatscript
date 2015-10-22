@@ -20,8 +20,9 @@ void flats::initEnv(int argc, char* argv[])
     opterr = 0;
     while ((ch = getopt(argc, argv, "e:")) != EOF) {
         switch (ch) {
-            case 'e':
-                Globals::g.external_syms.insert(optarg);
+        case 'e':
+            Globals::g.external_syms.insert(optarg);
+            continue;
         }
     }
     for (std::string const& i: pre_defined) {
