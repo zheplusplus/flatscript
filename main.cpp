@@ -19,14 +19,14 @@
 static semantic::CompilingSpace globalSpace()
 {
     semantic::CompilingSpace space;
-    space.sym()->importNames(misc::position(0), std::vector<std::string>(
-            stekin::Globals::g.pre_imported.begin(), stekin::Globals::g.pre_imported.end()));
+    space.sym()->addExternNames(misc::position(0), std::vector<std::string>(
+            flats::Globals::g.external_syms.begin(), flats::Globals::g.external_syms.end()));
     return std::move(space);
 }
 
 int main(int argc, char* argv[])
 {
-    stekin::initEnv(argc, argv);
+    flats::initEnv(argc, argv);
     yyparse();
     if (error::hasError()) {
         return 1;

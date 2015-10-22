@@ -1,5 +1,5 @@
 #include "globals.h"
 
-using namespace stekin;
+using namespace flats;
 
 Globals Globals::g;

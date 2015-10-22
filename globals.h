@@ -4,7 +4,7 @@
 #include <set>
 #include <string>
 
-namespace stekin {
+namespace flats {
 
     class Globals {
         Globals()
@@ -14,7 +14,7 @@ namespace stekin {
     public:
         static Globals g;
     public:
-        std::set<std::string> pre_imported;
+        std::set<std::string> external_syms;
         bool use_class_ext;
         bool use_list_slice;
     };

@@ -106,7 +106,7 @@ NodeType const test::DICT_ITEM("dictionary item");
 NodeType const test::NAME_DEF("name def");
 NodeType const test::ARITHMETICS("arithmetics");
 NodeType const test::RETURN("return");
-NodeType const test::IMPORT("import");
+NodeType const test::EXTERN("extern");
 NodeType const test::EXPORT("export");
 NodeType const test::EXPORT_VALUE("exported value");
 NodeType const test::ATTR_SET("attribute set");

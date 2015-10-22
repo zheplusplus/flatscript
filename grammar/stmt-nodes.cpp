@@ -66,9 +66,9 @@ util::sptr<semantic::Statement const> NameDef::compile() const
     return util::mkptr(new semantic::NameDef(pos, name, init->reduceAsExpr()));
 }
 
-util::sptr<semantic::Statement const> Import::compile() const
+util::sptr<semantic::Statement const> Extern::compile() const
 {
-    return util::mkptr(new semantic::Import(pos, names));
+    return util::mkptr(new semantic::Extern(pos, names));
 }
 
 util::sptr<semantic::Statement const> Export::compile() const

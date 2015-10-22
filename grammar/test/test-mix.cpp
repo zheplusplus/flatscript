@@ -283,10 +283,10 @@ TEST(Syntax, Mix)
                 (misc::position(39), OPERAND)
                     (misc::position(39), STRING, "nomico'misato")
 
-            (misc::position(41), IMPORT)
+            (misc::position(41), EXTERN)
                 (misc::position(41), IDENTIFIER, "emirin")
 
-            (misc::position(42), IMPORT)
+            (misc::position(42), EXTERN)
                 (misc::position(42), IDENTIFIER, "kagami")
                 (misc::position(42), IDENTIFIER, "hiiragi")
 

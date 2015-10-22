@@ -84,7 +84,7 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
     util::ptrarr<semantic::Expression const> largs;
 
     space.sym()->defName(pos, "f");
-    space.sym()->importNames(pos, { "g" });
+    space.sym()->addExternNames(pos, { "g" });
     space.sym()->defName(pos, "list");
 
     fargs.append(util::mkptr(new semantic::AsyncCall(pos
@@ -92,7 +92,7 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
                                                    , util::ptrarr<semantic::Expression const>()
                                                    , std::vector<std::string>({ "k" })
                                                    , util::ptrarr<semantic::Expression const>())));
-    block.addStmt(util::mkptr(new semantic::Import(pos, std::vector<std::string>{ "h" })));
+    block.addStmt(util::mkptr(new semantic::Extern(pos, std::vector<std::string>{ "h" })));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, semantic::Pipeline::createMapper(
                     pos
                   , util::mkptr(new semantic::Reference(pos, "list"))
@@ -327,22 +327,22 @@ TEST_F(PipelinesTest, ReturnInPipelineContext)
     ASSERT_EQ(pos_a, recs[0].pos);
 }
 
-TEST_F(PipelinesTest, RedefineImportNameSameAsAsyncParam)
+TEST_F(PipelinesTest, RedefineExternalNameSameAsAsyncParam)
 {
     misc::position pos(6);
     misc::position pos_ap(600);
-    misc::position pos_import(601);
+    misc::position pos_extern(601);
     semantic::CompilingSpace space;
     semantic::Block block;
 
-    block.addStmt(util::mkptr(new semantic::Import(pos, std::vector<std::string>{ "g" })));
+    block.addStmt(util::mkptr(new semantic::Extern(pos, std::vector<std::string>{ "g" })));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos_ap
                                       , util::mkptr(new semantic::Reference(pos, "g"))
                                       , util::ptrarr<semantic::Expression const>()
                                       , std::vector<std::string>({ "h" })
                                       , util::ptrarr<semantic::Expression const>())))));
-    block.addStmt(util::mkptr(new semantic::Import(pos_import, std::vector<std::string>{ "h" })));
+    block.addStmt(util::mkptr(new semantic::Extern(pos_extern, std::vector<std::string>{ "h" })));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Call(pos
                                  , util::mkptr(new semantic::Reference(pos, "h"))
@@ -354,20 +354,20 @@ TEST_F(PipelinesTest, RedefineImportNameSameAsAsyncParam)
     std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
     ASSERT_EQ(1, redefs.size());
     ASSERT_EQ(pos_ap, redefs[0].prev_def_pos);
-    ASSERT_EQ(pos_import, redefs[0].this_def_pos);
+    ASSERT_EQ(pos_extern, redefs[0].this_def_pos);
     ASSERT_EQ("h", redefs[0].name);
 }
 
-TEST_F(PipelinesTest, RedefineAsyncParamSameAsImportName)
+TEST_F(PipelinesTest, RedefineAsyncParamSameAsExternalName)
 {
     misc::position pos(7);
-    misc::position pos_import(700);
+    misc::position pos_extern(700);
     misc::position pos_ap(701);
     semantic::CompilingSpace space;
     semantic::Block block;
 
-    block.addStmt(util::mkptr(new semantic::Import(pos, std::vector<std::string>{ "g" })));
-    block.addStmt(util::mkptr(new semantic::Import(pos_import, std::vector<std::string>{ "h" })));
+    block.addStmt(util::mkptr(new semantic::Extern(pos, std::vector<std::string>{ "g" })));
+    block.addStmt(util::mkptr(new semantic::Extern(pos_extern, std::vector<std::string>{ "h" })));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos_ap
                                       , util::mkptr(new semantic::Reference(pos, "g"))
@@ -384,7 +384,7 @@ TEST_F(PipelinesTest, RedefineAsyncParamSameAsImportName)
 
     std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
     ASSERT_EQ(1, redefs.size());
-    ASSERT_EQ(pos_import, redefs[0].prev_def_pos);
+    ASSERT_EQ(pos_extern, redefs[0].prev_def_pos);
     ASSERT_EQ(pos_ap, redefs[0].this_def_pos);
     ASSERT_EQ("h", redefs[0].name);
 }

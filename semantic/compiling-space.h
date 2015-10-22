@@ -25,8 +25,8 @@ namespace semantic {
         virtual void defConst(misc::position const& pos
                             , std::string const& name
                             , util::sref<Expression const> value) = 0;
-        virtual void importNames(misc::position const& pos
-                               , std::vector<std::string> const& names) = 0;
+        virtual void addExternNames(misc::position const& pos
+                                  , std::vector<std::string> const& names) = 0;
         virtual void refNames(misc::position const& pos, std::vector<std::string> const& names) = 0;
 
         virtual util::sref<Expression const> literalOrNul(std::string const& name) const = 0;

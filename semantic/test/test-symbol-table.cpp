@@ -153,14 +153,14 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     ASSERT_FALSE(error::hasError());
 }
 
-TEST_F(SymbolTableTest, ImportAlreadyDef)
+TEST_F(SymbolTableTest, ExternalAlreadyDef)
 {
     misc::position pos(7);
     misc::position ref_pos(700);
 
     refSym()->defName(pos, "akari");
-    semantic::Import import(ref_pos, std::vector<std::string>({ "akari", "akaza" }));
-    import.compile(space());
+    semantic::Extern external(ref_pos, std::vector<std::string>({ "akari", "akaza" }));
+    external.compile(space());
 
     ASSERT_TRUE(error::hasError());
     std::vector<NameAlreadyInLocalRec> redefs(getNameAlreadyInLocalRecs());
@@ -170,13 +170,13 @@ TEST_F(SymbolTableTest, ImportAlreadyDef)
     ASSERT_EQ("akari", redefs[0].name);
 }
 
-TEST_F(SymbolTableTest, ImportBeforeDef)
+TEST_F(SymbolTableTest, ExternalBeforeDef)
 {
     misc::position pos(8);
     misc::position ref_pos(800);
 
-    semantic::Import import(ref_pos, std::vector<std::string>({ "yuru", "yuri" }));
-    import.compile(space());
+    semantic::Extern external(ref_pos, std::vector<std::string>({ "yuru", "yuri" }));
+    external.compile(space());
     refSym()->defName(pos, "yuri");
 
     ASSERT_TRUE(error::hasError());
@@ -187,14 +187,14 @@ TEST_F(SymbolTableTest, ImportBeforeDef)
     ASSERT_EQ("yuri", redefs[0].name);
 }
 
-TEST_F(SymbolTableTest, ImportAfterRef)
+TEST_F(SymbolTableTest, ExternalAfterRef)
 {
     misc::position pos(9);
     misc::position ref_pos(900);
 
     refSym()->compileRef(ref_pos, "akane");
-    semantic::Import import(pos, std::vector<std::string>({ "akane" }));
-    import.compile(space());
+    semantic::Extern external(pos, std::vector<std::string>({ "akane" }));
+    external.compile(space());
 
     ASSERT_TRUE(error::hasError());
     std::vector<NameRefBeforeDefRec> invalid_refs(getNameRefBeforeDefRecs());
@@ -210,7 +210,7 @@ TEST_F(SymbolTableTest, CompileRef)
     misc::position pos(10);
     misc::position ref_pos(1000);
 
-    refSym()->importNames(pos, {"akemi"});
+    refSym()->addExternNames(pos, {"akemi"});
     util::sptr<semantic::Expression const> i(new semantic::IntLiteral(pos, 20121115));
     refSym()->defConst(pos, "kaname", *i);
     refSym()->defName(pos, "miki");

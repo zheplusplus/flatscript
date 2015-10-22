@@ -72,10 +72,10 @@ namespace semantic {
         util::sptr<Expression const> const init;
     };
 
-    struct Import
+    struct Extern
         : Statement
     {
-        Import(misc::position const& pos, std::vector<std::string> const& n)
+        Extern(misc::position const& pos, std::vector<std::string> const& n)
             : Statement(pos)
             , names(n)
         {}

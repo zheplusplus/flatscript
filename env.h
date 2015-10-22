@@ -1,7 +1,7 @@
 #ifndef __STEKIN_ENVIRONMENT_H__
 #define __STEKIN_ENVIRONMENT_H__
 
-namespace stekin {
+namespace flats {
 
     void initEnv(int argc, char* argv[]);
 

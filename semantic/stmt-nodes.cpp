@@ -94,9 +94,9 @@ bool Return::isAsync() const
     return ret_val->isAsync();
 }
 
-void Import::compile(BaseCompilingSpace& space) const
+void Extern::compile(BaseCompilingSpace& space) const
 {
-    space.sym()->importNames(pos, names);
+    space.sym()->addExternNames(pos, names);
 }
 
 void Export::compile(BaseCompilingSpace& space) const

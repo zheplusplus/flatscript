@@ -56,14 +56,14 @@ void ClauseBuilder::addReturn(int indent_len
     _pushSequence(pos, sequence);
 }
 
-void ClauseBuilder::addImport(int indent_len
+void ClauseBuilder::addExtern(int indent_len
                             , misc::position const& pos
                             , std::vector<std::string> const& names)
 {
-    if (!_prepareLevel(indent_len, pos, "import")) {
+    if (!_prepareLevel(indent_len, pos, "extern")) {
         return;
     }
-    _clauses.back()->acceptStmt(util::mkptr(new Import(pos, names)));
+    _clauses.back()->acceptStmt(util::mkptr(new Extern(pos, names)));
 }
 
 void ClauseBuilder::addExport(int indent_len

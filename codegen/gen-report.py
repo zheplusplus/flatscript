@@ -339,10 +339,10 @@ std::cerr << "    attempt define class `" << name << "' but forbidden here." << 
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
 
 ReportFunc(
-'importOnlyInGlobal',
+'externOnlyInGlobal',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    names could only imported into global space" << std::endl;
+std::cerr << "    external names declaration only in global space" << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 

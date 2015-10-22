@@ -26,7 +26,7 @@
 %type <token_sequence_type> token_sequence
 
 %token INDENT EOL
-%token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_IMPORT KW_EXPORT KW_RESERVED
+%token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_EXTERN KW_EXPORT KW_RESERVED
 %token KW_TRY KW_CATCH KW_TRHOW
 %token OPERATOR PIPE_SEP
 %token BOOL_TRUE BOOL_FALSE
@@ -73,7 +73,7 @@ stmt:
     |
     func_return {}
     |
-    import {}
+    extern {}
     |
     export {}
 ;
@@ -105,10 +105,10 @@ func_return:
     }
 ;
 
-import:
-    indent KW_IMPORT name_list eol
+extern:
+    indent KW_EXTERN name_list eol
     {
-        grammar::builder.addImport($1, misc::position($4), $3->deliver());
+        grammar::builder.addExtern($1, misc::position($4), $3->deliver());
     }
 ;
 

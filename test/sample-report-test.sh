@@ -9,7 +9,7 @@ else
 fi
 
 verify() {
-    if $CHKMEM ./stekin < samples/errors/$1.fls 2>&1 > /dev/null | diff samples/errors/$1.expected - ;
+    if $CHKMEM ./flatsc < samples/errors/$1.fls 2>&1 > /dev/null | diff samples/errors/$1.expected - ;
     then
         echo $1 "report pass."
     else

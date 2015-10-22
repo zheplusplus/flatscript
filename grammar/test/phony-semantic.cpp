@@ -105,9 +105,9 @@ void Export::compile(BaseCompilingSpace&) const
     value->compile(nulSpace());
 }
 
-void Import::compile(BaseCompilingSpace&) const
+void Extern::compile(BaseCompilingSpace&) const
 {
-    DataTree::actualOne()(pos, IMPORT);
+    DataTree::actualOne()(pos, EXTERN);
     std::for_each(names.begin()
                 , names.end()
                 , [&](std::string const& name)

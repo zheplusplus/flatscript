@@ -46,9 +46,9 @@ namespace {
             _const_defs.insert(std::make_pair(name, std::make_pair(pos, value)));
         }
 
-        void importNames(misc::position const& pos, std::vector<std::string> const&)
+        void addExternNames(misc::position const& pos, std::vector<std::string> const&)
         {
-            error::importOnlyInGlobal(pos);
+            error::externOnlyInGlobal(pos);
         }
 
         void refNames(misc::position const& pos, std::vector<std::string> const& names)
@@ -81,7 +81,7 @@ namespace {
             if (_const_defs.end() != const_find_result) {
                 return compileLiteral(const_find_result->second.second, util::mkref(*this));
             }
-            if (_imported.end() != _imported.find(name)) {
+            if (_external.end() != _external.find(name)) {
                 return util::mkptr(new output::ImportedName(pos, name));
             }
             if (_async_param_defs.find(name) != _async_param_defs.end()) {
@@ -110,8 +110,8 @@ namespace {
             if (_const_defs.end() != _const_defs.find(name)) {
                 return util::mkref(_const_defs.find(name)->second.first);
             }
-            if (_imported.end() != _imported.find(name)) {
-                return util::mkref(_imported.find(name)->second);
+            if (_external.end() != _external.find(name)) {
+                return util::mkref(_external.find(name)->second);
             }
             if (_async_param_defs.end() != _async_param_defs.find(name)) {
                 return util::mkref(_async_param_defs.find(name)->second);
@@ -139,7 +139,7 @@ namespace {
         std::map<std::string, std::vector<misc::position>> _references;
         std::map<std::string, misc::position> _name_defs;
         std::map<std::string, misc::position> _async_param_defs;
-        std::map<std::string, misc::position> _imported;
+        std::map<std::string, misc::position> _external;
         std::map<std::string, std::pair<misc::position, util::sref<Expression const>>> _const_defs;
         std::vector<std::string> const _parameters;
     };
@@ -212,12 +212,12 @@ namespace {
     {
         GlobalSymbolTable() = default;
 
-        void importNames(misc::position const& pos, std::vector<std::string> const& names)
+        void addExternNames(misc::position const& pos, std::vector<std::string> const& names)
         {
             for (auto const& name: names) {
                 _checkNoRef(pos, name);
                 _checkNoDef(pos, name);
-                _imported.insert(std::make_pair(name, pos));
+                _external.insert(std::make_pair(name, pos));
             }
         }
     };

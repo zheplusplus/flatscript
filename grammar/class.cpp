@@ -10,7 +10,7 @@ using namespace grammar;
 util::sptr<semantic::Class const> Class::compile() const
 {
     if (!this->base_class_name.empty()) {
-        stekin::Globals::g.use_class_ext = true;
+        flats::Globals::g.use_class_ext = true;
     }
     util::sptr<semantic::Constructor> ctor(nullptr);
     if (this->body.getCtor().not_nul()) {

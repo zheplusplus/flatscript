@@ -1,14 +1,14 @@
-Stekinscript
-============
+Flatscript
+==========
 
 We write flat Javascript.
 
-This is a Javascript generator that makes it easy to write asynchronous code in a synchronous way. [Alpha Version]
+This is a Javascript generator that makes it easy to write asynchronous code in a synchronous way. [Beta Version]
 
 A Simple Example of Starring Features
 -----------------
 
-Steknscript code:
+Flatscript code:
 
     fs: require('fs')
     try
@@ -21,7 +21,7 @@ Steknscript code:
 
 Program would first read "a.txt", then read "b.txt", concatenate their content successively, and output to console, or report to stderr if any error occurs. And a message "end" would get printed in the end.
 
-Though in this piece of Stekinscript code there isn't any *asynchronous* part like callbacks, Stekinscript compile it into asynchronous Javascript.
+Though in this piece of Flatscript code there isn't any *asynchronous* part like callbacks, Flatscript compile it into asynchronous Javascript.
 
 Other Features
 -----------------
@@ -45,7 +45,7 @@ Ouput
         return ($c_fib(($c_n - 1)) + $c_fib(($c_n - 2)));
     }
 
-Stekinscript will also do some name mangling.
+Flatscript will also do some name mangling.
 
 It is easy to break a long line into shorter ones, by hitting return after proper tokens. Code samples
 
@@ -166,7 +166,7 @@ Just run
 
     make
 
-in the source directory and executable `stekin` would be generated. Clang is used by default. To specify another compiler, try
+in the source directory and executable `flatsc` would be generated. Clang is used by default. To specify another compiler, try
 
     make COMPILER=g++
 
@@ -174,27 +174,33 @@ In cygwin g++ is preferred.
 
 ### Run
 
-Stekinscript will always read source code from stdin, and output Javascript via stdout. The ordinary way to compile files is like
+Flatscript will read source code from stdin, and print Javascript via stdout. The ordinary way to compile files is like
 
-    stekin < source.stkn > output.js
+    flatsc < source.fls > output.js
 
 Or pipe the program to node
 
-    stekin < source.stkn | node
+    flatsc < source.fls | node
 
 FAQ
 ---
 
 ### Why the compiler complains name 'require'/'exports'/'document'/'window' not defined?
 
-Stekinscript checks name definition at compile time, and it is not possible to use any name that is not defined or imported.
+Flatscript checks name definition at compile time, and it is not possible to use any name that is not defined or not marked as external.
 
-You could pre-import names via `-i` option, like
+You could declare external names via `-e` option, like
 
-    stekin -i document -i window < client/source.stkn > client/output.js
-    stekin -i require -i exports < server/source.stkn > server/output.js
+    flatsc -e document -e window < client/source.fls > client/output.js
+    flatsc -e require -e exports < server/source.fls > server/output.js
 
-### How might I use jQuery in Stekinscript?
+Or using `extern` statement in the source file:
+
+    extern require
+    fs: require('fs')
+    console.log(fs.readFile('a.txt', %%))
+
+### How could I use jQuery in Flatscript?
 
 Use `jQuery` the identifier instead of `$` because `$` represents list elements in pipeline context, like
 
@@ -203,4 +209,4 @@ Use `jQuery` the identifier instead of `$` because `$` represents list elements 
 For More Information
 --------------------
 
-Please check the [wiki pages](https://github.com/neuront/stekinscript/wiki/_pages). (Chinese version only)
+Please check the [wiki pages](https://github.com/neuront/flatscript/wiki/_pages). (Chinese version only)

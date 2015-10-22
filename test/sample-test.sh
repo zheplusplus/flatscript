@@ -9,7 +9,7 @@ else
 fi
 
 verify() {
-    if $CHKMEM ./stekin < samples/$1.fls | node | diff samples/$1.expected - ;
+    if $CHKMEM ./flatsc < samples/$1.fls | node | diff samples/$1.expected - ;
     then
         echo $1 "exec pass."
     else

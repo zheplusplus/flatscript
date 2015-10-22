@@ -57,8 +57,8 @@ return {
     return KW_RETURN;
 }
 
-import {
-    return KW_IMPORT;
+extern {
+    return KW_EXTERN;
 }
 
 export {

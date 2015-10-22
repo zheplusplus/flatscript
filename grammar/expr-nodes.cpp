@@ -193,7 +193,7 @@ util::sptr<semantic::Expression const> Lookup::reduceAsLeftValue() const
 
 util::sptr<semantic::Expression const> ListSlice::reduceAsExpr() const
 {
-    stekin::Globals::g.use_list_slice = true;
+    flats::Globals::g.use_list_slice = true;
     return util::mkptr(new semantic::ListSlice(
             this->pos, this->list->reduceAsExpr(), this->begin->reduceAsExpr()
           , this->end->reduceAsExpr(), this->step->reduceAsExpr()));
