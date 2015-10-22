@@ -15,6 +15,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return false; }
         bool isAsync() const;
 
         util::sptr<Expression const> const list;
@@ -39,6 +40,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
     struct PipeIndex
@@ -49,6 +51,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
     struct PipeKey
@@ -59,6 +62,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
     struct PipeResult
@@ -69,6 +73,7 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        bool boolValue(util::sref<SymbolTable const>) const { return false; }
     };
 
 }

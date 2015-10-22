@@ -419,7 +419,6 @@ util::sptr<output::Statement const> Function::_compileBody(
         util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
 util::sptr<output::Statement const> RegularAsyncFunction::_compileBody(
         util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
-bool Expression::boolValue(util::sref<SymbolTable const>) const { return false; }
 bool Reference::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Reference::literalType(util::sref<SymbolTable const>) const { return ""; }
 bool Reference::boolValue(util::sref<SymbolTable const>) const { return false; }

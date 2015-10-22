@@ -1,0 +1,8 @@
+Line: 2
+    use tab as indent is forbidden.
+Line: 4
+    use tab as indent is forbidden.
+Line: 3
+    `else' does not match an `if'.
+Line: 7
+    use tab as indent is forbidden.

@@ -25,6 +25,7 @@ namespace semantic {
 
         void compile(BaseCompilingSpace& space) const;
         bool isAsync() const;
+        void checkNoAsync(misc::position const& check_pos) const;
         void append(Block following);
 
         void addStmt(util::sptr<Statement const> stmt)

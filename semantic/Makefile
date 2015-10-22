@@ -3,7 +3,6 @@ WORKDIR=semantic
 include misc/mf-template.mk
 
 semantic:$(WORKDIR)/const-fold.h $(WORKDIR)/const-fold.cpp \
-         node-base.d \
          stmt-nodes.d \
          expr-nodes.d \
          list-pipe.d \

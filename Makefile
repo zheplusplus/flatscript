@@ -40,6 +40,7 @@ runtest:all test-lib
 	make -f grammar/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f semantic/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	bash test/sample-test.sh -cm
+	bash test/sample-report-test.sh -cm
 
 test-lib:code-gen
 	mkdir -p libs

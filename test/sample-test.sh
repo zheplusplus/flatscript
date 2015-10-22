@@ -9,11 +9,11 @@ else
 fi
 
 verify() {
-    if $CHKMEM ./stekin < samples/$1.stkn | node | diff samples/$1.expected - ;
+    if $CHKMEM ./stekin < samples/$1.fls | node | diff samples/$1.expected - ;
     then
-        echo $1 "pass."
+        echo $1 "exec pass."
     else
-        echo $1 "FAILED!"
+        echo $1 "exec FAILED!"
     fi
 }
 

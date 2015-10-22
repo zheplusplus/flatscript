@@ -398,14 +398,6 @@ std::cerr << "    no available prefix unary operation " << op_img << " for type 
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'op_img'), Param(STR_TYPE, 'rhst_name')),
 
 ReportFunc(
-'condNotBool',
-lineno() + '''
-std::cerr << pos.str() << std::endl;
-std::cerr << "    condition type is not boolean, actual type: " << actual_type << std::endl;
-'''
-, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'actual_type')),
-
-ReportFunc(
 'returnNotAllowedInPipe',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
