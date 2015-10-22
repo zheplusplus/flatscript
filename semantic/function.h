@@ -26,12 +26,9 @@ namespace semantic {
             return this->compile(st, false);
         }
 
-        util::sptr<output::Statement const> compileAsMemberFunc(util::sref<SymbolTable> st) const
-        {
-            return this->_compileBody(st, true);
-        }
-
         virtual util::sptr<output::Function const> compile(
+                    util::sref<SymbolTable> st, bool class_space) const;
+        virtual util::sptr<output::Expression const> compileToLambda(
                     util::sref<SymbolTable> st, bool class_space) const;
 
         misc::position const pos;
@@ -58,6 +55,8 @@ namespace semantic {
         int const async_param_index;
 
         util::sptr<output::Function const> compile(
+                    util::sref<SymbolTable> st, bool class_space) const;
+        util::sptr<output::Expression const> compileToLambda(
                     util::sref<SymbolTable> st, bool class_space) const;
     protected:
         util::sptr<output::Statement const> _compileBody(

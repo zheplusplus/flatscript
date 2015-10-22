@@ -34,10 +34,10 @@ static std::string inherit(std::string const& name, util::sptr<Expression const>
 }
 
 static std::string memfuncs(std::string const& name
-                          , std::map<std::string, util::sptr<Lambda const>> const& fns)
+                          , std::map<std::string, util::sptr<Expression const>> const& fns)
 {
     std::vector<std::string> fno;
-    for (std::pair<std::string const, util::sptr<Lambda const>> const& fn: fns) {
+    for (std::pair<std::string const, util::sptr<Expression const>> const& fn: fns) {
         fno.push_back(name + ".prototype." + fn.first + '=' + fn.second->str() + ';');
     }
     return util::join("", fno);

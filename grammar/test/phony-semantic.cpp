@@ -469,3 +469,7 @@ mpz_class Conditional::intValue(util::sref<SymbolTable const>) const { return 0;
 mpf_class Conditional::floatValue(util::sref<SymbolTable const>) const { return 0; }
 std::string Conditional::stringValue(util::sref<SymbolTable const>) const { return ""; }
 bool Conditional::isAsync() const { return false; }
+util::sptr<output::Expression const> Function::compileToLambda(
+        util::sref<SymbolTable>, bool) const { return nulOutputExpr(); }
+util::sptr<output::Expression const> RegularAsyncFunction::compileToLambda(
+        util::sref<SymbolTable>, bool) const { return nulOutputExpr(); }

@@ -65,19 +65,16 @@ util::sptr<output::Class const> Class::compile(util::sref<SymbolTable> st) const
 
     util::sptr<output::Block const> class_body(new output::Block);
     std::map<std::string, misc::position> memfn_defs_pos;
-    std::map<std::string, util::sptr<output::Lambda const>> memfuncs;
-    this->body.getFuncs().iter([&](util::sptr<Function const> const& func, int)
-                               {
-                                   if (memfn_defs_pos.find(func->name) != memfn_defs_pos.end()) {
-                                       return error::duplicateMemFunc(memfn_defs_pos[func->name]
-                                                                    , func->pos, func->name);
-                                   }
-                                   memfn_defs_pos.insert(std::make_pair(func->name, func->pos));
-                                   memfuncs.insert(std::make_pair(
-                                        func->name, util::mkptr(new output::Lambda(
-                                               func->pos, func->param_names
-                                             , func->compileAsMemberFunc(st), false))));
-                               });
+    std::map<std::string, util::sptr<output::Expression const>> memfuncs;
+    this->body.getFuncs().iter(
+        [&](util::sptr<Function const> const& func, int)
+        {
+            if (memfn_defs_pos.find(func->name) != memfn_defs_pos.end()) {
+                return error::duplicateMemFunc(memfn_defs_pos[func->name], func->pos, func->name);
+            }
+            memfn_defs_pos.insert(std::make_pair(func->name, func->pos));
+            memfuncs.insert(std::make_pair(func->name, func->compileToLambda(st, true)));
+        });
     return util::mkptr(new output::Class(
             this->name, std::move(base_class), std::move(memfuncs), std::move(ct)));
 }

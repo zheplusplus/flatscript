@@ -5,7 +5,7 @@
 #include <string>
 
 #include "fwd-decl.h"
-#include "expr-nodes.h"
+#include "node-base.h"
 
 namespace output {
 
@@ -21,7 +21,7 @@ namespace output {
 
     struct Class {
         Class(std::string n, util::sptr<Expression const> base
-            , std::map<std::string, util::sptr<Lambda const>> memfns
+            , std::map<std::string, util::sptr<Expression const>> memfns
             , util::sptr<Constructor const> ct)
                 : name(std::move(n))
                 , base_class_or_nul(std::move(base))
@@ -33,7 +33,7 @@ namespace output {
 
         std::string const name;
         util::sptr<Expression const> const base_class_or_nul;
-        std::map<std::string, util::sptr<Lambda const>> const member_funcs;
+        std::map<std::string, util::sptr<Expression const>> const member_funcs;
         util::sptr<Constructor const> ctor_or_nul;
     };
 
