@@ -9,7 +9,7 @@ using namespace test;
 
 TEST(Syntax, ErrTabAsIndent)
 {
-    yyparse();
+    grammar::parse();
     ASSERT_TRUE(error::hasError());
     std::vector<TabAsIndentRec> recs = getTabAsIndentRecs();
     ASSERT_EQ(3, recs.size());

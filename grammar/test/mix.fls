@@ -14,7 +14,7 @@ else
 
 func print_10()
     if true
-        write(+1_234._5)
+        write(+1_234.5)
 
 x: print_10
 y: fib

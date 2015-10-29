@@ -5,6 +5,7 @@ grammar/syn.hpp
 *.o
 *.out
 *.pyc
+*.js
 tmp.*
 libs
 report/errors.*

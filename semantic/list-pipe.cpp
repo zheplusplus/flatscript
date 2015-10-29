@@ -24,9 +24,9 @@ bool Pipeline::isAsync() const
 
 util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace& space) const
 {
-    util::sref<output::Block> current_flow(space.block());
     util::sptr<output::Expression const> compl_list(list->compile(space));
 
+    util::sref<output::Block> current_flow(space.block());
     util::sptr<output::Block> succession_flow(new output::Block);
     space.setAsyncSpace(pos, std::vector<std::string>(), *succession_flow);
 

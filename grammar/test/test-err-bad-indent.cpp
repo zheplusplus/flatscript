@@ -9,7 +9,7 @@ using namespace test;
 
 TEST(Syntax, BadIndentation)
 {
-    yyparse();
+    grammar::parse();
     ASSERT_TRUE(error::hasError());
     std::vector<InvalidIndentRec> recs(getInvalidIndentRecs());
     ASSERT_EQ(4, recs.size());

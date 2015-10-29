@@ -7,6 +7,6 @@
 
 TEST(Syntax, Empty)
 {
-    yyparse();
+    grammar::parse();
     ASSERT_FALSE(error::hasError());
 }

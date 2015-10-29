@@ -1,0 +1,4 @@
+export test a.txt
+export test b.txt
+export test c.txt
+

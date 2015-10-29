@@ -18,10 +18,13 @@ void flats::initEnv(int argc, char* argv[])
 {
     int ch;
     opterr = 0;
-    while ((ch = getopt(argc, argv, "e:")) != EOF) {
+    while ((ch = getopt(argc, argv, "e:i:")) != EOF) {
         switch (ch) {
         case 'e':
             Globals::g.external_syms.insert(optarg);
+            continue;
+        case 'i':
+            Globals::g.input_file = optarg;
             continue;
         }
     }

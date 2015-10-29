@@ -101,7 +101,6 @@ void Extern::compile(BaseCompilingSpace& space) const
 
 void Export::compile(BaseCompilingSpace& space) const
 {
-    space.sym()->compileRef(pos, export_point[0]);
     util::sptr<output::Expression const> cval(value->compile(space));
     space.addStmt(pos, util::mkptr(new output::Export(export_point, std::move(cval))));
 }

@@ -32,3 +32,4 @@ verify reserved-words
 verify slice
 verify statments-after-return
 verify super-ctor-without-base-class
+verify init-super-with-super

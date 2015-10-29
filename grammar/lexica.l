@@ -163,11 +163,11 @@ delete {
     return INT_LITERAL;
 }
 
-[0-9][0-9_]*\.[0-9_]+ {
+[0-9][0-9_]*\.[0-9][0-9_]* {
     return DOUBLE_LITERAL;
 }
 
-\.[0-9_]+ {
+\.[0-9][0-9_]* {
     return DOUBLE_LITERAL;
 }
 

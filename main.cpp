@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <algorithm>
 #include <iostream>
 #include <sstream>
@@ -24,10 +25,9 @@ static semantic::CompilingSpace globalSpace()
     return std::move(space);
 }
 
-int main(int argc, char* argv[])
+static int compile()
 {
-    flats::initEnv(argc, argv);
-    yyparse();
+    grammar::parse();
     if (error::hasError()) {
         return 1;
     }
@@ -43,9 +43,17 @@ int main(int argc, char* argv[])
     }
     std::stringstream os;
     output::wrapGlobal(os, *global_scope);
-    if (error::hasError()) {
-        return 1;
-    }
     std::cout << os.str();
     return 0;
+}
+
+int main(int argc, char* argv[])
+{
+    flats::initEnv(argc, argv);
+    try {
+        return compile();
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
 }

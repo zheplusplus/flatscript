@@ -9,7 +9,7 @@ using namespace test;
 
 TEST(Syntax, MultiLevelLambdas)
 {
-    yyparse();
+    grammar::parse();
     grammar::builder.buildAndClear().compile(nulSpace());
     ASSERT_FALSE(error::hasError());
 

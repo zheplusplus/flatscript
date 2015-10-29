@@ -19,7 +19,7 @@ all:code-gen main.d env.d globals.d lib
 	        $(LIBS) \
 	     -o flatsc
 
-install:
+install:all
 	@install flatsc $(INSTALL_DIR)/flatsc || echo "Fail to install to $(INSTALL_DIR),"\
 		"permission denied or directory not existed."\
 		"Try specify installation path manully by passing INSTALL_DIR=directory"
@@ -41,6 +41,7 @@ runtest:all test-lib
 	make -f semantic/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	bash test/sample-test.sh -cm
 	bash test/sample-report-test.sh -cm
+	./flatsc -e require < test/sample-modules-test.fls | node
 
 test-lib:code-gen
 	mkdir -p libs
@@ -54,9 +55,10 @@ clean:
 	make -f semantic/Makefile clean
 	make -f output/Makefile clean
 	make -f codegen/Makefile clean
-	rm -f tmp.*
-	rm -f *.o
-	rm -f *.out
+	find -type f -name "*.js" -exec rm {} \;
+	find -type f -name "*.o" -exec rm {} \;
+	find -type f -name "*.out" -exec rm {} \;
+	find -type f -name "tmp.*" -exec rm {} \;
 	rm -rf $(LIB_DIR)
 	rm -f flatsc
 

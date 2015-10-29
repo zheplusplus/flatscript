@@ -9,7 +9,7 @@ using namespace test;
 
 TEST(Syntax, InvalidCharacters)
 {
-    yyparse();
+    grammar::parse();
     ASSERT_TRUE(error::hasError());
     std::vector<InvalidCharRec> recs = getInvalidCharRecs();
     ASSERT_EQ(3, recs.size());

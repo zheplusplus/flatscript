@@ -143,6 +143,11 @@ void Return::write(std::ostream&) const
     ret_val->str();
 }
 
+Export::Export(std::vector<std::string> e, util::sptr<Expression const> v)
+    : export_point(std::move(e))
+    , value(std::move(v))
+{}
+
 void Export::write(std::ostream&) const
 {
     DataTree::actualOne()(EXPORT);

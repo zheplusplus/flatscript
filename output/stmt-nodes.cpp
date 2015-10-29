@@ -42,6 +42,22 @@ void Return::write(std::ostream& os) const
     os << "return " << ret_val->str() << ";" << std::endl;
 }
 
+static std::vector<std::string> add_export_root(std::vector<std::string> export_point)
+{
+    std::vector<std::string> r;
+    r.reserve(1 + export_point.size());
+    r.push_back("$export");
+    for (std::string& e: export_point) {
+        r.push_back(std::move(e));
+    }
+    return std::move(r);
+}
+
+Export::Export(std::vector<std::string> e, util::sptr<Expression const> v)
+    : export_point(::add_export_root(std::move(e)))
+    , value(std::move(v))
+{}
+
 void Export::write(std::ostream& os) const
 {
     for (size_t i = 2; i < export_point.size(); ++i) {
