@@ -191,10 +191,11 @@ FAQ
 
 Flatscript checks name definition at compile time, and it is not possible to use any name that is not defined or not marked as external.
 
-You could declare external names via `-e` option, like
+You could declare external names via `-e` / `-E` option, like
 
-    flatsc -e document -e window < client/source.fls > client/output.js
-    flatsc -e require < server/source.fls > server/output.js
+    flatsc -e document -e window -i client/source.fls > client/output.js
+    flatsc -E document:window -i client/source.fls > client/output.js
+    flatsc -e require -i server/source.fls > server/output.js
 
 Or using `extern` statement in the source file:
 

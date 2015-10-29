@@ -21,6 +21,10 @@ namespace util {
     std::string str(mpz_class const& z);
     std::string str(mpf_class const& f);
 
+    std::vector<std::string> split_str(std::string const& str,
+                                       std::string const& delimiters=" ",
+                                       bool trimEmpty=false);
+
 }
 
 #endif /* __STEKIN_UTILITY_STRING_H__ */
