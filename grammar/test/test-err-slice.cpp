@@ -9,7 +9,7 @@ using namespace test;
 
 TEST(Syntax, SliceStepOmitted)
 {
-    yyparse();
+    grammar::parse();
     ASSERT_TRUE(error::hasError());
     std::vector<SliceStepOmittedRec> recs = getSliceStepOmittedRecs();
     ASSERT_EQ(1, recs.size());

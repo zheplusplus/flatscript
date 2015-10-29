@@ -113,14 +113,6 @@ std::cerr << "    use reserved word: " << token << std::endl;
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'token')),
 
 ReportFunc(
-'exportToIdent',
-lineno() + '''
-std::cerr << pos.str() << std::endl;
-std::cerr << "    export to identifier is invalid: " << ident << std::endl;
-'''
-, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'ident')),
-
-ReportFunc(
 'unexpectedToken',
 lineno() + '''
 std::cerr << pos.str() << std::endl;

@@ -1,0 +1,14 @@
+class Base
+    ctor(x, y)
+        this._x: x
+        this._y: y
+
+    func x()
+        return this._x
+
+    func y()
+        return this._y
+
+class Child: Base
+    ctor(x) super(x, super.y())
+        0

@@ -9,7 +9,7 @@ using namespace test;
 
 TEST(Syntax, ReservedWords)
 {
-    yyparse();
+    grammar::parse();
     ASSERT_TRUE(error::hasError());
     std::vector<ReservedWordRec> recs(getReservedWordRecs());
     ASSERT_EQ(4, recs.size());

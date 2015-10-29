@@ -1,10 +1,11 @@
-flatsc
+flsc
 grammar/lex.cpp
 grammar/syn.cpp
 grammar/syn.hpp
 *.o
 *.out
 *.pyc
+*.js
 tmp.*
 libs
 report/errors.*

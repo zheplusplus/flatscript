@@ -1,0 +1,100 @@
+TMP_OUTPUT: 'tmp.actual.txt'
+
+path: require('path')
+fs: require('fs')
+process: require('child_process')
+
+func runProcess(command, args, cb, opt)
+    p: process.spawn(command, args, opt)
+    stdout: []
+    stderr: []
+    p.stdout.on('data', (data): stdout.push(data))
+    p.stderr.on('data', (data): stderr.push(data))
+    p.on('close', (code): cb(null, {
+        code: code,
+        stdout: stdout.join(''),
+        stderr: stderr.join(''),
+    }))
+
+func runAsShell(command_str, %%, opt)
+    c: command_str.split(' ')
+    return runProcess(c[0], c[1,], %%, opt)
+
+func flatsCompile(file, %%)
+    r: runAsShell('./flsc -e require -i ' + file, %%)
+    if r.code != 0
+        throw 'Failed to compile ' + file + ': ' + r.stderr
+    return r.stdout
+
+func flatsCompileForError(file, %%)
+    r: runAsShell('./flsc -e require -i ' + file, %%)
+    if r.code = 0
+        throw 'Compile ' + file + ' without expected errors'
+    return r.stderr
+
+func runDiff(expected, actual, %%)
+    diff: runProcess('diff', [expected, actual], %%)
+    if diff.code = 2
+        throw 'Unable to diff ' + expected + ' <> ' + actual + ': ' +
+              diff.stderr
+    return diff
+
+func checkOutput(js, expected, %%, nodeOpt)
+    n: runProcess('node', [js], %%, nodeOpt)
+    if n.code != 0
+        throw 'Failed to exec ' + js + ': ' + n.stderr
+    TMP_OUTPUT: 'tmp.actual.txt'
+    fs.writeFile(TMP_OUTPUT, n.stdout, %%)
+    return runDiff(expected, TMP_OUTPUT, %%)
+
+func checkFile(case, %%)
+    fls: path.join('samples', case + '.fls')
+    js: path.join('samples', case + '.js')
+    fs.writeFile(js, flatsCompile(fls, %%), %%)
+    diff: checkOutput([js], path.join('samples', case + '.expected'), %%)
+    if diff.code != 0
+        throw 'Failed to check file ' + case + ':\n' + diff.stdout
+    console.log(case, 'file passed.')
+
+func checkDir(d, %%)
+    dir: path.join('samples', 'modules', d)
+    fs.readdir(dir, %%) |? $.slice(-4) = '.fls' |:
+        fls: path.join(dir, $)
+        js: flatsCompile(fls, %%)
+        fs.writeFile(fls.slice(0, -4) + '.js', js, %%)
+
+    diff: checkOutput(['entry.js'], path.join(dir, 'expected.txt'), %%,
+                      {cwd: dir})
+    if diff.code != 0
+        throw 'Failed to check module ' + dir + ':\n' + diff.stdout
+    console.log(dir, 'module passed.')
+
+func checkError(case, %%)
+    fls: path.join('samples', 'errors', case + '.fls')
+    fs.writeFile(TMP_OUTPUT, flatsCompileForError(fls, %%), %%)
+    diff: runDiff(path.join('samples', 'errors', case + '.expected'),
+                  TMP_OUTPUT, %%)
+    if diff.code != 0
+        throw 'Failed to check error ' + case + ':\n' + diff.stdout
+    console.log(case, 'report passed.')
+
+try
+    [
+        'empty', 'write', 'latency-ref', 'fib', 'nest-func', 'return-void',
+        'pair', 'sqrt', 'find-root', 'fixed-point', 'vector-multi', 'string',
+        'big-literals', 'basic-list', 'return-list', 'list-pipe', 'lookup',
+        'list-slice', 'qsort', 'set-attribute', 'dict', 'lambda', 'ref-this',
+        'async-calls', 'set-timeout', 'async-pipes', 'branches', 'async-fib',
+        'branch-with-async-sub', 'deliver-space-with-this-decl', 'try-catch',
+        'throw-in-pipeline', 'nested-subs', 'name-shadowing', 'class',
+    ] |: checkFile($, %%)
+    [
+        'export', 'class',
+    ] |: checkDir($, %%)
+    [
+        'inv-chars', 'bad-indent', 'tab-as-ind', 'reserved-words', 'slice',
+        'statments-after-return', 'super-ctor-without-base-class',
+        'init-super-with-super',
+    ] |: checkError($, %%)
+catch
+    console.error($e)

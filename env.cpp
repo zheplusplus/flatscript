@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <util/string.h>
 
 #include "env.h"
 #include "globals.h"
@@ -18,10 +19,18 @@ void flats::initEnv(int argc, char* argv[])
 {
     int ch;
     opterr = 0;
-    while ((ch = getopt(argc, argv, "e:")) != EOF) {
+    while ((ch = getopt(argc, argv, "e:E:i:")) != EOF) {
         switch (ch) {
         case 'e':
             Globals::g.external_syms.insert(optarg);
+            continue;
+        case 'E':
+            for (std::string s: util::split_str(optarg, ":")) {
+                Globals::g.external_syms.insert(s);
+            }
+            continue;
+        case 'i':
+            Globals::g.input_file = optarg;
             continue;
         }
     }

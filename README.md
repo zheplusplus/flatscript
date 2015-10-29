@@ -21,7 +21,7 @@ Flatscript code:
 
 Program would first read "a.txt", then read "b.txt", concatenate their content successively, and output to console, or report to stderr if any error occurs. And a message "end" would get printed in the end.
 
-Though in this piece of Flatscript code there isn't any *asynchronous* part like callbacks, Flatscript compile it into asynchronous Javascript.
+Though in this piece of code there isn't any *asynchronous* part like callbacks, Flatscript compile it into asynchronous Javascript, and even generate proper codes for error handling.
 
 Other Features
 -----------------
@@ -88,12 +88,12 @@ Code sample
 
 Output
 
-    function $c_read($c_fileA, $c_fileB, $c_$_racb) {
+    function $c_read($c_fileA, $c_fileB, $racb) {
         fs.read($c_fileA, (function ($cb_err, $ar_0) {
-            if ($cb_err) return $c_$_racb($cb_err);
+            if ($cb_err) return $racb($cb_err);
             fs.read($c_fileB, (function ($cb_err, $ar_1) {
-                if ($cb_err) return $c_$_racb($cb_err);
-                return $c_$_racb(null, ($ar_0 + $ar_1));
+                if ($cb_err) return $racb($cb_err);
+                return $racb(null, ($ar_0 + $ar_1));
             }));
         }));
     }
@@ -127,20 +127,20 @@ Code sample
 
 Output
 
-    function $c_readFiles($c_fileList, $c_$_racb) {
+    function $c_readFiles($c_fileList, $racb) {
         var $c_fileContent;
         var $ar_0 = (function ($list) {
             if (!($list) || $list.length === undefined)
-                return $c_$_racb('not iterable');
+                return $racb('not iterable');
             function $next($index, $result) {
                 var $key = null;
                 if ($index === $list.length) {
                     $c_fileContent = $result;
-                    return $c_$_racb(null, $c_fileContent.join(""));
+                    return $racb(null, $c_fileContent.join(""));
                 } else {
                     var $element = $list[$index];
                     fs.read($element, (function ($cb_err, $ar_1) {
-                        if ($cb_err) return $c_$_racb($cb_err);
+                        if ($cb_err) return $racb($cb_err);
                         $result.push($ar_1);
                         return $next($index + 1, $result);
                     }));
@@ -155,7 +155,7 @@ Use the Compiler
 
 ### Build
 
-* C++ compiler with C++11 features with lambda, move semantic, `nullptr`, decltype support. Suggested: g++ 4.6 or later clang++ 3.2 or later
+* C++ compiler with C++11 features with lambda, move semantic, `nullptr`, decltype support. Suggested: g++ 4.8 or later clang++ 3.4 or later
 * flex (the lexical parser) 2.5+
 * bison 2.4+
 * GMP lib 5+
@@ -166,7 +166,7 @@ Just run
 
     make
 
-in the source directory and executable `flatsc` would be generated. Clang is used by default. To specify another compiler, try
+in the source directory and executable `flsc` would be generated. Clang is used by default. To specify another compiler, try
 
     make COMPILER=g++
 
@@ -174,25 +174,28 @@ In cygwin g++ is preferred.
 
 ### Run
 
-Flatscript will read source code from stdin, and print Javascript via stdout. The ordinary way to compile files is like
+Flatscript will read source code from stdin or a file (with `-i` option), and print Javascript via stdout. The ordinary ways to compile
 
-    flatsc < source.fls > output.js
+    flsc < source.fls > output.js
+    flsc -i source.fls > output.js
 
 Or pipe the program to node
 
-    flatsc < source.fls | node
+    flsc < source.fls | node
+    flsc -i source.fls | node
 
 FAQ
 ---
 
-### Why the compiler complains name 'require'/'exports'/'document'/'window' not defined?
+### Why the compiler complains name 'require'/'document'/'window' not defined?
 
 Flatscript checks name definition at compile time, and it is not possible to use any name that is not defined or not marked as external.
 
-You could declare external names via `-e` option, like
+You could declare external names via `-e` / `-E` option, like
 
-    flatsc -e document -e window < client/source.fls > client/output.js
-    flatsc -e require -e exports < server/source.fls > server/output.js
+    flsc -e document -e window -i client/source.fls > client/output.js
+    flsc -E document:window -i client/source.fls > client/output.js
+    flsc -e require -i server/source.fls > server/output.js
 
 Or using `extern` statement in the source file:
 

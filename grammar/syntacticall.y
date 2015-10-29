@@ -116,10 +116,7 @@ export:
     indent KW_EXPORT member_name ':' token_sequence eol
     {
         std::vector<std::string> names = $3->deliver();
-        if (names.size() == 1) {
-            error::exportToIdent(misc::position($6), names[0]);
-        }
-        grammar::builder.addExport($1, misc::position($6), names, $5->deliver());
+        grammar::builder.addExport($1, misc::position($6), std::move(names), $5->deliver());
     }
 ;
 

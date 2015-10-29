@@ -82,3 +82,26 @@ std::string util::str(mpf_class const& f)
 {
     return str_from_something(f);
 }
+
+std::vector<std::string> util::split_str(std::string const& str,
+                                         std::string const& delimiters,
+                                         bool trimEmpty)
+{
+    std::vector<std::string> r;
+    std::string::size_type lastPos = 0;
+    while (true) {
+       std::string::size_type pos = str.find_first_of(delimiters, lastPos);
+       if (pos == std::string::npos) {
+           pos = str.length();
+           if (pos != lastPos || !trimEmpty) {
+               r.push_back(std::string(str.data() + lastPos, pos - lastPos));
+           }
+           return r;
+       } else {
+           if (pos != lastPos || !trimEmpty) {
+               r.push_back(std::string(str.data() + lastPos, pos - lastPos));
+           }
+       }
+       lastPos = pos + 1;
+    }
+}

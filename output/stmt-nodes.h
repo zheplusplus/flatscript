@@ -65,10 +65,7 @@ namespace output {
     struct Export
         : Statement
     {
-        Export(std::vector<std::string> const& e, util::sptr<Expression const> v)
-            : export_point(e)
-            , value(std::move(v))
-        {}
+        Export(std::vector<std::string> e, util::sptr<Expression const> v);
 
         void write(std::ostream& os) const;
         int count() const;

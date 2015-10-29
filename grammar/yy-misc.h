@@ -8,7 +8,6 @@
 #include "clause-builder.h"
 
 void yyerror(std::string const& msg);
-int yyparse();
 int yylex();
 extern "C" int yywrap(void);
 
@@ -21,6 +20,7 @@ namespace grammar {
     extern int lineno;
 
     misc::position here();
+    void parse();
 
 }
 

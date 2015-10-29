@@ -1,3 +1,4 @@
+#include <globals.h>
 #include <semantic/stmt-nodes.h>
 #include <semantic/expr-nodes.h>
 #include <report/errors.h>
@@ -73,6 +74,7 @@ util::sptr<semantic::Statement const> Extern::compile() const
 
 util::sptr<semantic::Statement const> Export::compile() const
 {
+    flats::Globals::g.use_export = true;
     return util::mkptr(new semantic::Export(pos, export_point, value->reduceAsExpr()));
 }
 

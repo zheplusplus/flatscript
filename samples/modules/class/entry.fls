@@ -1,0 +1,3 @@
+animals: require('./animals')
+console.log(animals.Animal().sound())
+console.log(animals.Cat('Sakamoto').sound())
