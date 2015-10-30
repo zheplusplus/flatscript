@@ -21,13 +21,13 @@ func runAsShell(command_str, %%, opt)
     return runProcess(c[0], c[1,], %%, opt)
 
 func flatsCompile(file, %%)
-    r: runAsShell('./flatsc -e require -i ' + file, %%)
+    r: runAsShell('./flsc -e require -i ' + file, %%)
     if r.code != 0
         throw 'Failed to compile ' + file + ': ' + r.stderr
     return r.stdout
 
 func flatsCompileForError(file, %%)
-    r: runAsShell('./flatsc -e require -i ' + file, %%)
+    r: runAsShell('./flsc -e require -i ' + file, %%)
     if r.code = 0
         throw 'Compile ' + file + ' without expected errors'
     return r.stderr

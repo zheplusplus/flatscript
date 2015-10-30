@@ -1,4 +1,4 @@
-flatsc
+flsc
 grammar/lex.cpp
 grammar/syn.cpp
 grammar/syn.hpp

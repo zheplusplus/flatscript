@@ -166,7 +166,7 @@ Just run
 
     make
 
-in the source directory and executable `flatsc` would be generated. Clang is used by default. To specify another compiler, try
+in the source directory and executable `flsc` would be generated. Clang is used by default. To specify another compiler, try
 
     make COMPILER=g++
 
@@ -176,13 +176,13 @@ In cygwin g++ is preferred.
 
 Flatscript will read source code from stdin or a file (with `-i` option), and print Javascript via stdout. The ordinary ways to compile
 
-    flatsc < source.fls > output.js
-    flatsc -i source.fls > output.js
+    flsc < source.fls > output.js
+    flsc -i source.fls > output.js
 
 Or pipe the program to node
 
-    flatsc < source.fls | node
-    flatsc -i source.fls | node
+    flsc < source.fls | node
+    flsc -i source.fls | node
 
 FAQ
 ---
@@ -193,9 +193,9 @@ Flatscript checks name definition at compile time, and it is not possible to use
 
 You could declare external names via `-e` / `-E` option, like
 
-    flatsc -e document -e window -i client/source.fls > client/output.js
-    flatsc -E document:window -i client/source.fls > client/output.js
-    flatsc -e require -i server/source.fls > server/output.js
+    flsc -e document -e window -i client/source.fls > client/output.js
+    flsc -E document:window -i client/source.fls > client/output.js
+    flsc -e require -i server/source.fls > server/output.js
 
 Or using `extern` statement in the source file:
 

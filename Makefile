@@ -1,7 +1,7 @@
 WORKDIR=.
 
 ifndef INSTALL_DIR
-	INSTALL_DIR=/usr/bin
+	INSTALL_DIR=/usr/local/bin
 endif
 
 include misc/mf-template.mk
@@ -17,15 +17,14 @@ all:code-gen main.d env.d globals.d lib
 	        semantic/*.o \
 	        output/*.o \
 	        $(LIBS) \
-	     -o flatsc
+	     -o flsc
 
 install:all
-	@install flatsc $(INSTALL_DIR)/flatsc || echo "Fail to install to $(INSTALL_DIR),"\
-		"permission denied or directory not existed."\
-		"Try specify installation path manully by passing INSTALL_DIR=directory"
+	@install flsc $(INSTALL_DIR)/flsc || echo "Fail to install to $(INSTALL_DIR)."\
+		"Try specifying installation path manully by passing INSTALL_DIR=directory"
 
 uninstall:
-	rm -f $(INSTALL_DIR)/flatsc
+	rm -f $(INSTALL_DIR)/flsc
 
 code-gen:
 	make -f codegen/Makefile PYTHON=$(PYTHON)
@@ -39,7 +38,7 @@ runtest:all test-lib
 	make -f util/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f grammar/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f semantic/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
-	./flatsc -e require -i test/sample-test.fls | node
+	./flsc -e require -i test/sample-test.fls | node
 
 test-lib:code-gen
 	mkdir -p libs
@@ -58,7 +57,7 @@ clean:
 	find -type f -name "*.out" -exec rm {} \;
 	find -type f -name "tmp.*" -exec rm {} \;
 	rm -rf $(LIB_DIR)
-	rm -f flatsc
+	rm -f flsc
 
 cleant:clean
 	make -f test/Makefile clean
