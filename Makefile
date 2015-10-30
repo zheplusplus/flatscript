@@ -39,9 +39,7 @@ runtest:all test-lib
 	make -f util/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f grammar/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f semantic/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
-	bash test/sample-test.sh -cm
-	bash test/sample-report-test.sh -cm
-	./flatsc -e require < test/sample-modules-test.fls | node
+	./flatsc -e require -i test/sample-test.fls | node
 
 test-lib:code-gen
 	mkdir -p libs

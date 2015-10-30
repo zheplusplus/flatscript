@@ -1,2 +1,2 @@
-Animal doesnt have a sound
+Animal doesn't have a sound
 Sakamoto meow

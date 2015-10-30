@@ -3,7 +3,7 @@ class Animal
         this.name: name
 
     func sound()
-        return 'Animal doesnt have a sound'
+        return '''Animal doesn't have a sound'''
 
 class Cat: Animal
     ctor(name) super(name)
