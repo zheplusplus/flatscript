@@ -14,6 +14,7 @@ namespace output {
         virtual ~Expression() {}
 
         virtual std::string str() const = 0;
+        virtual bool mayThrow() const = 0;
 
         misc::position const pos;
 
@@ -29,6 +30,7 @@ namespace output {
 
         virtual void write(std::ostream& os) const = 0;
         virtual int count() const { return 1; };
+        virtual bool mayThrow() const = 0;
 
         Statement() = default;
         Statement(Statement const&) = delete;

@@ -67,16 +67,6 @@ namespace grammar {
         util::sptr<Expression const> const ret_val;
     };
 
-    struct ReturnNothing
-        : Statement
-    {
-        explicit ReturnNothing(misc::position const& pos)
-            : Statement(pos)
-        {}
-
-        util::sptr<semantic::Statement const> compile() const;
-    };
-
     struct NameDef
         : Statement
     {

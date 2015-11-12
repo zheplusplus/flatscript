@@ -86,7 +86,8 @@ try
         'list-slice', 'qsort', 'set-attribute', 'dict', 'lambda', 'ref-this',
         'async-calls', 'set-timeout', 'async-pipes', 'branches', 'async-fib',
         'branch-with-async-sub', 'deliver-space-with-this-decl', 'try-catch',
-        'throw-in-pipeline', 'nested-subs', 'name-shadowing', 'class',
+        'async-try-catch', 'throw-in-pipeline', 'name-shadowing', 'nested-subs',
+        'class',
     ] |: checkFile($, %%)
     [
         'export', 'class',
@@ -94,7 +95,7 @@ try
     [
         'inv-chars', 'bad-indent', 'tab-as-ind', 'reserved-words', 'slice',
         'statments-after-return', 'super-ctor-without-base-class',
-        'init-super-with-super',
+        'init-super-with-super', 'throw-nothing', 'constructor-not-in-class',
     ] |: checkError($, %%)
 catch
     console.error($e)

@@ -86,7 +86,7 @@ try {
 }
 
 throw {
-    return KW_TRHOW;
+    return KW_THROW;
 }
 
 raise {

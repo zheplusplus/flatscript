@@ -19,6 +19,8 @@ namespace {
         {}
 
         void compile(semantic::BaseCompilingSpace&) const {}
+
+        bool isAsync() const { return false; }
     };
 
 }
@@ -55,11 +57,6 @@ util::sptr<semantic::Statement const> BranchAlterOnly::compile() const
 util::sptr<semantic::Statement const> Return::compile() const
 {
     return util::mkptr(new semantic::Return(pos, ret_val->reduceAsExpr()));
-}
-
-util::sptr<semantic::Statement const> ReturnNothing::compile() const
-{
-    return util::mkptr(new semantic::Return(pos, util::mkptr(new semantic::Undefined(pos))));
 }
 
 util::sptr<semantic::Statement const> NameDef::compile() const

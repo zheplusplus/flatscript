@@ -19,7 +19,9 @@ namespace output {
         util::sptr<Statement const> const body;
     };
 
-    struct Class {
+    struct Class
+        : Statement
+    {
         Class(std::string n, util::sptr<Expression const> base
             , std::map<std::string, util::sptr<Expression const>> memfns
             , util::sptr<Constructor const> ct)
@@ -30,6 +32,7 @@ namespace output {
         {}
 
         void write(std::ostream& os) const;
+        bool mayThrow() const { return true; }
 
         std::string const name;
         util::sptr<Expression const> const base_class_or_nul;

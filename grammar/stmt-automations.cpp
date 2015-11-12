@@ -65,6 +65,16 @@ ExprStmtAutomation::ExprStmtAutomation(util::sref<ClauseBase> clause)
                             {
                                 stack.replace(util::mkptr(new CtorAutomation(token.pos)));
                             };
+    _actions[RETURN] = [this](AutomationStack& stack, TypedToken const& token)
+                       {
+                           stack.replace(util::mkptr(
+                                new ReturnAutomation(token.pos, this->_clause)));
+                       };
+    _actions[THROW] = [this](AutomationStack& stack, TypedToken const& token)
+                      {
+                          stack.replace(util::mkptr(
+                               new ThrowAutomation(token.pos, this->_clause)));
+                      };
 }
 
 void ExprStmtAutomation::pushFactor(AutomationStack& stack
@@ -234,11 +244,7 @@ void ExprReceiver::finish(ClauseStackWrapper&, AutomationStack& stack, misc::pos
 
 void ReturnAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
 {
-    if (_expr->empty()) {
-        _clause->acceptStmt(util::mkptr(new ReturnNothing(_expr->pos)));
-    } else {
-        _clause->acceptStmt(util::mkptr(new Return(_expr->pos, std::move(_expr))));
-    }
+    this->_clause->acceptStmt(util::mkptr(new Return(this->pos, std::move(this->_expr))));
     stack.pop();
 }
 
@@ -254,6 +260,9 @@ void ExportStmtAutomation::finish(
 
 void ThrowAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
 {
+    if (_expr->empty()) {
+        error::invalidEmptyExpr(_expr->pos);
+    }
     _clause->acceptStmt(util::mkptr(new Throw(_expr->pos, std::move(_expr))));
     stack.pop();
 }
@@ -273,30 +282,32 @@ void ClassAutomation::pushFactor(
 {
     if (_class_name.empty()) {
         _class_name = factor->reduceAsName();
-        _actions[COLON] = [this](AutomationStack&, TypedToken const&)
+        _actions[COLON] = [this](AutomationStack& stack, TypedToken const&)
                           {
+                              stack.push(util::mkptr(new ConditionalAutomation));
                               _actions[COLON] = AutomationBase::discardToken;
-                              _before_colon = false;
                           };
-        return;
-    }
-    if (_base_class_name.empty()) {
-        _base_class_name = factor->reduceAsName();
         return;
     }
     error::unexpectedToken(factor->pos, image);
 }
 
+void ClassAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
+{
+    this->_base_class = std::move(expr);
+}
+
 bool ClassAutomation::finishOnBreak(bool) const
 {
-    return !_class_name.empty() && (_before_colon || !_base_class_name.empty());
+    return !this->_class_name.empty();
 }
 
 void ClassAutomation::finish(
                 ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
 {
     wrapper.pushClause(util::mkptr(new ClassClause(
-            wrapper.last_indent, _pos, _class_name, _base_class_name, wrapper.lastClause())));
+            wrapper.last_indent, this->_pos, this->_class_name
+          , std::move(this->_base_class), wrapper.lastClause())));
     stack.pop();
 }
 

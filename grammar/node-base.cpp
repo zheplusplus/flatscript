@@ -17,16 +17,6 @@ void Statement::acceptCatch(misc::position const& catch_pos, Block&&)
     error::partialStmtNotMatch(catch_pos, "catch", "try");
 }
 
-bool Expression::empty() const
-{
-    return false;
-}
-
-bool Expression::isName() const
-{
-    return false;
-}
-
 std::string Expression::reduceAsName() const
 {
     error::invalidName(pos);

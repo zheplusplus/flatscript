@@ -45,17 +45,6 @@ void ClauseBuilder::addArith(int indent_len
     _pushSequence(pos, sequence);
 }
 
-void ClauseBuilder::addReturn(int indent_len
-                            , misc::position const& pos
-                            , std::vector<util::sptr<Token>> const& sequence)
-{
-    if (!_prepareLevel(indent_len, pos, "return")) {
-        return;
-    }
-    _clauses.back()->prepareReturn();
-    _pushSequence(pos, sequence);
-}
-
 void ClauseBuilder::addExtern(int indent_len
                             , misc::position const& pos
                             , std::vector<std::string> const& names)
@@ -75,17 +64,6 @@ void ClauseBuilder::addExport(int indent_len
         return;
     }
     _clauses.back()->prepareExport(names);
-    _pushSequence(pos, sequence);
-}
-
-void ClauseBuilder::addThrow(int indent_len
-                           , misc::position const& pos
-                           , std::vector<util::sptr<Token>> const& sequence)
-{
-    if (!_prepareLevel(indent_len, pos, "throw")) {
-        return;
-    }
-    _clauses.back()->prepareThrow();
     _pushSequence(pos, sequence);
 }
 

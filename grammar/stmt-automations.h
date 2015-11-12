@@ -119,9 +119,12 @@ namespace grammar {
     {
         void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
 
-        explicit ReturnAutomation(util::sref<ClauseBase> clause)
+        ReturnAutomation(misc::position const& p, util::sref<ClauseBase> clause)
             : ExprReceiver(clause)
+            , pos(p)
         {}
+
+        misc::position const pos;
     };
 
     struct ExportStmtAutomation
@@ -142,9 +145,12 @@ namespace grammar {
     {
         void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
 
-        explicit ThrowAutomation(util::sref<ClauseBase> clause)
+        ThrowAutomation(misc::position const& p, util::sref<ClauseBase> clause)
             : ExprReceiver(clause)
+            , pos(p)
         {}
+
+        misc::position const pos;
     };
 
     struct TryAutomation
@@ -172,19 +178,18 @@ namespace grammar {
     {
         explicit ClassAutomation(misc::position const& pos)
             : _pos(pos)
-            , _before_colon(true)
+            , _base_class(nullptr)
         {}
 
         void pushFactor(AutomationStack&, util::sptr<Expression const> factor,
                         std::string const& image);
-        void accepted(AutomationStack&, util::sptr<Expression const>) {};
+        void accepted(AutomationStack&, util::sptr<Expression const> expr);
         bool finishOnBreak(bool) const;
         void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
     private:
         misc::position const _pos;
         std::string _class_name;
-        std::string _base_class_name;
-        bool _before_colon;
+        util::sptr<Expression const> _base_class;
     };
 
     struct CtorAutomation

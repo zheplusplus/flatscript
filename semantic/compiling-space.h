@@ -46,19 +46,11 @@ namespace semantic {
             : BaseCompilingSpace(std::move(symbols), false)
         {}
 
-        BaseCompilingSpace(BaseCompilingSpace&& rhs)
-            : _allow_super(rhs._allow_super)
-            , _terminated_err_reported(rhs._terminated_err_reported)
-            , _term_pos_or_nul_if_not_term(std::move(rhs._term_pos_or_nul_if_not_term))
-            , _symbols(std::move(rhs._symbols))
-            , _main_block(std::move(rhs._main_block))
-            , _current_block(rhs._current_block)
-        {}
-
         util::sref<SymbolTable> sym();
         util::sptr<output::Expression const> makeReference(
             misc::position const& pos, std::string const& name);
         void addStmt(misc::position const& pos, util::sptr<output::Statement const> stmt);
+        void checkNotTerminated(misc::position const& pos);
         util::sref<output::Block> block() const;
         void terminate(misc::position const& pos);
         bool terminated() const;
@@ -72,11 +64,11 @@ namespace semantic {
                          , std::vector<std::string> const& params
                          , util::sref<output::Block> block);
         virtual util::sref<output::Block> replaceSpace(
-                    misc::position const& pos, util::sref<output::Block> block);
+                misc::position const& pos, util::sref<output::Block> block);
         virtual void referenceThis() = 0;
 
-        virtual util::sptr<output::Expression const> ret(util::sref<Expression const> val);
-        virtual output::Method raiseMethod() const;
+        virtual output::Method retMethod(misc::position const& p) const;
+        virtual output::Method throwMethod() const;
 
         virtual util::sptr<output::Block> deliver();
     private:
@@ -86,8 +78,6 @@ namespace semantic {
         util::sptr<SymbolTable> _symbols;
         util::sptr<output::Block> _main_block;
         util::sref<output::Block> _current_block;
-
-        void _testOrReportTerminated(misc::position const& pos);
     };
 
     struct CompilingSpace
@@ -98,11 +88,6 @@ namespace semantic {
                      , util::sref<SymbolTable> ext_st
                      , std::vector<std::string> const& params
                      , bool allow_super=false);
-
-        CompilingSpace(CompilingSpace&& rhs)
-            : BaseCompilingSpace(std::move(rhs))
-            , _this_referenced(rhs._this_referenced)
-        {}
 
         bool inPipe() const { return false; }
         bool inCatch() const { return false; }
@@ -119,14 +104,13 @@ namespace semantic {
         RegularAsyncCompilingSpace(misc::position const& pos
                                  , util::sref<SymbolTable> ext_st
                                  , std::vector<std::string> const& params
-                                 , bool allow_super=false)
-            : CompilingSpace(pos, ext_st, params, allow_super)
-            , compile_pos(pos)
-        {}
+                                 , bool allow_super=false);
 
-        util::sptr<output::Expression const> ret(util::sref<Expression const> val);
-        output::Method raiseMethod() const;
+        output::Method retMethod(misc::position const&) const;
+        output::Method throwMethod() const;
         util::sptr<output::Block> deliver();
+        util::sref<output::Block> replaceSpace(
+                misc::position const& pos, util::sref<output::Block> block);
 
         misc::position const compile_pos;
     };
@@ -144,8 +128,8 @@ namespace semantic {
         bool inPipe() const;
         bool inCatch() const;
         bool allowSuper() const;
-        util::sptr<output::Expression const> ret(util::sref<Expression const> val);
-        output::Method raiseMethod() const;
+        output::Method retMethod(misc::position const& p) const;
+        output::Method throwMethod() const;
         util::sref<output::Block> replaceSpace(
                 misc::position const& pos, util::sref<output::Block> block);
         void referenceThis();
@@ -165,7 +149,7 @@ namespace semantic {
         explicit PipelineSpace(BaseCompilingSpace& ext_space);
 
         bool inPipe() const { return true; }
-        util::sptr<output::Expression const> ret(util::sref<Expression const> val);
+        output::Method retMethod(misc::position const& p) const;
     };
 
     struct AsyncPipelineSpace
@@ -204,7 +188,7 @@ namespace semantic {
             , catch_func(cf)
         {}
 
-        output::Method raiseMethod() const;
+        output::Method throwMethod() const;
         util::sref<output::Block> replaceSpace(
                 misc::position const& pos, util::sref<output::Block> block);
 

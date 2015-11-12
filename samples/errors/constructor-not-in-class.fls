@@ -1,0 +1,4 @@
+func x()
+    ctor(m, n)
+        this.m: m
+        this.n: n

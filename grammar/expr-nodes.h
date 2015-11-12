@@ -66,7 +66,7 @@ namespace grammar {
             , name(n)
         {}
 
-        bool isName() const;
+        bool isName() const { return true; }
         std::string reduceAsName() const;
         util::sptr<semantic::Expression const> reduceAsExpr() const;
 

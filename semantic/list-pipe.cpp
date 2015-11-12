@@ -12,9 +12,9 @@
 
 using namespace semantic;
 
-util::sptr<output::Expression const> Pipeline::compile(BaseCompilingSpace& space) const
+util::sptr<output::Expression const> Pipeline::_compile(BaseCompilingSpace& space, bool root) const
 {
-    return section.isAsync() ? _compileAsync(space) : _compileSync(space);
+    return section.isAsync() ? _compileAsync(space, root) : _compileSync(space);
 }
 
 bool Pipeline::isAsync() const
@@ -22,7 +22,7 @@ bool Pipeline::isAsync() const
     return list->isAsync() || section.isAsync();
 }
 
-util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace& space) const
+util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace& space, bool root) const
 {
     util::sptr<output::Expression const> compl_list(list->compile(space));
 
@@ -37,7 +37,10 @@ util::sptr<output::Expression const> Pipeline::_compileAsync(BaseCompilingSpace&
                                                         , std::move(compl_list)
                                                         , pipe_space.deliver()
                                                         , std::move(succession_flow)
-                                                        , space.raiseMethod())))));
+                                                        , space.throwMethod())), false)));
+    if (root) {
+        return util::sptr<output::Expression const>(nullptr);
+    }
     return util::mkptr(new output::PipeResult(pos));
 }
 

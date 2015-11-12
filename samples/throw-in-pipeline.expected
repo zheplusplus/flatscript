@@ -1,3 +1,5 @@
-sync pipeline throw
-async pipeline throw
+sync pipeline throw:3
+async pipeline throw:3
+aGet throw:2
+sGet throw:2
 end

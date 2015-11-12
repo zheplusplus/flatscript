@@ -9,10 +9,11 @@
 #endif
 
 static std::set<std::string> const pre_defined({
-    "console", "setTimeout", "setInterval", "clearTimeout", "parseInt", "parseFloat", "Number",
-    "Date", "Math", "Object", "Function", "escape", "unescape", "encodeURI", "encodeURIComponent",
-    "decodeURI", "decodeURIComponent", "JSON", "NaN", "null", "undefined", "isFinite", "isNaN",
-    "RegExp",
+    "console", "eval", "setTimeout", "setInterval", "clearTimeout", "parseInt",
+    "parseFloat", "isFinite", "isNaN", "Number", "Array", "Object", "Function",
+    "JSON", "RegExp", "Math", "String", "Date", "NaN", "undefined", "Infinity",
+    "null", "escape", "unescape", "encodeURI", "decodeURI", "encodeURIComponent",
+    "decodeURIComponent",
 });
 
 void flats::initEnv(int argc, char* argv[])

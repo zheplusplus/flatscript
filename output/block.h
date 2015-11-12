@@ -16,16 +16,18 @@ namespace output {
 
         void write(std::ostream& os) const;
         int count() const;
-        void append(util::sptr<Block> b);
+        bool mayThrow() const;
+
+        void append(util::sptr<Block> b)
+        {
+            this->_stmts.append(std::move(b->_stmts));
+            this->_funcs.append(std::move(b->_funcs));
+            this->_local_decls.insert(b->_local_decls.begin(), b->_local_decls.end());
+        }
 
         void setLocalDecls(std::set<std::string> decls)
         {
             this->_local_decls = std::move(decls);
-        }
-
-        void addClass(util::sptr<Class const> cls)
-        {
-            this->_classes.append(std::move(cls));
         }
 
         void addStmt(util::sptr<Statement const> stmt)
@@ -38,7 +40,6 @@ namespace output {
             this->_funcs.append(std::move(func));
         }
     protected:
-        util::ptrarr<Class const> _classes;
         util::ptrarr<Statement const> _stmts;
         util::ptrarr<Function const> _funcs;
         std::set<std::string> _local_decls;

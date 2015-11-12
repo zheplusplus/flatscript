@@ -43,7 +43,7 @@ std::string AsyncPipeline::str() const
         util::replace_all(
         util::replace_all(
             ASYNC_PIPE
-                , "#RAISE_EXC", raiser("'not iterable'"))
+                , "#RAISE_EXC", thrower->scheme("'not iterable'"))
                 , "#SUCCESSIVE_STATEMENTS", suc_os.str())
                 , "#NEXT", rec_os.str())
                 , "#LIST", list->str())

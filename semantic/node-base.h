@@ -16,8 +16,8 @@ namespace semantic {
     struct Statement {
         misc::position const pos;
 
+        virtual bool isAsync() const = 0;
         virtual void compile(BaseCompilingSpace& space) const = 0;
-        virtual bool isAsync() const { return false; }
 
         virtual ~Statement() {}
 
@@ -31,7 +31,13 @@ namespace semantic {
     struct Expression {
         misc::position const pos;
 
+        virtual bool isAsync() const = 0;
         virtual util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const = 0;
+        virtual util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        {
+            return compile(space);
+        }
+
         virtual bool isLiteral(util::sref<SymbolTable const>) const { return false; }
         virtual std::string literalType(util::sref<SymbolTable const>) const { return ""; }
 
@@ -39,8 +45,6 @@ namespace semantic {
         virtual mpz_class intValue(util::sref<SymbolTable const>) const { return 0; }
         virtual mpf_class floatValue(util::sref<SymbolTable const>) const { return 0; }
         virtual std::string stringValue(util::sref<SymbolTable const>) const { return "";}
-
-        virtual bool isAsync() const { return false; }
 
         virtual ~Expression() {}
 

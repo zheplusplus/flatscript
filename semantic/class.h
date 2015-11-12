@@ -26,26 +26,29 @@ namespace semantic {
         Block const body;
     };
 
-    struct Class {
-        Class(misc::position const& ps, std::string n, std::string base_n
+    struct Class
+        : Statement
+    {
+        Class(misc::position const& ps, std::string n, util::sptr<Expression const> base
             , Block b, util::sptr<Constructor const> ct)
-                : pos(ps)
+                : Statement(ps)
                 , name(std::move(n))
-                , base_class_name(std::move(base_n))
+                , base_class(std::move(base))
                 , body(std::move(b))
                 , ctor_or_nul(std::move(ct))
         {}
 
-        util::sptr<output::Class const> compile(util::sref<SymbolTable> st) const;
+        void compile(BaseCompilingSpace& space) const;
+
+        bool isAsync() const { return false; }
 
         bool hasBaseClass() const
         {
-            return !this->base_class_name.empty();
+            return this->base_class.not_nul();
         }
 
-        misc::position const pos;
         std::string const name;
-        std::string const base_class_name;
+        util::sptr<Expression const> const base_class;
         Block const body;
         util::sptr<Constructor const> const ctor_or_nul;
     };

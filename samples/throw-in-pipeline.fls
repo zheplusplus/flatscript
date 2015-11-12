@@ -3,7 +3,7 @@ x: [0, 1, 2, 3]
 try
     x |:
         if $ % 4 = 3
-            throw 'sync pipeline throw'
+            throw 'sync pipeline throw:' + $
 catch
     console.log($e)
 
@@ -11,8 +11,27 @@ try
     x |:
         setTimeout(%, 1)
         if $ % 4 = 3
-            throw 'async pipeline throw'
+            throw 'async pipeline throw:' + $
 catch
     console.log($e)
 
+func aGet(n, %%)
+    if n % 3 = 2
+        throw 'aGet throw:' + n
+
+func sGet(n)
+    if n % 3 = 2
+        throw 'sGet throw:' + n
+
+func piping(%%)
+    try
+        x |: aGet($, %%)
+    catch
+        console.log($e)
+    try
+        x |: sGet($)
+    catch
+        console.log($e)
+
+piping(%%)
 console.log('end')

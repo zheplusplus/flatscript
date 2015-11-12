@@ -219,6 +219,14 @@ std::cerr << "    a constructor already defined at " << def_pos.str() << std::en
 , Param(POS_TYPE, 'def_pos'), Param(POS_TYPE, 'pos')),
 
 ReportFunc(
+'ctorNotAllowed',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    constructors not allowed outside class definition" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'duplicateMemFunc',
 lineno() + '''
 std::cerr << this_pos.str() << std::endl;

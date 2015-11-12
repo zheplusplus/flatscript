@@ -7,9 +7,9 @@
 
 using namespace grammar;
 
-util::sptr<semantic::Class const> Class::compile() const
+util::sptr<semantic::Statement const> Class::compile() const
 {
-    if (!this->base_class_name.empty()) {
+    if (this->base_class.not_nul()) {
         flats::Globals::g.use_class_ext = true;
     }
     util::sptr<semantic::Constructor> ctor(nullptr);
@@ -23,7 +23,11 @@ util::sptr<semantic::Class const> Class::compile() const
                   , this->body.getCtor()->body.compile(), this->name
                   , this->body.getCtor()->super_init , std::move(reduced_super_ctor_args)));
     }
+
+    util::sptr<semantic::Expression const> base(nullptr);
+    if (this->base_class.not_nul()) {
+        base = this->base_class->reduceAsExpr();
+    }
     return util::mkptr(new semantic::Class(
-                this->pos, this->name, this->base_class_name
-              , this->body.compile(), std::move(ctor)));
+        this->pos, this->name, std::move(base), this->body.compile(), std::move(ctor)));
 }

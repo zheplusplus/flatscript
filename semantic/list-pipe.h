@@ -14,14 +14,24 @@ namespace semantic {
             , section(std::move(sec))
         {}
 
-        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const
+        {
+            return this->_compile(space, false);
+        }
+
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        {
+            return this->_compile(space, true);
+        }
+
         bool isAsync() const;
 
         util::sptr<Expression const> const list;
         Block const section;
     private:
+        util::sptr<output::Expression const> _compile(BaseCompilingSpace& space, bool root) const;
         util::sptr<output::Expression const> _compileSync(BaseCompilingSpace& space) const;
-        util::sptr<output::Expression const> _compileAsync(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> _compileAsync(BaseCompilingSpace& space, bool root) const;
     public:
         static util::sptr<Expression const> createMapper(misc::position const& pos
                                                        , util::sptr<Expression const> ls
@@ -39,6 +49,8 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+
+        bool isAsync() const { return false; }
     };
 
     struct PipeIndex
@@ -49,6 +61,8 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+
+        bool isAsync() const { return false; }
     };
 
     struct PipeKey
@@ -59,6 +73,8 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+
+        bool isAsync() const { return false; }
     };
 
     struct PipeResult
@@ -69,6 +85,8 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+
+        bool isAsync() const { return false; }
     };
 
 }

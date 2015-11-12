@@ -56,19 +56,6 @@ namespace output {
         int const async_param_index;
     };
 
-    struct RegularAsyncReturnCall
-        : Expression
-    {
-        RegularAsyncReturnCall(misc::position const& pos, util::sptr<Expression const> v)
-            : Expression(pos)
-            , val(std::move(v))
-        {}
-
-        std::string str() const;
-
-        util::sptr<Expression const> const val;
-    };
-
     struct AnonymousCallback
         : Function
     {

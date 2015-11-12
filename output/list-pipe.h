@@ -10,6 +10,7 @@ namespace output {
         : Statement
     {
         void write(std::ostream& os) const;
+        bool mayThrow() const { return false; }
     };
 
     struct AsyncPipeline
@@ -19,20 +20,21 @@ namespace output {
                     , util::sptr<Expression const> ls
                     , util::sptr<Statement const> recur
                     , util::sptr<Statement const> suc
-                    , Method const& r)
+                    , Method t)
             : Expression(pos)
             , list(std::move(ls))
             , recursion(std::move(recur))
             , succession(std::move(suc))
-            , raiser(r)
+            , thrower(std::move(t))
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const list;
         util::sptr<Statement const> const recursion;
         util::sptr<Statement const> const succession;
-        Method const raiser;
+        Method const thrower;
     };
 
     struct SyncPipeline
@@ -47,6 +49,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const list;
         util::sptr<Statement const> const section;
@@ -60,6 +63,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return false; }
     };
 
     struct PipeIndex
@@ -70,6 +74,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return false; }
     };
 
     struct PipeKey
@@ -80,6 +85,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return false; }
     };
 
     struct PipeResult
@@ -90,6 +96,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return false; }
     };
 
 }

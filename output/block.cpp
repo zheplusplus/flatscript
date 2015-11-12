@@ -14,10 +14,6 @@ void Block::write(std::ostream& os) const
            << util::join(",", std::vector<std::string>(_local_decls.begin(), _local_decls.end()))
            << ";" << std::endl;
     }
-    _classes.iter([&](util::sptr<Class const> const& cls, int)
-                  {
-                      cls->write(os);
-                  });
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
                     func->write(os);
@@ -30,13 +26,13 @@ void Block::write(std::ostream& os) const
 
 int Block::count() const
 {
-    return _classes.size() + _stmts.size() + _funcs.size();
+    return _stmts.size() + _funcs.size();
 }
 
-void Block::append(util::sptr<Block> b)
+bool Block::mayThrow() const
 {
-    _stmts.append(std::move(b->_stmts));
-    _funcs.append(std::move(b->_funcs));
-    _classes.append(std::move(b->_classes));
-    _local_decls.insert(b->_local_decls.begin(), b->_local_decls.end());
+    return _stmts.any([](util::sptr<Statement const> const& stmt, int)
+                      {
+                          return stmt->mayThrow();
+                      });
 }

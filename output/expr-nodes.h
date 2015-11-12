@@ -11,21 +11,31 @@
 
 namespace output {
 
-    struct Undefined
+    struct PrimeFactor
         : Expression
     {
-        explicit Undefined(misc::position const& pos)
+        explicit PrimeFactor(misc::position const& pos)
             : Expression(pos)
+        {}
+
+        bool mayThrow() const { return false; }
+    };
+
+    struct Undefined
+        : PrimeFactor
+    {
+        explicit Undefined(misc::position const& pos)
+            : PrimeFactor(pos)
         {}
 
         std::string str() const;
     };
 
     struct BoolLiteral
-        : Expression
+        : PrimeFactor
     {
         BoolLiteral(misc::position const& pos, bool v)
-            : Expression(pos)
+            : PrimeFactor(pos)
             , value(v)
         {}
 
@@ -35,10 +45,10 @@ namespace output {
     };
 
     struct IntLiteral
-        : Expression
+        : PrimeFactor
     {
         IntLiteral(misc::position const& pos, mpz_class const& v)
-            : Expression(pos)
+            : PrimeFactor(pos)
             , value(v)
         {}
 
@@ -48,10 +58,10 @@ namespace output {
     };
 
     struct FloatLiteral
-        : Expression
+        : PrimeFactor
     {
         FloatLiteral(misc::position const& pos, mpf_class const& v)
-            : Expression(pos)
+            : PrimeFactor(pos)
             , value(v)
         {}
 
@@ -61,10 +71,10 @@ namespace output {
     };
 
     struct StringLiteral
-        : Expression
+        : PrimeFactor
     {
         StringLiteral(misc::position const& pos, std::string const& v)
-            : Expression(pos)
+            : PrimeFactor(pos)
             , value(v)
         {}
 
@@ -82,15 +92,16 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const;
 
         util::ptrarr<Expression const> const value;
     };
 
     struct Reference
-        : Expression
+        : PrimeFactor
     {
         Reference(misc::position const& pos, std::string const& n)
-            : Expression(pos)
+            : PrimeFactor(pos)
             , name(n)
         {}
 
@@ -131,6 +142,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         std::string const name;
     };
@@ -147,6 +159,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const callee;
         util::ptrarr<Expression const> const args;
@@ -164,6 +177,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const referee;
         std::string const member;
@@ -181,6 +195,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const collection;
         util::sptr<Expression const> const key;
@@ -202,6 +217,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const list;
         util::sptr<Expression const> const begin;
@@ -218,6 +234,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::ptrkvarr<Expression const> const items;
     };
@@ -234,6 +251,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const lhs;
         util::sptr<Expression const> const rhs;
@@ -251,6 +269,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return lhs->mayThrow() || rhs->mayThrow(); }
 
         util::sptr<Expression const> const lhs;
         util::sptr<Expression const> const rhs;
@@ -270,6 +289,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return lhs->mayThrow() || rhs->mayThrow(); }
 
         util::sptr<Expression const> const lhs;
         std::string const op;
@@ -286,6 +306,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return rhs->mayThrow(); }
 
         std::string const op;
         util::sptr<Expression const> const rhs;
@@ -305,6 +326,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return false; }
 
         std::vector<std::string> const param_names;
         util::sptr<Statement const> const body;
@@ -325,6 +347,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return false; }
 
         std::vector<std::string> const param_names;
         int const async_param_index;
@@ -332,10 +355,10 @@ namespace output {
     };
 
     struct AsyncReference
-        : Expression
+        : PrimeFactor
     {
         AsyncReference(misc::position const& pos, util::id const& id)
-            : Expression(pos)
+            : PrimeFactor(pos)
             , ref_id(id)
         {}
 
@@ -349,23 +372,24 @@ namespace output {
     {
         RegularAsyncCallbackArg(misc::position const& pos
                               , util::sptr<Statement const> b
-                              , Method const& r)
+                              , Method t)
             : Expression(pos)
             , body(std::move(b))
-            , raiser(r)
+            , thrower(std::move(t))
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Statement const> const body;
-        Method const raiser;
+        Method const thrower;
     };
 
     struct This
-        : Expression
+        : PrimeFactor
     {
         explicit This(misc::position const& pos)
-            : Expression(pos)
+            : PrimeFactor(pos)
         {}
 
         std::string str() const;
@@ -380,6 +404,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         std::string const property;
     };
@@ -398,6 +423,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         util::sptr<Expression const> const predicate;
         util::sptr<Expression const> const consequence;
@@ -405,20 +431,20 @@ namespace output {
     };
 
     struct ExceptionObj
-        : Expression
+        : PrimeFactor
     {
         explicit ExceptionObj(misc::position const& pos)
-            : Expression(pos)
+            : PrimeFactor(pos)
         {}
 
         std::string str() const;
     };
 
     struct ConditionalCallbackParameter
-        : Expression
+        : PrimeFactor
     {
         explicit ConditionalCallbackParameter(misc::position const& pos)
-            : Expression(pos)
+            : PrimeFactor(pos)
         {}
 
         std::string str() const;
@@ -435,6 +461,7 @@ namespace output {
         {}
 
         std::string str() const;
+        bool mayThrow() const { return true; }
 
         std::string const class_name;
         util::ptrarr<Expression const> const args;

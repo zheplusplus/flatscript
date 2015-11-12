@@ -82,6 +82,8 @@ namespace semantic {
 
         void compile(BaseCompilingSpace& space) const;
 
+        bool isAsync() const { return false; }
+
         std::vector<std::string> const names;
     };
 
@@ -146,6 +148,7 @@ namespace semantic {
         {}
 
         void compile(BaseCompilingSpace& space) const;
+
         bool isAsync() const { return false; }
 
         util::sptr<Expression const> const exception;

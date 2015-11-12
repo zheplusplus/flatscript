@@ -24,19 +24,20 @@ namespace grammar {
         std::vector<util::sptr<Expression const>> const super_ctor_args;
     };
 
-    struct Class {
-        Class(misc::position const& ps, std::string n, std::string base_n, Block b)
-            : pos(ps)
+    struct Class
+        : Statement
+    {
+        Class(misc::position const& ps, std::string n, util::sptr<Expression const> base, Block b)
+            : Statement(ps)
             , name(std::move(n))
-            , base_class_name(std::move(base_n))
+            , base_class(std::move(base))
             , body(std::move(b))
         {}
 
-        util::sptr<semantic::Class const> compile() const;
+        util::sptr<semantic::Statement const> compile() const;
 
-        misc::position const pos;
         std::string const name;
-        std::string const base_class_name;
+        util::sptr<Expression const> const base_class;
         Block const body;
     };
 

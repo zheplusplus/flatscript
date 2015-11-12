@@ -7,7 +7,7 @@ using namespace misc;
 std::string position::str() const
 {
     std::stringstream ss;
-    ss << "Line: " << line;
+    ss << "Line " << line;
     return ss.str();
 }
 

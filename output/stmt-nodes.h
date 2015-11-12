@@ -20,46 +20,27 @@ namespace output {
         {}
 
         void write(std::ostream& os) const;
+        bool mayThrow() const { return predicate->mayThrow()
+            || consequence->mayThrow() || alternative->mayThrow(); }
 
         util::sptr<Expression const> const predicate;
         util::sptr<Statement const> const consequence;
         util::sptr<Statement const> const alternative;
     };
 
-    struct Arithmetics
-        : Statement
-    {
-        explicit Arithmetics(util::sptr<Expression const> e)
-            : expr(std::move(e))
-        {}
-
-        void write(std::ostream& os) const;
-
-        util::sptr<Expression const> const expr;
-    };
-
     struct AsyncCallResultDef
         : Statement
     {
-        explicit AsyncCallResultDef(util::sptr<Expression const> ar)
+        AsyncCallResultDef(util::sptr<Expression const> ar, bool nd)
             : async_result(std::move(ar))
+            , need_decl(nd)
         {}
 
         void write(std::ostream& os) const;
+        bool mayThrow() const { return async_result->mayThrow(); }
 
         util::sptr<Expression const> const async_result;
-    };
-
-    struct Return
-        : Statement
-    {
-        explicit Return(util::sptr<Expression const> r)
-            : ret_val(std::move(r))
-        {}
-
-        void write(std::ostream& os) const;
-
-        util::sptr<Expression const> const ret_val;
+        bool const need_decl;
     };
 
     struct Export
@@ -69,6 +50,7 @@ namespace output {
 
         void write(std::ostream& os) const;
         int count() const;
+        bool mayThrow() const { return value->mayThrow(); }
 
         std::vector<std::string> const export_point;
         util::sptr<Expression const> const value;
@@ -78,6 +60,7 @@ namespace output {
         : Statement
     {
         void write(std::ostream& os) const;
+        bool mayThrow() const { return false; }
     };
 
     struct ExceptionStall
@@ -90,23 +73,25 @@ namespace output {
 
         void write(std::ostream& os) const;
         int count() const;
+        bool mayThrow() const { return catch_block->mayThrow(); }
 
         util::sptr<Statement const> const try_block;
         util::sptr<Statement const> const catch_block;
     };
 
-    struct Throw
+    struct ExprScheme
         : Statement
     {
-        Throw(Method tm, util::sptr<Expression const> e)
-            : throw_method(std::move(tm))
-            , exception(std::move(e))
+        ExprScheme(Method m, util::sptr<Expression const> e)
+            : method(std::move(m))
+            , expr(std::move(e))
         {}
 
         void write(std::ostream& os) const;
+        bool mayThrow() const { return method->mayThrow(expr); }
 
-        Method const throw_method;
-        util::sptr<Expression const> const exception;
+        Method const method;
+        util::sptr<Expression const> const expr;
     };
 
 }

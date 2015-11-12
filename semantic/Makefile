@@ -9,6 +9,7 @@ semantic:$(WORKDIR)/const-fold.h $(WORKDIR)/const-fold.cpp \
          const-fold.d \
          block.d \
          compiling-space.d \
+         common.d \
          class.d \
          function.d
 

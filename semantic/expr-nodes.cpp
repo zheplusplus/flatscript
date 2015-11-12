@@ -11,6 +11,7 @@
 #include "expr-nodes.h"
 #include "compiling-space.h"
 #include "const-fold.h"
+#include "common.h"
 
 using namespace semantic;
 
@@ -341,6 +342,17 @@ util::sptr<output::Expression const> RegularAsyncLambda::compile(BaseCompilingSp
 
 util::sptr<output::Expression const> RegularAsyncCall::compile(BaseCompilingSpace& space) const
 {
+    return util::mkptr(new output::AsyncReference(pos, this->_compile(space, false)));
+}
+
+util::sptr<output::Expression const> RegularAsyncCall::compileAsRoot(BaseCompilingSpace& space) const
+{
+    this->_compile(space, true);
+    return util::sptr<output::Expression const>(nullptr);
+}
+
+util::id RegularAsyncCall::_compile(BaseCompilingSpace& space, bool) const
+{
     util::sptr<output::Expression const> compl_callee(callee->compile(space));
     util::ptrarr<output::Expression const> compl_fargs(compileList(former_args, space));
     util::ptrarr<output::Expression const> compl_largs(compileList(latter_args, space));
@@ -350,16 +362,16 @@ util::sptr<output::Expression const> RegularAsyncCall::compile(BaseCompilingSpac
     space.setAsyncSpace(pos, std::vector<std::string>(), *async_flow);
 
     util::sptr<output::Expression const> callback(new output::RegularAsyncCallbackArg(
-                                            pos, std::move(async_flow), space.raiseMethod()));
+                                            pos, std::move(async_flow), space.throwMethod()));
     util::id compl_call_id(callback.id());
     compl_fargs.append(std::move(callback)).append(std::move(compl_largs));
 
-    current_flow->addStmt(util::mkptr(new output::Arithmetics(util::mkptr(
-                        new output::Call(pos, std::move(compl_callee), std::move(compl_fargs))))));
-    return util::mkptr(new output::AsyncReference(pos, compl_call_id));
+    current_flow->addStmt(makeArith(util::mkptr(
+                        new output::Call(pos, std::move(compl_callee), std::move(compl_fargs)))));
+    return compl_call_id;
 }
 
-util::sptr<output::Expression const> AsyncCall::compile(BaseCompilingSpace& space) const
+util::id AsyncCall::_compile(BaseCompilingSpace& space, bool root) const
 {
     util::sptr<output::Expression const> compl_callee(callee->compile(space));
     util::ptrarr<output::Expression const> compl_fargs(compileList(former_args, space));
@@ -375,8 +387,8 @@ util::sptr<output::Expression const> AsyncCall::compile(BaseCompilingSpace& spac
     util::sptr<output::Expression const> compl_call(util::mkptr(
                         new output::Call(pos, std::move(compl_callee), std::move(compl_fargs))));
     util::id compl_call_id(compl_call.id());
-    current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(std::move(compl_call))));
-    return util::mkptr(new output::AsyncReference(pos, compl_call_id));
+    current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(std::move(compl_call), !root)));
+    return compl_call_id;
 }
 
 util::sptr<output::Expression const> This::compile(BaseCompilingSpace& space) const
@@ -466,8 +478,7 @@ static util::sptr<output::Block const> compileConditionalBranch(
     util::ptrarr<output::Expression const> args;
     BranchCompilingSpace sub_space(space);
     args.append(expr->compile(sub_space));
-    sub_space.addStmt(expr->pos, util::mkptr(
-                new output::Arithmetics(cb->callMe(expr->pos, std::move(args)))));
+    sub_space.addStmt(expr->pos, makeArith(cb->callMe(expr->pos, std::move(args))));
     return sub_space.deliver();
 }
 

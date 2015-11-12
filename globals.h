@@ -13,6 +13,7 @@ namespace flats {
             , use_export(false)
         {}
     public:
+        static std::string const version;
         static Globals g;
     public:
         std::set<std::string> external_syms;

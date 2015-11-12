@@ -32,21 +32,6 @@ Block::Block()
     _stmts.append(util::mkptr(new PlaceholderStatement));
 }
 
-void Block::addStmt(util::sptr<Statement> stmt)
-{
-    _stmts.append(std::move(stmt));
-}
-
-void Block::addFunc(util::sptr<Function const> func)
-{
-    _funcs.append(std::move(func));
-}
-
-void Block::addClass(util::sptr<Class const> cls)
-{
-    _classes.append(std::move(cls));
-}
-
 void Block::setCtor(misc::position const& pos, std::vector<std::string> params, Block body
                   , bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args)
 {
@@ -70,10 +55,6 @@ void Block::acceptCatch(misc::position const& catch_pos, Block block)
 semantic::Block Block::compile() const
 {
     semantic::Block block;
-    _classes.iter([&](util::sptr<Class const> const& cls, int)
-                  {
-                      block.addClass(cls->compile());
-                  });
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
                     block.addFunc(func->compile());

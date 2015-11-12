@@ -11,6 +11,7 @@
 
 #include "compiling-space.h"
 #include "const-fold.h"
+#include "common.h"
 
 using namespace semantic;
 
@@ -276,7 +277,7 @@ util::sref<SymbolTable> BaseCompilingSpace::sym()
 void BaseCompilingSpace::addStmt(misc::position const& pos
                                , util::sptr<output::Statement const> stmt)
 {
-    _testOrReportTerminated(pos);
+    this->checkNotTerminated(pos);
     _current_block->addStmt(std::move(stmt));
 }
 
@@ -309,17 +310,17 @@ void BaseCompilingSpace::setAsyncSpace(misc::position const& pos
 }
 
 util::sref<output::Block> BaseCompilingSpace::replaceSpace(
-        misc::position const&, util::sref<output::Block> block)
+                misc::position const&, util::sref<output::Block> block)
 {
     return block;
 }
 
-util::sptr<output::Expression const> BaseCompilingSpace::ret(util::sref<Expression const> val)
+output::Method BaseCompilingSpace::retMethod(misc::position const&) const
 {
-    return val->compile(*this);
+    return output::method::ret();
 }
 
-output::Method BaseCompilingSpace::raiseMethod() const
+output::Method BaseCompilingSpace::throwMethod() const
 {
     return output::method::throwExc();
 }
@@ -330,7 +331,7 @@ util::sptr<output::Block> BaseCompilingSpace::deliver()
     return std::move(_main_block);
 }
 
-void BaseCompilingSpace::_testOrReportTerminated(misc::position const& pos)
+void BaseCompilingSpace::checkNotTerminated(misc::position const& pos)
 {
     if (terminated() && !_terminated_err_reported) {
         error::flowTerminated(pos, misc::position(_term_pos_or_nul_if_not_term->line));
@@ -367,14 +368,41 @@ util::sptr<output::Block> CompilingSpace::deliver()
     return BaseCompilingSpace::deliver();
 }
 
-util::sptr<output::Expression const> RegularAsyncCompilingSpace::ret(
-                                        util::sref<Expression const> val)
+RegularAsyncCompilingSpace::RegularAsyncCompilingSpace(
+            misc::position const& pos
+          , util::sref<SymbolTable> ext_st
+          , std::vector<std::string> const& params
+          , bool allow_super)
+    : CompilingSpace(pos, ext_st, params, allow_super)
+    , compile_pos(pos)
 {
-    misc::position const pos(val->pos);
-    return util::mkptr(new output::RegularAsyncReturnCall(pos, val->compile(*this)));
+    this->setAsyncSpace(pos, {}, this->block());
 }
 
-output::Method RegularAsyncCompilingSpace::raiseMethod() const
+typedef std::function<util::sptr<output::Statement const>(
+            util::sptr<output::Expression const>)> MakeCatcher;
+
+static util::sref<output::Block> _replaceSpaceInAsyncTry(
+                misc::position const& pos, util::sref<output::Block> block,
+                BaseCompilingSpace& current_space, MakeCatcher make_catcher)
+{
+    util::sptr<output::Block> try_block(new output::Block);
+    util::sref<output::Block> try_flow(*try_block);
+
+    RegularSubCompilingSpace staller(current_space);
+    staller.addStmt(pos, make_catcher(util::mkptr(new output::ExceptionObj(pos))));
+
+    block->addStmt(util::mkptr(new output::ExceptionStall(
+                    std::move(try_block), staller.deliver())));
+    return try_flow;
+}
+
+output::Method RegularAsyncCompilingSpace::retMethod(misc::position const&) const
+{
+    return output::method::asyncRet();
+}
+
+output::Method RegularAsyncCompilingSpace::throwMethod() const
 {
     return output::method::callbackExc();
 }
@@ -382,11 +410,21 @@ output::Method RegularAsyncCompilingSpace::raiseMethod() const
 util::sptr<output::Block> RegularAsyncCompilingSpace::deliver()
 {
     if (!terminated()) {
-        block()->addStmt(util::mkptr(new output::Return(util::mkptr(
-                        new output::RegularAsyncReturnCall(compile_pos, util::mkptr(
-                                                          new output::Undefined(compile_pos)))))));
+        block()->addStmt(util::mkptr(new output::ExprScheme(
+                output::method::asyncRet(), util::mkptr(new output::Undefined(compile_pos)))));
     }
     return CompilingSpace::deliver();
+}
+
+util::sref<output::Block> RegularAsyncCompilingSpace::replaceSpace(
+                misc::position const& pos, util::sref<output::Block> block)
+{
+    return ::_replaceSpaceInAsyncTry(
+        pos, block, *this, [this](util::sptr<output::Expression const> exception)
+                           {
+                               return util::mkptr(new output::ExprScheme(
+                                       this->throwMethod(), std::move(exception)));
+                           });
 }
 
 SubCompilingSpace::SubCompilingSpace(BaseCompilingSpace& ext_space)
@@ -413,18 +451,18 @@ void SubCompilingSpace::referenceThis()
     _ext_space.referenceThis();
 }
 
-util::sptr<output::Expression const> SubCompilingSpace::ret(util::sref<Expression const> val)
+output::Method SubCompilingSpace::retMethod(misc::position const& p) const
 {
-    return _ext_space.ret(val);
+    return _ext_space.retMethod(p);
 }
 
-output::Method SubCompilingSpace::raiseMethod() const
+output::Method SubCompilingSpace::throwMethod() const
 {
-    return _ext_space.raiseMethod();
+    return _ext_space.throwMethod();
 }
 
 util::sref<output::Block> SubCompilingSpace::replaceSpace(
-        misc::position const& pos, util::sref<output::Block> block)
+                misc::position const& pos, util::sref<output::Block> block)
 {
     return _ext_space.replaceSpace(pos, block);
 }
@@ -443,10 +481,10 @@ PipelineSpace::PipelineSpace(BaseCompilingSpace& ext_space)
     : SubCompilingSpace(util::mkptr(new RegularSymbolTable(ext_space.sym())), ext_space)
 {}
 
-util::sptr<output::Expression const> PipelineSpace::ret(util::sref<Expression const> val)
+output::Method PipelineSpace::retMethod(misc::position const& p) const
 {
-    error::returnNotAllowedInPipe(val->pos);
-    return BaseCompilingSpace::ret(val);
+    error::returnNotAllowedInPipe(p);
+    return BaseCompilingSpace::retMethod(p);
 }
 
 util::sptr<output::Block> AsyncPipelineSpace::deliver()
@@ -455,25 +493,19 @@ util::sptr<output::Block> AsyncPipelineSpace::deliver()
     return BaseCompilingSpace::deliver();
 }
 
-output::Method AsyncTrySpace::raiseMethod() const
+output::Method AsyncTrySpace::throwMethod() const
 {
     return output::method::asyncCatcher(catch_func->mangledName());
 }
 
 util::sref<output::Block> AsyncTrySpace::replaceSpace(
-        misc::position const& pos, util::sref<output::Block> block)
+                misc::position const& pos, util::sref<output::Block> block)
 {
-    util::sptr<output::Block> try_block(new output::Block);
-    util::sref<output::Block> try_flow(*try_block);
-
-    BaseCompilingSpace& me = *this;
-    RegularSubCompilingSpace staller(me);
-    util::ptrarr<output::Expression const> args;
-    args.append(util::mkptr(new output::ExceptionObj(pos)));
-    staller.addStmt(pos, util::mkptr(
-            new output::Arithmetics(catch_func->callMe(pos, std::move(args)))));
-
-    block->addStmt(util::mkptr(new output::ExceptionStall(
-                    std::move(try_block), staller.deliver())));
-    return try_flow;
+    return ::_replaceSpaceInAsyncTry(
+        pos, block, *this, [&](util::sptr<output::Expression const> exception)
+                           {
+                               util::ptrarr<output::Expression const> args;
+                               args.append(std::move(exception));
+                               return makeArith(this->catch_func->callMe(pos, std::move(args)));
+                           });
 }

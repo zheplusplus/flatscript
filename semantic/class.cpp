@@ -49,8 +49,9 @@ util::sptr<output::Constructor const> Constructor::compile(
     return util::mkptr(new output::Constructor(this->param_names, ctor_space.deliver()));
 }
 
-util::sptr<output::Class const> Class::compile(util::sref<SymbolTable> st) const
+void Class::compile(BaseCompilingSpace& space) const
 {
+    util::sref<SymbolTable> st(space.sym());
     util::sptr<output::Constructor const> ct(nullptr);
     if (this->ctor_or_nul.not_nul()) {
         ct = this->ctor_or_nul->compile(st, this->hasBaseClass());
@@ -60,8 +61,9 @@ util::sptr<output::Class const> Class::compile(util::sref<SymbolTable> st) const
 
     util::sptr<output::Expression const> base_class(
             this->hasBaseClass()
-          ? st->compileRef(this->pos, this->base_class_name)
+          ? this->base_class->compile(space)
           : util::sptr<output::Expression const>(nullptr));
+    st->defName(this->pos, this->name);
 
     util::sptr<output::Block const> class_body(new output::Block);
     std::map<std::string, misc::position> memfn_defs_pos;
@@ -75,6 +77,6 @@ util::sptr<output::Class const> Class::compile(util::sref<SymbolTable> st) const
             memfn_defs_pos.insert(std::make_pair(func->name, func->pos));
             memfuncs.insert(std::make_pair(func->name, func->compileToLambda(st, true)));
         });
-    return util::mkptr(new output::Class(
-            this->name, std::move(base_class), std::move(memfuncs), std::move(ct)));
+    space.addStmt(this->pos, util::mkptr(new output::Class(
+            this->name, std::move(base_class), std::move(memfuncs), std::move(ct))));
 }

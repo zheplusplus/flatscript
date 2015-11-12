@@ -14,9 +14,6 @@ namespace grammar {
         void addArith(int indent_len
                     , misc::position const& pos
                     , std::vector<util::sptr<Token>> const& sequence);
-        void addReturn(int indent_len
-                     , misc::position const& pos
-                     , std::vector<util::sptr<Token>> const& sequence);
         void addExtern(int indent_len
                      , misc::position const& pos
                      , std::vector<std::string> const& names);
@@ -24,9 +21,6 @@ namespace grammar {
                      , misc::position const& pos
                      , std::vector<std::string> const& names
                      , std::vector<util::sptr<Token>> const& sequence);
-        void addThrow(int indent_len
-                    , misc::position const& pos
-                    , std::vector<util::sptr<Token>> const& sequence);
 
         semantic::Block buildAndClear();
     private:

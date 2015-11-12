@@ -26,20 +26,12 @@ void Branch::write(std::ostream& os) const
     }
 }
 
-void Arithmetics::write(std::ostream& os) const
-{
-    os << expr->str() << ";" << std::endl;
-}
-
 void AsyncCallResultDef::write(std::ostream& os) const
 {
-    os << "var " << formAsyncRef(async_result.id()) << "=" << async_result->str() << ";"
-       << std::endl;
-}
-
-void Return::write(std::ostream& os) const
-{
-    os << "return " << ret_val->str() << ";" << std::endl;
+    if (this->need_decl) {
+        os << "var " << formAsyncRef(async_result.id()) << "=";
+    }
+    os << async_result->str() << ";" << std::endl;
 }
 
 static std::vector<std::string> add_export_root(std::vector<std::string> export_point)
@@ -83,6 +75,10 @@ void ExceptionStall::write(std::ostream& os) const
     if (0 == try_block->count()) {
         return;
     }
+    if (!try_block->mayThrow()) {
+        try_block->write(os);
+        return;
+    }
     os << "try{" << std::endl;
     try_block->write(os);
     os << "}catch($exception){" << std::endl;
@@ -95,7 +91,7 @@ int ExceptionStall::count() const
     return std::max(try_block->count(), 1);
 }
 
-void Throw::write(std::ostream& os) const
+void ExprScheme::write(std::ostream& os) const
 {
-    os << throw_method(exception->str()) << std::endl;
+    os << method->scheme(expr) << std::endl;
 }

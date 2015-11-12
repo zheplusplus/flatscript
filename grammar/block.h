@@ -16,7 +16,6 @@ namespace grammar {
         Block(Block&& rhs)
             : _stmts(std::move(rhs._stmts))
             , _funcs(std::move(rhs._funcs))
-            , _classes(std::move(rhs._classes))
             , _ctor(std::move(rhs._ctor))
         {}
 
@@ -27,9 +26,16 @@ namespace grammar {
 
         semantic::Block compile() const;
 
-        void addStmt(util::sptr<Statement> stmt);
-        void addFunc(util::sptr<Function const> func);
-        void addClass(util::sptr<Class const> cls);
+        void addStmt(util::sptr<Statement> stmt)
+        {
+            this->_stmts.append(std::move(stmt));
+        }
+
+        void addFunc(util::sptr<Function const> func)
+        {
+            this->_funcs.append(std::move(func));
+        }
+
         void setCtor(misc::position const& pos, std::vector<std::string> params, Block body
                    , bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args);
         void acceptElse(misc::position const& else_pos, Block block);
@@ -37,7 +43,6 @@ namespace grammar {
     private:
         util::ptrarr<Statement> _stmts;
         util::ptrarr<Function const> _funcs;
-        util::ptrarr<Class const> _classes;
         util::sptr<Constructor const> _ctor;
     };
 

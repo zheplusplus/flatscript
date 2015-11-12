@@ -27,7 +27,7 @@
 
 %token INDENT EOL
 %token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_EXTERN KW_EXPORT KW_RESERVED
-%token KW_TRY KW_CATCH KW_TRHOW
+%token KW_TRY KW_CATCH KW_THROW
 %token OPERATOR PIPE_SEP
 %token BOOL_TRUE BOOL_FALSE
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
@@ -69,10 +69,6 @@ stmt_list:
 stmt:
     arithmetics {}
     |
-    throw {}
-    |
-    func_return {}
-    |
     extern {}
     |
     export {}
@@ -82,26 +78,6 @@ arithmetics:
     indent token_sequence eol
     {
         grammar::builder.addArith($1, misc::position($3), $2->deliver());
-    }
-;
-
-throw:
-    indent KW_TRHOW token_sequence eol
-    {
-        grammar::builder.addThrow($1, misc::position($4), $3->deliver());
-    }
-;
-
-func_return:
-    indent KW_RETURN token_sequence eol
-    {
-        grammar::builder.addReturn($1, misc::position($4), $3->deliver());
-    }
-    |
-    indent KW_RETURN eol
-    {
-        grammar::builder.addReturn(
-                    $1, misc::position($3), std::vector<util::sptr<grammar::Token>>());
     }
 ;
 
@@ -150,6 +126,11 @@ token:
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::FUNC);
     }
     |
+    KW_RETURN
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::RETURN);
+    }
+    |
     KW_IF
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::IF);
@@ -168,6 +149,11 @@ token:
     KW_CATCH
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CATCH);
+    }
+    |
+    KW_THROW
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::THROW);
     }
     |
     KW_ELSE

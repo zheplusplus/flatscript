@@ -24,11 +24,11 @@ namespace grammar {
         int const indent;
 
         void acceptFunc(util::sptr<Function const> func);
-        virtual void acceptClass(util::sptr<Class const> cls);
-        void acceptCtor(misc::position const& ct_pos
-                      , std::vector<std::string> ct_params
-                      , Block ct_bl, bool super_init
-                      , std::vector<util::sptr<Expression const>> super_ctor_args);
+        virtual void acceptClass(util::sptr<Class> cls);
+        virtual void acceptCtor(misc::position const& ct_pos
+                              , std::vector<std::string> ct_params
+                              , Block ct_bl, bool super_init
+                              , std::vector<util::sptr<Expression const>> super_ctor_args);
         virtual void acceptStmt(util::sptr<Statement> stmt);
         void acceptElse(misc::position const& else_pos, Block block);
         void acceptCatch(misc::position const& catch_pos, Block block);
@@ -40,8 +40,6 @@ namespace grammar {
         void nextToken(util::sptr<Token> const& token);
         bool tryFinish(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses);
         void prepareArith();
-        void prepareReturn();
-        void prepareThrow();
         void prepareExport(std::vector<std::string> const& names);
 
         void setMemberIndent(int level, misc::position const& pos);
@@ -125,22 +123,26 @@ namespace grammar {
         : ClauseBase
     {
         ClassClause(int indent_len, misc::position const& ps, std::string cls_name
-                  , std::string base_cls_name, util::sref<ClauseBase> parent)
+                  , util::sptr<Expression const> base_cls, util::sref<ClauseBase> parent)
             : ClauseBase(indent_len)
             , pos(ps)
             , _class_name(std::move(cls_name))
-            , _base_class_name(std::move(base_cls_name))
+            , _base_class(std::move(base_cls))
             , _parent(parent)
         {}
 
         void deliver();
-        void acceptClass(util::sptr<Class const> cls);
+        void acceptClass(util::sptr<Class> cls);
         void acceptStmt(util::sptr<Statement> stmt);
+        void acceptCtor(misc::position const& ct_pos
+                      , std::vector<std::string> ct_params
+                      , Block ct_bl, bool super_init
+                      , std::vector<util::sptr<Expression const>> super_ctor_args);
 
         misc::position const pos;
     private:
-        std::string const _class_name;
-        std::string const _base_class_name;
+        std::string _class_name;
+        util::sptr<Expression const> _base_class;
         util::sref<ClauseBase> const _parent;
     };
 

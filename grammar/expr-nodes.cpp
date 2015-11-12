@@ -65,11 +65,6 @@ util::sptr<semantic::Expression const> BinaryOp::reduceAsLeftValue() const
                                 pos, lhs->reduceAsExpr(), rhs->reduceAsName()));
 }
 
-bool Identifier::isName() const
-{
-    return true;
-}
-
 std::string Identifier::reduceAsName() const
 {
     return name;

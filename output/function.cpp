@@ -17,10 +17,8 @@ namespace {
             , name(n)
         {}
 
-        std::string str() const
-        {
-            return name;
-        }
+        std::string str() const { return name; }
+        bool mayThrow() const { return false; }
 
         std::string const name;
     };
@@ -62,11 +60,6 @@ std::vector<std::string> RegularAsyncFunction::parameters() const
     std::vector<std::string> p(formNames(params));
     p.insert(p.begin() + async_param_index, TERM_REGULAR_ASYNC_CALLBACK);
     return p;
-}
-
-std::string RegularAsyncReturnCall::str() const
-{
-    return TERM_REGULAR_ASYNC_CALLBACK + "(null," + val->str() + ")";
 }
 
 util::sref<Statement const> AnonymousCallback::body() const

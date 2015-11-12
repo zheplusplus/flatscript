@@ -69,6 +69,14 @@ std::string ListLiteral::str() const
     return "[" + util::join(",", strList(value)) + "]";
 }
 
+bool ListLiteral::mayThrow() const
+{
+    return value.any([](util::sptr<Expression const> const& e, int)
+                     {
+                         return e->mayThrow();
+                     });
+}
+
 std::string Reference::str() const
 {
     return formName(name);
@@ -227,7 +235,7 @@ std::string RegularAsyncCallbackArg::str() const
             "#BODY\n"
             "})"
                 , "#CALLBACK_RESULT", formAsyncRef(util::id(this)))
-                , "#RAISE_EXC", raiser("$cb_err"))
+                , "#RAISE_EXC", thrower->scheme("$cb_err"))
                 , "#BODY", body_os.str())
         ;
 }

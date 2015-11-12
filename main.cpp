@@ -17,12 +17,13 @@
 #include "env.h"
 #include "globals.h"
 
-static semantic::CompilingSpace globalSpace()
+static util::sptr<output::Statement const> compileGlobal(semantic::Block flow)
 {
     semantic::CompilingSpace space;
     space.sym()->addExternNames(misc::position(0), std::vector<std::string>(
             flats::Globals::g.external_syms.begin(), flats::Globals::g.external_syms.end()));
-    return std::move(space);
+    flow.compile(space);
+    return space.deliver();
 }
 
 static int compile()
@@ -35,9 +36,7 @@ static int compile()
     if (error::hasError()) {
         return 1;
     }
-    semantic::CompilingSpace global_space(globalSpace());
-    global_flow.compile(global_space);
-    util::sptr<output::Statement const> global_scope(global_space.deliver());
+    util::sptr<output::Statement const> global_scope(compileGlobal(std::move(global_flow)));
     if (error::hasError()) {
         return 1;
     }

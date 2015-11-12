@@ -35,9 +35,9 @@ lib:
 	make -f misc/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 
 runtest:all test-lib
-	make -f util/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
-	make -f grammar/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
-	make -f semantic/test/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f test/util/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f test/grammar/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
+	make -f test/semantic/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	./flsc -e require -i test/sample-test.fls | node
 
 test-lib:code-gen
@@ -52,15 +52,13 @@ clean:
 	make -f semantic/Makefile clean
 	make -f output/Makefile clean
 	make -f codegen/Makefile clean
+	make -f test/Makefile clean
+	make -f test/util/Makefile cleant
+	make -f test/grammar/Makefile cleant
+	make -f test/semantic/Makefile cleant
 	find -type f -name "*.js" -exec rm {} \;
 	find -type f -name "*.o" -exec rm {} \;
 	find -type f -name "*.out" -exec rm {} \;
 	find -type f -name "tmp.*" -exec rm {} \;
 	rm -rf $(LIB_DIR)
 	rm -f flsc
-
-cleant:clean
-	make -f test/Makefile clean
-	make -f util/test/Makefile cleant
-	make -f grammar/test/Makefile cleant
-	make -f semantic/test/Makefile cleant

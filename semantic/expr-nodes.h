@@ -17,6 +17,13 @@ namespace semantic {
             : Expression(pos)
         {}
 
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace&) const
+        {
+            return util::sptr<output::Expression const>(nullptr);
+        }
+
+        bool isAsync() const { return false; }
+
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
     };
 
@@ -30,6 +37,11 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        {
+            return rhs->compileAsRoot(space);
+        }
+
         bool isLiteral(util::sref<SymbolTable const>) const;
         std::string literalType(util::sref<SymbolTable const>) const;
         bool boolValue(util::sref<SymbolTable const>) const;
@@ -78,6 +90,13 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        {
+            return expr->compileAsRoot(space);
+        }
+
+        bool isAsync() const { return this->expr->isAsync(); }
+
         bool boolValue(util::sref<SymbolTable const>) const { return true; }
         bool isLiteral(util::sref<SymbolTable const> st) const;
         std::string literalType(util::sref<SymbolTable const>) const { return "string"; }
@@ -94,6 +113,14 @@ namespace semantic {
             , name(n)
         {}
 
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        {
+            this->compile(space);
+            return util::sptr<output::Expression const>(nullptr);
+        }
+
+        bool isAsync() const { return false; }
+
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
         bool isLiteral(util::sref<SymbolTable const> st) const;
         std::string literalType(util::sref<SymbolTable const>) const;
@@ -105,16 +132,31 @@ namespace semantic {
         std::string const name;
     };
 
-    struct BoolLiteral
+    struct LiteralFactor
         : Expression
     {
-        BoolLiteral(misc::position const& pos, bool v)
+        explicit LiteralFactor(misc::position const& pos)
             : Expression(pos)
+        {}
+
+        bool isLiteral(util::sref<SymbolTable const>) const { return true; }
+        bool isAsync() const { return false; }
+
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace&) const
+        {
+            return util::sptr<output::Expression const>(nullptr);
+        }
+    };
+
+    struct BoolLiteral
+        : LiteralFactor
+    {
+        BoolLiteral(misc::position const& pos, bool v)
+            : LiteralFactor(pos)
             , value(v)
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
-        bool isLiteral(util::sref<SymbolTable const>) const { return true; }
         std::string literalType(util::sref<SymbolTable const>) const { return "bool"; }
         bool boolValue(util::sref<SymbolTable const>) const;
 
@@ -122,21 +164,20 @@ namespace semantic {
     };
 
     struct IntLiteral
-        : Expression
+        : LiteralFactor
     {
         IntLiteral(misc::position const& pos, std::string const& image)
-            : Expression(pos)
+            : LiteralFactor(pos)
             , value(image)
         {}
 
         IntLiteral(misc::position const& pos, mpz_class const& v)
-            : Expression(pos)
+            : LiteralFactor(pos)
             , value(v)
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
         bool boolValue(util::sref<SymbolTable const>) const { return this->value != 0; }
-        bool isLiteral(util::sref<SymbolTable const>) const { return true; }
         std::string literalType(util::sref<SymbolTable const>) const { return "int"; }
         mpz_class intValue(util::sref<SymbolTable const>) const;
 
@@ -144,21 +185,20 @@ namespace semantic {
     };
 
     struct FloatLiteral
-        : Expression
+        : LiteralFactor
     {
         FloatLiteral(misc::position const& pos, std::string const& image)
-            : Expression(pos)
+            : LiteralFactor(pos)
             , value(image)
         {}
 
         FloatLiteral(misc::position const& pos, mpf_class const& v)
-            : Expression(pos)
+            : LiteralFactor(pos)
             , value(v)
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
         bool boolValue(util::sref<SymbolTable const>) const { return this->value != 0; }
-        bool isLiteral(util::sref<SymbolTable const>) const { return true; }
         std::string literalType(util::sref<SymbolTable const>) const { return "float"; }
         mpf_class floatValue(util::sref<SymbolTable const>) const;
 
@@ -166,15 +206,14 @@ namespace semantic {
     };
 
     struct StringLiteral
-        : Expression
+        : LiteralFactor
     {
         StringLiteral(misc::position const& pos, std::string const& image)
-            : Expression(pos)
+            : LiteralFactor(pos)
             , value(image)
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace&) const;
-        bool isLiteral(util::sref<SymbolTable const>) const { return true; }
         std::string literalType(util::sref<SymbolTable const>) const { return "string"; }
         bool boolValue(util::sref<SymbolTable const>) const;
         std::string stringValue(util::sref<SymbolTable const>) const;
@@ -335,6 +374,8 @@ namespace semantic {
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
 
+        bool isAsync() const { return false; }
+
         std::vector<std::string> const param_names;
         Block const body;
     };
@@ -373,7 +414,11 @@ namespace semantic {
         util::ptrarr<Expression const> const latter_args;
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const;
+
         bool isAsync() const { return true; }
+    private:
+        virtual util::id _compile(BaseCompilingSpace& space, bool root) const;
     };
 
     struct AsyncCall
@@ -389,8 +434,8 @@ namespace semantic {
         {}
 
         std::vector<std::string> const async_params;
-
-        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+    private:
+        util::id _compile(BaseCompilingSpace& space, bool root) const;
     };
 
     struct This
@@ -399,6 +444,13 @@ namespace semantic {
         explicit This(misc::position const& pos)
             : Expression(pos)
         {}
+
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace&) const
+        {
+            return util::sptr<output::Expression const>(nullptr);
+        }
+
+        bool isAsync() const { return false; }
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
     };
@@ -412,6 +464,8 @@ namespace semantic {
         {}
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+
+        bool isAsync() const { return false; }
 
         std::string const property;
     };
@@ -453,6 +507,14 @@ namespace semantic {
         explicit ExceptionObj(misc::position const& pos)
             : Expression(pos)
         {}
+
+        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        {
+            this->compile(space);
+            return util::sptr<output::Expression const>(nullptr);
+        }
+
+        bool isAsync() const { return false; }
 
         util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
     };

@@ -1,7 +1,7 @@
 Flatscript
 ==========
 
-We write flat Javascript.
+We generate callbacks, instead of writing them.
 
 This is a Javascript generator that makes it easy to write asynchronous code in a synchronous way. [Beta Version]
 
