@@ -18,7 +18,7 @@ namespace {
             : Statement(pos)
         {}
 
-        void compile(semantic::BaseCompilingSpace&) const {}
+        void compile(util::sref<semantic::Scope>) const {}
 
         bool isAsync() const { return false; }
     };

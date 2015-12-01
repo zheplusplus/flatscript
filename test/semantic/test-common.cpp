@@ -2,7 +2,7 @@
 
 #include <test/common.h>
 #include <test/phony-errors.h>
-#include <semantic/compiling-space.h>
+#include <semantic/scope-impl.h>
 #include <util/string.h>
 
 #include "test-common.h"
@@ -18,9 +18,9 @@ std::ostream& test::dummyos()
 util::sptr<output::Statement const> test::compile(
                                         semantic::Block& b, util::sref<semantic::SymbolTable> sym)
 {
-    semantic::CompilingSpace space(misc::position(), sym, std::vector<std::string>());
-    b.compile(space);
-    return space.deliver();
+    semantic::SyncFunctionScope scope(misc::position(), sym, std::vector<std::string>(), false);
+    b.compile(scope);
+    return scope.deliver();
 }
 
 DataTree& DataTree::operator()(misc::position const& pos
@@ -82,6 +82,7 @@ NodeType const test::INTEGER("integer");
 NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
 NodeType const test::LIST("list");
+NodeType const test::REGEXP("regexp");
 NodeType const test::THIS("this");
 NodeType const test::SUPER_FUNC("super func");
 NodeType const test::BINARY_OP("binary operation");
@@ -104,7 +105,9 @@ NodeType const test::ASYNC_REFERENCE("asynchronous reference");
 
 NodeType const test::ASYNC_PIPELINE("asynchronous pipeline");
 NodeType const test::SYNC_PIPELINE("synchronous pipeline");
+NodeType const test::ROOT_SYNC_PIPELINE("root synchronous pipeline");
 NodeType const test::PIPELINE_CONTINUE("pipeline continue");
+NodeType const test::SYNC_PIPELINE_RETURN("sync pipeline return");
 
 NodeType const test::LIST_SLICE("list slice");
 

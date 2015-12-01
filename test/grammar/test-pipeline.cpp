@@ -24,7 +24,7 @@ TEST_F(PipelineTest, MultiLinesPipeline)
                 ->add(id(pos_b, "houjou"))
                 ->deliver());
 
-    builder.buildAndClear().compile(nulSpace());
+    builder.buildAndClear().compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -62,7 +62,7 @@ TEST_F(PipelineTest, MultiLinesPipelineSeparatedByFilterBreak)
                                                      ->add(pipeElement(pos_a))
                                                      ->deliver());
 
-    builder.buildAndClear().compile(nulSpace());
+    builder.buildAndClear().compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

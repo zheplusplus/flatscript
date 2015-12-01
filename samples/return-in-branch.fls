@@ -1,0 +1,78 @@
+func aReturn(x, cb)
+    setTimeout(%, 1)
+    if x
+        cb(null, x - 1)
+    else
+        cb('a', null)
+
+func sReturn(x)
+    if x
+        return x - 1
+    else
+        return null
+
+func ss(a, b, x)
+    if a
+        if b
+            return sReturn(x + 2)
+        return sReturn(x + 1)
+    if b
+        return sReturn(x)
+    return sReturn(x - 1)
+
+func sa(a, b, x, %%)
+    if a
+        if b
+            setTimeout(%, 1)
+            return aReturn(x + 2, %%)
+        return sReturn(x + 1)
+    if b
+        setTimeout(%, 1)
+        return aReturn(x, %%)
+    return sReturn(x - 1)
+
+func as(a, b, x, %%)
+    if a
+        setTimeout(%, 1)
+        if b
+            return sReturn(x + 2)
+        return aReturn(x + 1, %%)
+    if b
+        return sReturn(x)
+    return sReturn(x - 1)
+
+func aa(a, b, x, %%)
+    setTimeout(%, 1)
+    if a
+        setTimeout(%, 1)
+        if b
+            setTimeout(%, 1)
+            return aReturn(x + 2, %%)
+        return aReturn(x + 1, %%)
+    if b
+        return aReturn(x, %%)
+    return aReturn(x - 1, %%)
+
+console.log('ss')
+console.log(ss(true, true, 3))
+console.log(ss(true, false, 3))
+console.log(ss(false, true, 3))
+console.log(ss(false, false, 3))
+
+console.log('sa')
+console.log(sa(true, true, 13, %%))
+console.log(sa(true, false, 13, %%))
+console.log(sa(false, true, 13, %%))
+console.log(sa(false, false, 13, %%))
+
+console.log('as')
+console.log(as(true, true, 23, %%))
+console.log(as(true, false, 23, %%))
+console.log(as(false, true, 23, %%))
+console.log(as(false, false, 23, %%))
+
+console.log('aa')
+console.log(aa(true, true, 33, %%))
+console.log(aa(true, false, 33, %%))
+console.log(aa(false, true, 33, %%))
+console.log(aa(false, false, 33, %%))

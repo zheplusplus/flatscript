@@ -27,9 +27,9 @@ namespace semantic {
         }
 
         virtual util::sptr<output::Function const> compile(
-                    util::sref<SymbolTable> st, bool class_space) const;
+                    util::sref<SymbolTable> st, bool class_scope) const;
         virtual util::sptr<output::Expression const> compileToLambda(
-                    util::sref<SymbolTable> st, bool class_space) const;
+                    util::sref<SymbolTable> st, bool class_scope) const;
 
         misc::position const pos;
         std::string const name;
@@ -37,7 +37,7 @@ namespace semantic {
         Block const body;
     protected:
         virtual util::sptr<output::Statement const> _compileBody(
-                    util::sref<SymbolTable> st, bool class_space) const;
+                    util::sref<SymbolTable> st, bool class_scope) const;
     };
 
     struct RegularAsyncFunction
@@ -55,12 +55,45 @@ namespace semantic {
         int const async_param_index;
 
         util::sptr<output::Function const> compile(
-                    util::sref<SymbolTable> st, bool class_space) const;
+                    util::sref<SymbolTable> st, bool class_scope) const;
         util::sptr<output::Expression const> compileToLambda(
-                    util::sref<SymbolTable> st, bool class_space) const;
+                    util::sref<SymbolTable> st, bool class_scope) const;
     protected:
         util::sptr<output::Statement const> _compileBody(
-                    util::sref<SymbolTable> st, bool class_space) const;
+                    util::sref<SymbolTable> st, bool class_scope) const;
+    };
+
+    struct Lambda
+        : Expression
+    {
+        Lambda(misc::position const& pos, std::vector<std::string> const& p, Block b)
+            : Expression(pos)
+            , param_names(p)
+            , body(std::move(b))
+        {}
+
+        util::sptr<output::Expression const> compile(util::sref<Scope> scope) const;
+
+        bool isAsync() const { return false; }
+
+        std::vector<std::string> const param_names;
+        Block const body;
+    };
+
+    struct RegularAsyncLambda
+        : Lambda
+    {
+        RegularAsyncLambda(misc::position const& pos
+                         , std::vector<std::string> const& params
+                         , int async_param_idx
+                         , Block body)
+            : Lambda(pos, params, std::move(body))
+            , async_param_index(async_param_idx)
+        {}
+
+        util::sptr<output::Expression const> compile(util::sref<Scope> scope) const;
+
+        int const async_param_index;
     };
 
 }

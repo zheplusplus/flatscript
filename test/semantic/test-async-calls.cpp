@@ -3,7 +3,7 @@
 #include <semantic/expr-nodes.h>
 #include <semantic/stmt-nodes.h>
 #include <semantic/list-pipe.h>
-#include <semantic/compiling-space.h>
+#include <semantic/symbol-table.h>
 #include <output/node-base.h>
 #include <test/phony-errors.h>
 #include <test/common.h>
@@ -17,16 +17,16 @@ typedef SemanticTest AsyncCallsTest;
 TEST_F(AsyncCallsTest, TopFlowCalls)
 {
     misc::position pos(1);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "setTimeout");
-    space.sym()->defName(pos, "cb");
-    space.sym()->defName(pos, "readLine");
-    space.sym()->defName(pos, "writeLine");
-    space.sym()->defName(pos, "log");
+    scope->sym()->defName(pos, "setTimeout");
+    scope->sym()->defName(pos, "cb");
+    scope->sym()->defName(pos, "readLine");
+    scope->sym()->defName(pos, "writeLine");
+    scope->sym()->defName(pos, "log");
 
     largs.append(util::mkptr(new semantic::IntLiteral(pos, "1")));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
@@ -60,7 +60,7 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
                     pos, util::mkptr(new semantic::Reference(pos, "log")), std::move(largs))))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -106,16 +106,16 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
 TEST_F(AsyncCallsTest, InBranch)
 {
     misc::position pos(2);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     semantic::Block consq_block;
     semantic::Block alter_block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "x");
-    space.sym()->defName(pos, "y");
-    space.sym()->defName(pos, "read");
+    scope->sym()->defName(pos, "x");
+    scope->sym()->defName(pos, "y");
+    scope->sym()->defName(pos, "read");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "f20130106")));
     consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
@@ -139,7 +139,7 @@ TEST_F(AsyncCallsTest, InBranch)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::FloatLiteral(pos, "17.53")))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -175,16 +175,16 @@ TEST_F(AsyncCallsTest, InBranch)
 TEST_F(AsyncCallsTest, AsBranchPredicate)
 {
     misc::position pos(3);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     semantic::Block consq_block;
     semantic::Block alter_block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "m");
-    space.sym()->defName(pos, "n");
-    space.sym()->defName(pos, "write");
+    scope->sym()->defName(pos, "m");
+    scope->sym()->defName(pos, "n");
+    scope->sym()->defName(pos, "write");
 
     consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::Reference(pos, "m")))));
@@ -206,7 +206,7 @@ TEST_F(AsyncCallsTest, AsBranchPredicate)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::FloatLiteral(pos, "17.53")))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -236,7 +236,7 @@ TEST_F(AsyncCallsTest, ConflictDefinition)
     misc::position pos_a(400);
     misc::position pos_b(401);
     misc::position pos_c(402);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
@@ -260,7 +260,7 @@ TEST_F(AsyncCallsTest, ConflictDefinition)
     block.addStmt(util::mkptr(new semantic::NameDef(
                     pos_c, "kyouma", util::mkptr(new semantic::FloatLiteral(pos, "0.456914")))));
 
-    compile(block, space.sym());
+    compile(block, scope->sym());
     ASSERT_TRUE(error::hasError());
 
     std::vector<NameAlreadyInLocalRec> redefs(getNameAlreadyInLocalRecs());
@@ -277,14 +277,14 @@ TEST_F(AsyncCallsTest, ConflictDefinition)
 TEST_F(AsyncCallsTest, NestedAsyncArgs)
 {
     misc::position pos(5);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "f");
-    space.sym()->defName(pos, "g");
-    space.sym()->defName(pos, "h");
+    scope->sym()->defName(pos, "f");
+    scope->sym()->defName(pos, "g");
+    scope->sym()->defName(pos, "h");
 
     fargs.append(util::mkptr(new semantic::AsyncCall(pos
                                                    , util::mkptr(new semantic::Reference(pos, "g"))
@@ -308,7 +308,7 @@ TEST_F(AsyncCallsTest, NestedAsyncArgs)
                                   , util::mkptr(new semantic::Reference(pos, "x"))
                                   , util::ptrarr<semantic::Expression const>())))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -347,13 +347,13 @@ TEST_F(AsyncCallsTest, NestedAsyncArgs)
 TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
 {
     misc::position pos(16);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
-    space.sym()->defName(pos, "suzuha");
-    space.sym()->defName(pos, "yuki");
-    space.sym()->defName(pos, "rintarou");
-    space.sym()->defName(pos, "mayuri");
+    scope->sym()->defName(pos, "suzuha");
+    scope->sym()->defName(pos, "yuki");
+    scope->sym()->defName(pos, "rintarou");
+    scope->sym()->defName(pos, "mayuri");
 
     util::ptrarr<semantic::Expression const> args;
     util::ptrarr<semantic::Expression const> fargs;
@@ -379,7 +379,7 @@ TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
                     pos, util::mkptr(new semantic::Reference(pos, "mayuri")), std::move(args))))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -429,12 +429,12 @@ TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
 TEST_F(AsyncCallsTest, RegularAsyncCall)
 {
     misc::position pos(17);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
     semantic::Block body;
 
-    space.sym()->defName(pos, "yurine");
+    scope->sym()->defName(pos, "yurine");
 
     fargs.append(util::mkptr(new semantic::StringLiteral(pos, "karas")));
     body.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
@@ -444,8 +444,8 @@ TEST_F(AsyncCallsTest, RegularAsyncCall)
                                       , std::move(fargs)
                                       , std::move(largs))))));
 
-    body.compile(space);
-    space.deliver()->write(dummyos());
+    body.compile(*scope);
+    scope->deliver()->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

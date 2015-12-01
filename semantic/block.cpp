@@ -3,23 +3,23 @@
 
 #include "block.h"
 #include "function.h"
-#include "class.h"
 #include "node-base.h"
-#include "compiling-space.h"
+#include "scope.h"
+#include "symbol-table.h"
 
 using namespace semantic;
 
-void Block::compile(BaseCompilingSpace& space) const
+void Block::compile(util::sref<Scope> scope) const
 {
-    util::sref<SymbolTable> root_sym(space.sym());
-    util::sref<output::Block> root_block(space.block());
+    util::sref<SymbolTable> root_sym(scope->sym());
+    util::sref<output::Block> root_block(scope->block());
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
                     root_sym->defFunc(func->pos, func->name);
                 });
     _stmts.iter([&](util::sptr<Statement const> const& stmt, int)
                 {
-                    stmt->compile(space);
+                    stmt->compile(scope);
                 });
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {

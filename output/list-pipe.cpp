@@ -6,29 +6,28 @@
 
 using namespace output;
 
-static std::string const ASYNC_MAPPER_CONTINUE(
-"return $next($index + 1, $result);\n"
-);
+static std::string const ASYNC_MAPPER_CONTINUE("return $nx#PIPE_ID();");
 
 void PipelineContinue::write(std::ostream& os) const
 {
-    os << ASYNC_MAPPER_CONTINUE;
+    os << util::replace_all(ASYNC_MAPPER_CONTINUE, "#PIPE_ID", this->pipe_id.str());
 }
 
 static std::string const ASYNC_PIPE(
-"(function ($list) {\n"
-"    if (!($list) || $list.length === undefined) #RAISE_EXC\n"
-"    function $next($index, $result) {\n"
-"        var $key = null;\n"
-"        if ($index === $list.length) {\n"
-"            #SUCCESSIVE_STATEMENTS\n"
-"        } else {\n"
-"            var $element = $list[$index];\n"
-"            #NEXT\n"
-"        }\n"
-"    }\n"
-"    $next(0, []);\n"
-"})(#LIST)\n"
+"(function ($list) {"
+    "if (!($list) || !Array.isArray($list)) #RAISE_EXC"
+    "function $np#PIPE_ID($index, $result) {"
+        "function $nx#PIPE_ID() { $np#PIPE_ID($index + 1, $result) }"
+        "var $key = null;"
+        "if ($index === $list.length) {"
+            "#SUCCESSIVE_STATEMENTS"
+        "} else {"
+            "var $element = $list[$index];"
+            "#NEXT"
+        "}"
+    "}"
+    "$np#PIPE_ID(0, []);"
+"})(#LIST)"
 );
 
 std::string AsyncPipeline::str() const
@@ -37,49 +36,69 @@ std::string AsyncPipeline::str() const
     succession->write(suc_os);
     std::ostringstream rec_os;
     recursion->write(rec_os);
-    return std::move(
+    return
+        util::replace_all(
         util::replace_all(
         util::replace_all(
         util::replace_all(
         util::replace_all(
             ASYNC_PIPE
-                , "#RAISE_EXC", thrower->scheme("'not iterable'"))
+                , "#RAISE_EXC", thrower->scheme("'Require array for async iteration'"))
                 , "#SUCCESSIVE_STATEMENTS", suc_os.str())
                 , "#NEXT", rec_os.str())
                 , "#LIST", list->str())
-        );
+                , "#PIPE_ID", this->pipe_id.str())
+        ;
 }
 
 static std::string const SYNC_PIPE(
-"(function ($list) {\n"
-"    if (!($list)) return;\n"
-"    var $result = [];\n"
-"    var $ind = 0;\n"
-"    var $next = function() {};\n"
-"    for (var $k in $list) {\n"
-"        if ($ind === $list.length) {\n"
-"            break;\n"
-"        }\n"
-"        (function ($index, $key, $element) {\n"
-"           #SECTION\n"
-"        })($ind, $k, $list[$k]);\n"
-"        ++$ind;\n"
-"    }\n"
-"    return $result;\n"
-"})(#LIST)"
-);
+    "($listpipe(#LIST, function($index, $key, $element, $result) {#SECTION}))");
 
 std::string SyncPipeline::str() const
 {
     std::ostringstream sec_os;
     section->write(sec_os);
-    return std::move(
+    return
         util::replace_all(
         util::replace_all(
             SYNC_PIPE
                 , "#SECTION", sec_os.str())
                 , "#LIST", list->str())
-        );
+        ;
+}
+
+static std::string const SYNC_PIPE_ROOT(
+"{"
+    "var $ind#PIPE_ID=0, $ret#PIPE_ID, $retf#PIPE_ID=false, $list=#LIST, $result=[];"
+    "for (var $k in $list) {"
+        "if ($list.hasOwnProperty($k)) {"
+            "(function ($index, $key, $element) {"
+                "#SECTION"
+            "})($ind#PIPE_ID, $k, $list[$k]);"
+            "if ($retf#PIPE_ID) {"
+                "#EXT_RETURN"
+            "}"
+            "++$ind#PIPE_ID;"
+        "}"
+    "}"
+"}"
+);
+
+std::string RootSyncPipeline::str() const
+{
+    std::ostringstream sec_os;
+    section->write(sec_os);
+    return
+        util::replace_all(
+        util::replace_all(
+        util::replace_all(
+        util::replace_all(
+            SYNC_PIPE_ROOT
+                , "#SECTION", sec_os.str())
+                , "#LIST", this->list->str())
+                , "#EXT_RETURN", this->ext_return->scheme("$ret" + this->pipe_id.str()))
+                , "#PIPE_ID", this->pipe_id.str())
+        ;
 }
 
 std::string PipeElement::str() const

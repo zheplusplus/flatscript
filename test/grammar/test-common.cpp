@@ -21,10 +21,9 @@ util::sref<semantic::SymbolTable> test::nulSymbols()
     return util::sref<semantic::SymbolTable>(nullptr);
 }
 
-semantic::CompilingSpace& test::nulSpace()
+util::sref<semantic::Scope> test::nulScope()
 {
-    static semantic::CompilingSpace* const n(nullptr);
-    return *n;
+    return util::sref<semantic::Scope>(nullptr);
 }
 
 DataTree& DataTree::operator()(misc::position const& pos
@@ -73,6 +72,7 @@ NodeType const test::BOOLEAN("boolean");
 NodeType const test::INTEGER("integer");
 NodeType const test::FLOATING("floating");
 NodeType const test::STRING("string");
+NodeType const test::REGEXP("regexp");
 NodeType const test::IDENTIFIER("identifier");
 NodeType const test::THIS("this");
 NodeType const test::SUPER_FUNC("super func");

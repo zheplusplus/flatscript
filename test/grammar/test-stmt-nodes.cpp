@@ -19,7 +19,7 @@ TEST_F(StmtNodesTest, Arithmetics)
     grammar::Arithmetics arith1(pos, util::mkptr(new grammar::BoolLiteral(pos, false)));
     block.addStmt(arith0.compile());
     block.addStmt(arith1.compile());
-    block.compile(nulSpace());
+    block.compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -40,7 +40,7 @@ TEST_F(StmtNodesTest, NameDef)
     grammar::NameDef def1(pos, "Asuka", util::mkptr(new grammar::Identifier(pos, "tsundere")));
     block.addStmt(def0.compile());
     block.addStmt(def1.compile());
-    block.compile(nulSpace());
+    block.compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -63,7 +63,7 @@ TEST_F(StmtNodesTest, Returns)
     grammar::Return ret1(pos, util::mkptr(new grammar::EmptyExpr(pos_b)));
     block.addStmt(ret0.compile());
     block.addStmt(ret1.compile());
-    block.compile(nulSpace());
+    block.compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -82,7 +82,7 @@ TEST_F(StmtNodesTest, Block)
     grammar::Block block;
     block.addStmt(util::mkptr(new grammar::NameDef(
                     pos, "Misato", util::mkptr(new grammar::Identifier(pos, "Katsuragi")))));
-    block.compile().compile(nulSpace());
+    block.compile().compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -128,7 +128,7 @@ TEST_F(StmtNodesTest, Branch)
                           , std::move(block2));
     branch1.acceptElse(pos, std::move(block3));
     block.addStmt(branch1.compile());
-    block.compile(nulSpace());
+    block.compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -197,7 +197,7 @@ TEST_F(StmtNodesTest, Functions)
                           , -1
                           , std::move(body));
     block.addFunc(func1.compile());
-    block.compile(nulSpace());
+    block.compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -243,7 +243,7 @@ TEST_F(StmtNodesTest, Mixed)
                          , -1
                          , std::move(body));
     block.addFunc(func.compile());
-    block.compile(nulSpace());
+    block.compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

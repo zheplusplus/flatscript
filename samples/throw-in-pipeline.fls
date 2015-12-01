@@ -34,4 +34,39 @@ func piping(%%)
         console.log($e)
 
 piping(%%)
+
+console.log('======')
+
+y: [
+    [0, 1],
+    [2, 3],
+]
+
+func mixing_pipes(%%)
+    try
+        y |:
+            console.log('#x', $.join(':'))
+            $ |:
+                aGet($, %%)
+    catch
+        console.log('%x', $e)
+
+    try
+        y |:
+            console.log('#y', $.join(':'))
+            $ |:
+                sGet($)
+    catch
+        console.log('%y', $e)
+
+    y |:
+        console.log('#z', $.join(':'))
+        $ |:
+            aGet($, %%)
+
+try
+    mixing_pipes(%%)
+catch
+    console.log('%z', $e)
+
 console.log('end')

@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
 
-#include <semantic/compiling-space.h>
-#include <semantic/function.h>
+#include <semantic/symbol-table.h>
 #include <semantic/stmt-nodes.h>
 #include <semantic/expr-nodes.h>
-#include <output/function.h>
+#include <semantic/scope-impl.h>
 #include <test/common.h>
 #include <test/phony-errors.h>
 
@@ -16,32 +15,26 @@ struct SymbolTableTest
     : SemanticTest
 {
     SymbolTableTest()
-        : _space(nullptr)
+        : _scope(nullptr)
     {}
 
     void SetUp()
     {
         SemanticTest::SetUp();
-        _space = new semantic::CompilingSpace;
-    }
-
-    void TearDown()
-    {
-        delete _space;
-        SemanticTest::TearDown();
+        this->_scope = semantic::Scope::global();
     }
 
     util::sref<semantic::SymbolTable> refSym()
     {
-        return _space->sym();
+        return this->_scope->sym();
     }
 
-    semantic::CompilingSpace& space()
+    util::sref<semantic::Scope> scope()
     {
-        return *_space;
+        return *this->_scope;
     }
 
-    semantic::CompilingSpace* _space;
+    util::sptr<semantic::Scope> _scope;
 };
 
 TEST_F(SymbolTableTest, DefName)
@@ -51,11 +44,11 @@ TEST_F(SymbolTableTest, DefName)
     refSym()->defName(pos, "seele");
     refSym()->defName(pos, "lilith");
     ASSERT_FALSE(error::hasError());
-    semantic::CompilingSpace inner_space(pos, refSym(), std::vector<std::string>());
-    inner_space.sym()->defName(pos, "nerv");
-    inner_space.sym()->defName(pos, "seele");
-    inner_space.sym()->defName(pos, "adam");
-    inner_space.sym()->defName(pos, "eve");
+    semantic::SyncFunctionScope inner_scope(pos, refSym(), std::vector<std::string>(), false);
+    inner_scope.sym()->defName(pos, "nerv");
+    inner_scope.sym()->defName(pos, "seele");
+    inner_scope.sym()->defName(pos, "adam");
+    inner_scope.sym()->defName(pos, "eve");
     ASSERT_FALSE(error::hasError());
 }
 
@@ -71,16 +64,16 @@ TEST_F(SymbolTableTest, RefLocalName)
     refSym()->compileRef(pos, "lilith")->str();
     ASSERT_FALSE(error::hasError());
 
-    semantic::CompilingSpace inner_space(pos, refSym(), std::vector<std::string>());
-    inner_space.sym()->defName(pos, "nerv");
-    inner_space.sym()->defName(pos, "seele");
-    inner_space.sym()->defName(pos, "adam");
-    inner_space.sym()->defName(pos, "eve");
+    semantic::SyncFunctionScope inner_scope(pos, refSym(), std::vector<std::string>(), false);
+    inner_scope.sym()->defName(pos, "nerv");
+    inner_scope.sym()->defName(pos, "seele");
+    inner_scope.sym()->defName(pos, "adam");
+    inner_scope.sym()->defName(pos, "eve");
 
-    inner_space.sym()->compileRef(pos, "nerv")->str();
-    inner_space.sym()->compileRef(pos, "seele")->str();
-    inner_space.sym()->compileRef(pos, "adam")->str();
-    inner_space.sym()->compileRef(pos, "eve")->str();
+    inner_scope.sym()->compileRef(pos, "nerv")->str();
+    inner_scope.sym()->compileRef(pos, "seele")->str();
+    inner_scope.sym()->compileRef(pos, "adam")->str();
+    inner_scope.sym()->compileRef(pos, "eve")->str();
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -117,9 +110,9 @@ TEST_F(SymbolTableTest, RedefName)
     ASSERT_EQ("aida", redefs[1].name);
 
     clearErr();
-    semantic::CompilingSpace inner_space(pos, refSym(), std::vector<std::string>());
-    inner_space.sym()->defName(pos, "aida");
-    inner_space.sym()->defName(pos, "suzuhara");
+    semantic::SyncFunctionScope inner_scope(pos, refSym(), std::vector<std::string>(), false);
+    inner_scope.sym()->defName(pos, "aida");
+    inner_scope.sym()->defName(pos, "suzuhara");
     ASSERT_FALSE(error::hasError());
 }
 
@@ -130,10 +123,10 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     misc::position ref_pos1(601);
     refSym()->defName(pos, "katsuragi");
 
-    semantic::CompilingSpace inner_space_a(pos, refSym(), std::vector<std::string>());
-    inner_space_a.sym()->compileRef(ref_pos0, "katsuragi");
-    inner_space_a.sym()->compileRef(ref_pos1, "katsuragi");
-    inner_space_a.sym()->defName(pos, "katsuragi");
+    semantic::SyncFunctionScope inner_scope_a(pos, refSym(), std::vector<std::string>(), false);
+    inner_scope_a.sym()->compileRef(ref_pos0, "katsuragi");
+    inner_scope_a.sym()->compileRef(ref_pos1, "katsuragi");
+    inner_scope_a.sym()->defName(pos, "katsuragi");
     ASSERT_TRUE(error::hasError());
     std::vector<NameRefBeforeDefRec> invalid_refs = getNameRefBeforeDefRecs();
     ASSERT_EQ(1, invalid_refs.size());
@@ -147,9 +140,9 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     refSym()->defName(pos, "penpen");
     refSym()->compileRef(pos, "penpen");
 
-    semantic::CompilingSpace inner_space_b(pos, refSym(), std::vector<std::string>());
-    inner_space_b.sym()->compileRef(pos, "katsuragi");
-    inner_space_b.sym()->defName(pos, "penpen");
+    semantic::SyncFunctionScope inner_scope_b(pos, refSym(), std::vector<std::string>(), false);
+    inner_scope_b.sym()->compileRef(pos, "katsuragi");
+    inner_scope_b.sym()->defName(pos, "penpen");
     ASSERT_FALSE(error::hasError());
 }
 
@@ -160,7 +153,7 @@ TEST_F(SymbolTableTest, ExternalAlreadyDef)
 
     refSym()->defName(pos, "akari");
     semantic::Extern external(ref_pos, std::vector<std::string>({ "akari", "akaza" }));
-    external.compile(space());
+    external.compile(scope());
 
     ASSERT_TRUE(error::hasError());
     std::vector<NameAlreadyInLocalRec> redefs(getNameAlreadyInLocalRecs());
@@ -176,7 +169,7 @@ TEST_F(SymbolTableTest, ExternalBeforeDef)
     misc::position ref_pos(800);
 
     semantic::Extern external(ref_pos, std::vector<std::string>({ "yuru", "yuri" }));
-    external.compile(space());
+    external.compile(scope());
     refSym()->defName(pos, "yuri");
 
     ASSERT_TRUE(error::hasError());
@@ -194,7 +187,7 @@ TEST_F(SymbolTableTest, ExternalAfterRef)
 
     refSym()->compileRef(ref_pos, "akane");
     semantic::Extern external(pos, std::vector<std::string>({ "akane" }));
-    external.compile(space());
+    external.compile(scope());
 
     ASSERT_TRUE(error::hasError());
     std::vector<NameRefBeforeDefRec> invalid_refs(getNameRefBeforeDefRecs());

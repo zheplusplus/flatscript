@@ -1,0 +1,31 @@
+func aAnd(x, y, %%)
+    setTimeout(%, 1)
+    if !x
+        setTimeout(%, 1)
+        return false
+    setTimeout(%, 1)
+    return y
+
+func aNeg(x, %%)
+    setTimeout(%, 1)
+    return !x
+
+func sAnd(x, y)
+    return x && y
+
+func sNeg(x)
+    return !x
+
+console.log('Group A')
+console.log('00', aNeg(false, %%) if aAnd(true, true, %%) else sAnd(true, false))
+console.log('01', sNeg(false) if aAnd(true, true, %%) else aAnd(true, false, %%))
+console.log('02', aNeg(false, %%) if aAnd(true, true, %%) else aAnd(true, false, %%))
+console.log('03', sNeg(false) if aAnd(true, true, %%) else sAnd(true, false))
+console.log('04', sNeg(false) if sAnd(true, true) else sAnd(true, false))
+console.log('Group B')
+console.log('10', aAnd(true, true, %%) if aNeg(true, %%) else sAnd(true, false))
+console.log('11', aAnd(true, true, %%) if sNeg(true) else aAnd(true, false, %%))
+console.log('12', aAnd(true, true, %%) if aNeg(true, %%) else aAnd(true, false, %%))
+console.log('13', aAnd(true, true, %%) if sNeg(true) else sAnd(true, false))
+console.log('14', sAnd(true, true) if sNeg(true) else sAnd(true, false))
+console.log('End')

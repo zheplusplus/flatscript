@@ -38,7 +38,7 @@ namespace semantic {
                 , ctor_or_nul(std::move(ct))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
 

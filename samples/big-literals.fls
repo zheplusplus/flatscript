@@ -1,12 +1,13 @@
-write: console.log
-
 x: 1000000000000 * 2 % 31
-write(x)
-write(1000000000000 * 2 % 37)
+console.log(x)
+console.log(1000000000000 * 2 % 37)
 y: 8.0 * 1000000000000 / 2500000000000
-write(y)
+console.log(y)
 
-write((1 << 30) + (1 << 30))
-write(((1 << 30) + (1 << 30)) << 1)
-write(-1 >> 1)
-write(-1 >>> 1)
+console.log((1 << 30) + (1 << 30))
+console.log(((1 << 30) + (1 << 30)) << 1)
+console.log(-1 >> 1)
+console.log(-1 >>> 1)
+
+z: 1 + 2
+console.log(z.toString())

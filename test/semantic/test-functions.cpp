@@ -3,7 +3,7 @@
 #include <semantic/function.h>
 #include <semantic/expr-nodes.h>
 #include <semantic/stmt-nodes.h>
-#include <semantic/compiling-space.h>
+#include <semantic/symbol-table.h>
 #include <output/node-base.h>
 #include <test/phony-errors.h>
 #include <test/common.h>
@@ -17,11 +17,11 @@ typedef SemanticTest FunctionTest;
 TEST_F(FunctionTest, RegularAsyncFunction)
 {
     misc::position pos(1);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
     semantic::Block body;
-    space.sym()->defName(pos, "setTimeout");
+    scope->sym()->defName(pos, "setTimeout");
 
     largs.append(util::mkptr(new semantic::IntLiteral(pos, "1600")));
     body.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::AsyncCall(
@@ -35,7 +35,7 @@ TEST_F(FunctionTest, RegularAsyncFunction)
     semantic::RegularAsyncFunction af(
                 pos, "li", std::vector<std::string>({ "light", "dark" }), 1, std::move(body));
 
-    af.compile(space.sym(), false)->write(dummyos());
+    af.compile(scope->sym(), false)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -58,18 +58,14 @@ TEST_F(FunctionTest, RegularAsyncFunction)
                                                     (pos, REFERENCE, "light")
                                             (SCOPE_END)
                                         (CATCH)
-                                            (SCOPE_BEGIN)
-                                                (EXC_CALLBACK)
-                                                    (pos, EXCEPTION_OBJ)
-                                            (SCOPE_END)
+                                            (EXC_CALLBACK)
+                                                (pos, EXCEPTION_OBJ)
                                     (SCOPE_END)
                                 (pos, INTEGER, "1600")
                     (SCOPE_END)
                 (CATCH)
-                    (SCOPE_BEGIN)
-                        (EXC_CALLBACK)
-                            (pos, EXCEPTION_OBJ)
-                    (SCOPE_END)
+                    (EXC_CALLBACK)
+                        (pos, EXCEPTION_OBJ)
             (SCOPE_END)
     ;
 }
@@ -77,11 +73,11 @@ TEST_F(FunctionTest, RegularAsyncFunction)
 TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
 {
     misc::position pos(2);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
     semantic::Block body;
-    space.sym()->defName(pos, "x20130308");
+    scope->sym()->defName(pos, "x20130308");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "200d0308")));
     body.addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
@@ -93,7 +89,7 @@ TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
     semantic::RegularAsyncFunction af(
                 pos, "yukito", std::vector<std::string>({ "touya" }), 1, std::move(body));
 
-    af.compile(space.sym(), false)->write(dummyos());
+    af.compile(scope->sym(), false)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -116,18 +112,14 @@ TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
                                                     (pos, ASYNC_REFERENCE)
                                             (SCOPE_END)
                                         (CATCH)
-                                            (SCOPE_BEGIN)
-                                                (EXC_CALLBACK)
-                                                    (pos, EXCEPTION_OBJ)
-                                            (SCOPE_END)
+                                            (EXC_CALLBACK)
+                                                (pos, EXCEPTION_OBJ)
                                     (SCOPE_END)
                                 (pos, STRING, "200d0308")
                     (SCOPE_END)
                 (CATCH)
-                    (SCOPE_BEGIN)
-                        (EXC_CALLBACK)
-                            (pos, EXCEPTION_OBJ)
-                    (SCOPE_END)
+                    (EXC_CALLBACK)
+                        (pos, EXCEPTION_OBJ)
             (SCOPE_END)
     ;
 }
@@ -135,10 +127,10 @@ TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
 TEST_F(FunctionTest, RegularAsyncFunctionAutoReturn)
 {
     misc::position pos(3);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> args;
     semantic::Block body;
-    space.sym()->defName(pos, "setTimeout");
+    scope->sym()->defName(pos, "setTimeout");
 
     args.append(util::mkptr(new semantic::IntLiteral(pos, "1357")));
     body.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
@@ -147,7 +139,7 @@ TEST_F(FunctionTest, RegularAsyncFunctionAutoReturn)
                                       , std::move(args))))));
     semantic::RegularAsyncLambda af(pos, std::vector<std::string>(), 0, std::move(body));
 
-    af.compile(space)->str();
+    af.compile(*scope)->str();
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -164,10 +156,8 @@ TEST_F(FunctionTest, RegularAsyncFunctionAutoReturn)
                             (pos, UNDEFINED)
                     (SCOPE_END)
                 (CATCH)
-                    (SCOPE_BEGIN)
-                        (EXC_CALLBACK)
-                            (pos, EXCEPTION_OBJ)
-                    (SCOPE_END)
+                    (EXC_CALLBACK)
+                        (pos, EXCEPTION_OBJ)
             (SCOPE_END)
     ;
 }

@@ -2,7 +2,7 @@
 
 #include <semantic/expr-nodes.h>
 #include <semantic/stmt-nodes.h>
-#include <semantic/compiling-space.h>
+#include <semantic/symbol-table.h>
 #include <semantic/function.h>
 #include <test/phony-errors.h>
 #include <test/common.h>
@@ -15,27 +15,21 @@ struct BlockTest
     : SemanticTest
 {
     BlockTest()
-        : _space(nullptr)
+        : _scope(nullptr)
     {}
 
     void SetUp()
     {
         SemanticTest::SetUp();
-        _space = new semantic::CompilingSpace;
-    }
-
-    void TearDown()
-    {
-        delete _space;
-        SemanticTest::TearDown();
+        this->_scope = semantic::Scope::global();
     }
 
     util::sref<semantic::SymbolTable> refSym()
     {
-        return _space->sym();
+        return this->_scope->sym();
     }
 
-    semantic::CompilingSpace* _space;
+    util::sptr<semantic::Scope> _scope;
 };
 
 TEST_F(BlockTest, Block)

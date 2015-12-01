@@ -14,14 +14,14 @@ namespace semantic {
             , section(std::move(sec))
         {}
 
-        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const
+        util::sptr<output::Expression const> compile(util::sref<Scope> scope) const
         {
-            return this->_compile(space, false);
+            return this->_compile(scope, false);
         }
 
-        util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        util::sptr<output::Expression const> compileAsRoot(util::sref<Scope> scope) const
         {
-            return this->_compile(space, true);
+            return this->_compile(scope, true);
         }
 
         bool isAsync() const;
@@ -29,9 +29,9 @@ namespace semantic {
         util::sptr<Expression const> const list;
         Block const section;
     private:
-        util::sptr<output::Expression const> _compile(BaseCompilingSpace& space, bool root) const;
-        util::sptr<output::Expression const> _compileSync(BaseCompilingSpace& space) const;
-        util::sptr<output::Expression const> _compileAsync(BaseCompilingSpace& space, bool root) const;
+        util::sptr<output::Expression const> _compile(util::sref<Scope> scope, bool root) const;
+        util::sptr<output::Expression const> _compileSync(util::sref<Scope> scope, bool root) const;
+        util::sptr<output::Expression const> _compileAsync(util::sref<Scope> scope, bool root) const;
     public:
         static util::sptr<Expression const> createMapper(misc::position const& pos
                                                        , util::sptr<Expression const> ls
@@ -48,7 +48,7 @@ namespace semantic {
             : Expression(pos)
         {}
 
-        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
     };
@@ -60,7 +60,7 @@ namespace semantic {
             : Expression(pos)
         {}
 
-        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
     };
@@ -72,7 +72,7 @@ namespace semantic {
             : Expression(pos)
         {}
 
-        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
     };
@@ -84,7 +84,7 @@ namespace semantic {
             : Expression(pos)
         {}
 
-        util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const;
+        util::sptr<output::Expression const> compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
     };

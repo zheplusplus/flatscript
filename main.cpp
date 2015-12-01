@@ -7,23 +7,19 @@
 #include <grammar/node-base.h>
 #include <grammar/function.h>
 #include <grammar/class.h>
-#include <semantic/function.h>
-#include <semantic/compiling-space.h>
+#include <semantic/scope.h>
 #include <output/function.h>
 #include <output/class.h>
 #include <output/global.h>
 #include <report/errors.h>
 
 #include "env.h"
-#include "globals.h"
 
 static util::sptr<output::Statement const> compileGlobal(semantic::Block flow)
 {
-    semantic::CompilingSpace space;
-    space.sym()->addExternNames(misc::position(0), std::vector<std::string>(
-            flats::Globals::g.external_syms.begin(), flats::Globals::g.external_syms.end()));
-    flow.compile(space);
-    return space.deliver();
+    util::sptr<semantic::Scope> global_scope(semantic::Scope::global());
+    flow.compile(*global_scope);
+    return global_scope->deliver();
 }
 
 static int compile()

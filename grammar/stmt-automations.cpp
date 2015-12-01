@@ -319,9 +319,9 @@ CtorAutomation::CtorAutomation(misc::position const& pos)
 {
     this->_actions[OPEN_PAREN] = [this](AutomationStack& stack, TypedToken const&)
                                  {
-                                     this->_actions[OPEN_PAREN] = AutomationBase::discardToken;
                                      stack.push(util::mkptr(new ExprListAutomation));
                                      this->_list_accepted = CtorAutomation::_acceptParams;
+                                     this->_actions[OPEN_PAREN] = AutomationBase::discardToken;
                                  };
 }
 

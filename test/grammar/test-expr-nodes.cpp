@@ -18,7 +18,7 @@ TEST_F(ExprNodesTest, Pipeline)
               , util::mkptr(new grammar::Identifier(pos, "x20130109"))
               , "|:"
               , util::mkptr(new grammar::PipeElement(pos))));
-    p->reduceAsExpr()->compile(nulSpace());
+    p->reduceAsExpr()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

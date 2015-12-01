@@ -31,6 +31,7 @@
 %token OPERATOR PIPE_SEP
 %token BOOL_TRUE BOOL_FALSE
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
+%token REGEXP
 %token IDENT
 %token PIPE_ELEMENT PIPE_INDEX PIPE_KEY PIPE_RESULT EXCEPTION_OBJ REGULAR_ASYNC_PARAM
 %token KW_CLASS KW_THIS KW_SUPER KW_CONSTRUCTOR
@@ -227,7 +228,7 @@ token:
     {
         std::string image(util::comprehend(yytext, 1, -1));
         $$ = new grammar::FactorToken(grammar::here(), util::mkptr(
-                                    new grammar::StringLiteral(grammar::here(), image)), image);
+                                    new grammar::StringLiteral(grammar::here(), image)), yytext);
         grammar::lineno += std::count(yytext + 1, yytext + strlen(yytext) - 1, '\n');
     }
     |
@@ -235,8 +236,20 @@ token:
     {
         std::string image(util::comprehend(yytext, 3, -3));
         $$ = new grammar::FactorToken(grammar::here(), util::mkptr(
-                                    new grammar::StringLiteral(grammar::here(), image)), image);
+                                    new grammar::StringLiteral(grammar::here(), image)), yytext);
         grammar::lineno += std::count(yytext + 3, yytext + strlen(yytext) - 3, '\n');
+    }
+    |
+    REGEXP
+    {
+        $$ = new grammar::FactorToken(grammar::here(), grammar::makeRegEx(
+                                            grammar::here(), yytext), yytext);
+        auto breaks = std::count(yytext + 1, yytext + strlen(yytext) - 1, '\n');
+        if (breaks != 0) {
+            error::invalidRegExp(grammar::here(), "line break in regexp;"
+                                                  " add a space after / if you want a div op");
+        }
+        grammar::lineno += breaks;
     }
     |
     ident

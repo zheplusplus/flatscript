@@ -27,7 +27,7 @@ TEST_F(ClauseTest, FuncClause)
                       pos, "SonOfKorhal", util::mkptr(new grammar::IntLiteral(pos, "20110116")))));
 
     func_acc0.deliver();
-    receiver.compile().compile(nulSpace());
+    receiver.compile().compile(nulScope());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -89,7 +89,7 @@ TEST_F(ClauseTest, FuncAccNested)
 
     func_acc1.deliver();
     func_acc0.deliver();
-    receiver.compile().compile(nulSpace());
+    receiver.compile().compile(nulScope());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)

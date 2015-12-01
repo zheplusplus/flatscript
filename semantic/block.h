@@ -22,10 +22,15 @@ namespace semantic {
             , _funcs(std::move(rhs._funcs))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
         bool isAsync() const;
         void checkNoAsync(misc::position const& check_pos) const;
         void append(Block following);
+        void compile(util::sref<Scope> scope) const;
+
+        void compile(Scope& scope) const
+        {
+            this->compile(util::mkref(scope));
+        }
 
         void addStmt(util::sptr<Statement const> stmt)
         {

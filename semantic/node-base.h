@@ -17,7 +17,7 @@ namespace semantic {
         misc::position const pos;
 
         virtual bool isAsync() const = 0;
-        virtual void compile(BaseCompilingSpace& space) const = 0;
+        virtual void compile(util::sref<Scope> scope) const = 0;
 
         virtual ~Statement() {}
 
@@ -32,10 +32,10 @@ namespace semantic {
         misc::position const pos;
 
         virtual bool isAsync() const = 0;
-        virtual util::sptr<output::Expression const> compile(BaseCompilingSpace& space) const = 0;
-        virtual util::sptr<output::Expression const> compileAsRoot(BaseCompilingSpace& space) const
+        virtual util::sptr<output::Expression const> compile(util::sref<Scope> scope) const = 0;
+        virtual util::sptr<output::Expression const> compileAsRoot(util::sref<Scope> scope) const
         {
-            return compile(space);
+            return compile(scope);
         }
 
         virtual bool isLiteral(util::sref<SymbolTable const>) const { return false; }

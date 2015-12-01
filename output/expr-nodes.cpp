@@ -36,6 +36,12 @@ static std::string strPrimitive(T const& t)
     return util::str(t);
 }
 
+template <typename T>
+static std::string strPrimitive(T const& t, bool)
+{
+    return '(' + strPrimitive(t) + ')';
+}
+
 std::string BoolLiteral::str() const
 {
     return strPrimitive(value);
@@ -43,17 +49,22 @@ std::string BoolLiteral::str() const
 
 std::string IntLiteral::str() const
 {
-    return strPrimitive(value);
+    return strPrimitive(value, true);
 }
 
 std::string FloatLiteral::str() const
 {
-    return strPrimitive(value);
+    return strPrimitive(value, true);
 }
 
 std::string StringLiteral::str() const
 {
     return util::cstr_repr(value.c_str(), value.size());
+}
+
+std::string RegEx::str() const
+{
+    return this->value;
 }
 
 static std::vector<std::string> strList(util::ptrarr<Expression const> const& list)

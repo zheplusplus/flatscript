@@ -89,10 +89,6 @@ throw {
     return KW_THROW;
 }
 
-raise {
-    return KW_RESERVED;
-}
-
 catch {
     return KW_CATCH;
 }
@@ -149,16 +145,6 @@ delete {
     return KW_RESERVED;
 }
 
-[A-Z] {
-    error::reservedWord(grammar::here(), yytext);
-    return IDENT;
-}
-
-[_]+ {
-    error::reservedWord(grammar::here(), yytext);
-    return IDENT;
-}
-
 [0-9][0-9_]* {
     return INT_LITERAL;
 }
@@ -189,6 +175,10 @@ delete {
 
 \'\'\'((\\.|[^\\'])|\'[^\']|\'\'[^\'])*\'\'\' {
     return TRIPLE_QUOTED_STRING_LITERAL;
+}
+
+[/][^ \n](\\.|[^\\/])*[/][a-zA-Z]* {
+    return REGEXP;
 }
 
 [+][+] {

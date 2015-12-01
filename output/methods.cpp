@@ -1,5 +1,5 @@
 #include <functional>
-#include <util/pointer.h>
+#include <util/string.h>
 
 #include "methods.h"
 #include "name-mangler.h"
@@ -92,5 +92,23 @@ Method method::asyncRet()
         [](std::string const& r)
         {
             return "return " + TERM_REGULAR_ASYNC_CALLBACK + "(null," + r + ");";
+        }, false);
+}
+
+Method method::syncPipeRet(util::id pipe_id)
+{
+    return make_method(
+        [=](std::string const& r)
+        {
+            return
+                util::replace_all(
+                util::replace_all(
+                    "{"
+                        "$retf#PIPE_ID = true;"
+                        "return $ret#PIPE_ID = #RESULT;"
+                    "}"
+                        , "#RESULT", r)
+                        , "#PIPE_ID", pipe_id.str())
+                ;
         }, false);
 }

@@ -4,7 +4,7 @@
 #include "function.h"
 #include "stmt-nodes.h"
 #include "expr-nodes.h"
-#include "compiling-space.h"
+#include "scope-impl.h"
 
 using namespace semantic;
 
@@ -37,33 +37,32 @@ util::sptr<output::Constructor const> Constructor::compile(
         error::noSuperClass(this->pos);
     }
 
-    CompilingSpace ctor_space(pos, st, this->param_names);
+    SyncFunctionScope ctor_scope(pos, st, this->param_names, false);
     if (has_base_class) {
-        ctor_space.referenceThis();
+        ctor_scope.referenceThis(this->pos);
     }
     if (this->super_init.not_nul()) {
-        this->super_init->compile(ctor_space);
+        this->super_init->compile(util::mkref(ctor_scope));
     }
-    ctor_space.allowSuper(has_base_class);
-    this->body.compile(ctor_space);
-    return util::mkptr(new output::Constructor(this->param_names, ctor_space.deliver()));
+    ctor_scope.allowSuper(has_base_class);
+    this->body.compile(util::mkref(ctor_scope));
+    return util::mkptr(new output::Constructor(this->param_names, ctor_scope.deliver()));
 }
 
-void Class::compile(BaseCompilingSpace& space) const
+void Class::compile(util::sref<Scope> scope) const
 {
-    util::sref<SymbolTable> st(space.sym());
     util::sptr<output::Constructor const> ct(nullptr);
     if (this->ctor_or_nul.not_nul()) {
-        ct = this->ctor_or_nul->compile(st, this->hasBaseClass());
+        ct = this->ctor_or_nul->compile(scope->sym(), this->hasBaseClass());
     } else if (this->hasBaseClass()) {
         error::contructorNotCallSuper(this->pos);
     }
 
     util::sptr<output::Expression const> base_class(
             this->hasBaseClass()
-          ? this->base_class->compile(space)
+          ? this->base_class->compile(scope)
           : util::sptr<output::Expression const>(nullptr));
-    st->defName(this->pos, this->name);
+    scope->sym()->defName(this->pos, this->name);
 
     util::sptr<output::Block const> class_body(new output::Block);
     std::map<std::string, misc::position> memfn_defs_pos;
@@ -75,8 +74,8 @@ void Class::compile(BaseCompilingSpace& space) const
                 return error::duplicateMemFunc(memfn_defs_pos[func->name], func->pos, func->name);
             }
             memfn_defs_pos.insert(std::make_pair(func->name, func->pos));
-            memfuncs.insert(std::make_pair(func->name, func->compileToLambda(st, true)));
+            memfuncs.insert(std::make_pair(func->name, func->compileToLambda(scope->sym(), true)));
         });
-    space.addStmt(this->pos, util::mkptr(new output::Class(
+    scope->addStmt(this->pos, util::mkptr(new output::Class(
             this->name, std::move(base_class), std::move(memfuncs), std::move(ct))));
 }

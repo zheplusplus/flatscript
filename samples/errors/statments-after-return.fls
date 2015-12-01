@@ -1,8 +1,7 @@
 func write(x)
-    0
+    if x = 10
+        return
+        write(x)
+    console.log(x = 10)
 
-x: 10
-if x = 10
-    return
-    write(x)
-write(x = 10)
+write(10)

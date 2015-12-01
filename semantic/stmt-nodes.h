@@ -18,7 +18,7 @@ namespace semantic {
             , expr(std::move(e))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         util::sptr<Expression const> const expr;
@@ -34,7 +34,7 @@ namespace semantic {
             , alternative(std::move(a))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         util::sptr<Expression const> const predicate;
@@ -50,7 +50,7 @@ namespace semantic {
             , ret_val(std::move(retval))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         util::sptr<Expression const> const ret_val;
@@ -65,7 +65,7 @@ namespace semantic {
             , init(std::move(i))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         std::string const name;
@@ -80,7 +80,7 @@ namespace semantic {
             , names(n)
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
 
@@ -98,7 +98,7 @@ namespace semantic {
                 , value(std::move(v))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         std::vector<std::string> const export_point;
@@ -116,7 +116,7 @@ namespace semantic {
             , value(std::move(v))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         util::sptr<Expression const> const set_point;
@@ -132,7 +132,7 @@ namespace semantic {
             , catch_block(std::move(c))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         Block const try_block;
@@ -147,7 +147,7 @@ namespace semantic {
             , exception(std::move(e))
         {}
 
-        void compile(BaseCompilingSpace& space) const;
+        void compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
 

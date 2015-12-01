@@ -121,6 +121,14 @@ std::cerr << "    unexpected " << image << std::endl;
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'image')),
 
 ReportFunc(
+'invalidRegExp',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    invalid regular expression: " << message << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'message')),
+
+ReportFunc(
 'emptyLookupKey',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
@@ -347,6 +355,22 @@ std::cerr << "    external names declaration only in global space" << std::endl;
 , Param(POS_TYPE, 'pos')),
 
 ReportFunc(
+'returnInGlobal',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    `return' is invalid in global scope" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'referenceThisInGlobal',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    reference to `this' is invalid in global scope" << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'nameAlreadyInLocal',
 lineno() + '''
 std::cerr << this_def_pos.str() << std::endl;
@@ -398,10 +422,10 @@ std::cerr << "    no available prefix unary operation " << op_img << " for type 
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'op_img'), Param(STR_TYPE, 'rhst_name')),
 
 ReportFunc(
-'returnNotAllowedInPipe',
+'returnNotAllowedInExprPipe',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    return statement not allowed in pipeline." << std::endl;
+std::cerr << "    `return' statement not allowed in non-root pipeline expression." << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 

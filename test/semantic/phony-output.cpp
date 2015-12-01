@@ -5,6 +5,7 @@
 #include <output/expr-nodes.h>
 #include <output/list-pipe.h>
 #include <output/function.h>
+#include <output/class.h>
 #include <output/methods.h>
 #include <output/name-mangler.h>
 #include <util/string.h>
@@ -208,6 +209,12 @@ std::string FloatLiteral::str() const
 std::string StringLiteral::str() const
 {
     DataTree::actualOne()(pos, STRING, value);
+    return "";
+}
+
+std::string RegEx::str() const
+{
+    DataTree::actualOne()(pos, REGEXP, value);
     return "";
 }
 
@@ -440,6 +447,14 @@ std::string SyncPipeline::str() const
     return "";
 }
 
+std::string RootSyncPipeline::str() const
+{
+    DataTree::actualOne()(pos, ROOT_SYNC_PIPELINE);
+    list->str();
+    section->write(dummyos());
+    return "";
+}
+
 struct MethodImpl
     : output::method::_Method
 {
@@ -491,6 +506,11 @@ Method method::ret()
 Method method::asyncRet()
 {
     return make_method(REGULAR_ASYNC_RETURN);
+}
+
+Method method::syncPipeRet(util::id)
+{
+    return make_method(SYNC_PIPELINE_RETURN);
 }
 
 int Block::count() const { return 0; }

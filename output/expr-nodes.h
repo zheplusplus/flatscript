@@ -83,6 +83,19 @@ namespace output {
         std::string const value;
     };
 
+    struct RegEx
+        : PrimeFactor
+    {
+        RegEx(misc::position const& pos, std::string v)
+            : PrimeFactor(pos)
+            , value(std::move(v))
+        {}
+
+        std::string str() const;
+
+        std::string const value;
+    };
+
     struct ListLiteral
         : Expression
     {

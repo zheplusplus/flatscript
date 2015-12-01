@@ -239,6 +239,7 @@ util::sptr<semantic::Expression const> SuperFunc::reduceAsExpr() const
 
 util::sptr<semantic::Expression const> Pipeline::reduceAsExpr() const
 {
+    flats::Globals::g.use_list_pipe = true;
     if ("|:" == op_img) {
         return semantic::Pipeline::createMapper(pos, lhs->reduceAsExpr(), rhs->reduceAsExpr());
     }
@@ -274,4 +275,59 @@ util::sptr<semantic::Expression const> RegularAsyncParam::reduceAsArg(
 {
     env.setRegularAsync(pos, index);
     return util::sptr<semantic::Expression const>(nullptr);
+}
+
+#include <iostream>
+namespace {
+
+    struct RegEx
+        : Expression
+    {
+        RegEx(misc::position const& pos, std::string p, std::string m)
+            : Expression(pos)
+            , pattern(std::move(p))
+            , modifiers(std::move(m))
+        {}
+
+        util::sptr<semantic::Expression const> reduceAsExpr() const
+        {
+            return util::mkptr(new semantic::RegEx(
+                        this->pos, '/' + this->pattern + '/' + this->modifiers));
+        }
+
+        std::string const pattern;
+        std::string const modifiers;
+
+        static std::set<char> const ALLOWED_MODIFIERS;
+    };
+    std::set<char> const RegEx::ALLOWED_MODIFIERS({'i', 'm', 'g'});
+
+    void checkValidReMod(misc::position const& p, std::string const& v)
+    {
+        std::map<char, bool> flags;
+        for (char ch: v) {
+            if (RegEx::ALLOWED_MODIFIERS.find(ch) == RegEx::ALLOWED_MODIFIERS.end()) {
+                error::invalidRegExp(p, std::string("unknown flag ") + ch + " in " + v);
+                return;
+            }
+            if (flags[ch]) {
+                error::invalidRegExp(p, std::string("duplicated flag ") + ch + " in " + v);
+            }
+            flags[ch] = true;
+        }
+    }
+
+}
+
+util::sptr<Expression const> grammar::makeRegEx(misc::position const& pos, std::string v)
+{
+    if (v.back() == '/') {
+        std::string pat(v.substr(1, v.size() - 2));
+        return util::mkptr(new RegEx(pos, std::move(pat), ""));
+    }
+    auto last_slash = v.rfind('/');
+    std::string pat(v.substr(1, last_slash - 1));
+    std::string mod(v.substr(last_slash + 1));
+    ::checkValidReMod(pos, mod);
+    return util::mkptr(new RegEx(pos, std::move(pat), std::move(mod)));
 }

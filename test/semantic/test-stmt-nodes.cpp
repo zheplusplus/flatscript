@@ -2,7 +2,8 @@
 
 #include <semantic/stmt-nodes.h>
 #include <semantic/expr-nodes.h>
-#include <semantic/compiling-space.h>
+#include <semantic/symbol-table.h>
+#include <semantic/scope-impl.h>
 #include <util/string.h>
 #include <output/node-base.h>
 #include <test/phony-errors.h>
@@ -14,18 +15,18 @@ using namespace test;
 
 typedef SemanticTest StmtNodesTest;
 
-TEST_F(StmtNodesTest, AsyncSpaceInBranchWithConstantPredicate)
+TEST_F(StmtNodesTest, AsyncScopeInBranchWithConstantPredicate)
 {
     misc::position pos(1);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     semantic::Block consq_block;
     semantic::Block alter_block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "x");
-    space.sym()->defName(pos, "read");
+    scope->sym()->defName(pos, "x");
+    scope->sym()->defName(pos, "read");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "f20130123")));
     consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
@@ -49,7 +50,7 @@ TEST_F(StmtNodesTest, AsyncSpaceInBranchWithConstantPredicate)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                             new semantic::FloatLiteral(pos, "11.04")))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -72,14 +73,14 @@ TEST_F(StmtNodesTest, AsyncSpaceInBranchWithConstantPredicate)
 TEST_F(StmtNodesTest, ReferenceThisInBranch)
 {
     misc::position pos(2);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
     semantic::Block consq_block;
     semantic::Block alter_block;
 
-    space.sym()->defName(pos, "houjou");
-    space.sym()->defName(pos, "ryuuguu");
+    scope->sym()->defName(pos, "houjou");
+    scope->sym()->defName(pos, "ryuuguu");
 
     consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
@@ -96,7 +97,7 @@ TEST_F(StmtNodesTest, ReferenceThisInBranch)
                    , std::move(consq_block)
                    , std::move(alter_block))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -122,13 +123,13 @@ TEST_F(StmtNodesTest, ReferenceThisInBranch)
 TEST_F(StmtNodesTest, ReferenceThisInBranchWithConstantPredicate)
 {
     misc::position pos(3);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
     semantic::Block consq_block;
     semantic::Block alter_block;
 
-    space.sym()->defName(pos, "rena");
+    scope->sym()->defName(pos, "rena");
 
     consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
@@ -145,7 +146,7 @@ TEST_F(StmtNodesTest, ReferenceThisInBranchWithConstantPredicate)
                    , std::move(consq_block)
                    , std::move(alter_block))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -162,13 +163,13 @@ TEST_F(StmtNodesTest, ReferenceThisInBranchWithConstantPredicate)
 TEST_F(StmtNodesTest, ReferenceThisInLambda)
 {
     misc::position pos(4);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
     semantic::Block lambda_block;
 
-    space.sym()->defName(pos, "satoko");
-    space.sym()->defName(pos, "satosi");
+    scope->sym()->defName(pos, "satoko");
+    scope->sym()->defName(pos, "satosi");
 
     lambda_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
@@ -178,7 +179,7 @@ TEST_F(StmtNodesTest, ReferenceThisInLambda)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lambda(pos, std::vector<std::string>(), std::move(lambda_block))))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -199,13 +200,13 @@ TEST_F(StmtNodesTest, ReferenceThisInLambda)
 TEST_F(StmtNodesTest, ReferenceThisInHostFunction)
 {
     misc::position pos(5);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
     semantic::Block lambda_block;
 
-    space.sym()->defName(pos, "furukawa");
-    space.sym()->defName(pos, "okasaki");
+    scope->sym()->defName(pos, "furukawa");
+    scope->sym()->defName(pos, "okasaki");
 
     lambda_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
@@ -219,7 +220,7 @@ TEST_F(StmtNodesTest, ReferenceThisInHostFunction)
                                    , util::mkptr(new semantic::This(pos))
                                    , util::mkptr(new semantic::Reference(pos, "okasaki")))))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -241,14 +242,14 @@ TEST_F(StmtNodesTest, ReferenceThisInHostFunction)
     ;
 }
 
-TEST_F(StmtNodesTest, ReferenceThisInAsyncSpace)
+TEST_F(StmtNodesTest, ReferenceThisInAsyncScope)
 {
     misc::position pos(6);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
-    space.sym()->defName(pos, "tomoya");
-    space.sym()->defName(pos, "nagisa");
+    scope->sym()->defName(pos, "tomoya");
+    scope->sym()->defName(pos, "nagisa");
 
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
@@ -261,7 +262,7 @@ TEST_F(StmtNodesTest, ReferenceThisInAsyncSpace)
                                    , util::mkptr(new semantic::This(pos))
                                    , util::mkptr(new semantic::Reference(pos, "tomoya")))))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -287,7 +288,7 @@ TEST_F(StmtNodesTest, StatementsAfterReturn)
     misc::position pos(7);
     misc::position pos_a(700);
     misc::position pos_b(701);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
     block.addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
@@ -297,7 +298,7 @@ TEST_F(StmtNodesTest, StatementsAfterReturn)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos_b, util::mkptr(
                                         new semantic::IntLiteral(pos, 923)))));
 
-    block.compile(space);
+    block.compile(*scope);
     ASSERT_TRUE(error::hasError());
 
     ASSERT_EQ(1, getFlowTerminatedRecs().size());
@@ -311,9 +312,9 @@ TEST_F(StmtNodesTest, StatementsAfterBothBranchesReturned)
     misc::position pos_a(800);
     misc::position pos_b(801);
     misc::position pos_c(802);
-    semantic::CompilingSpace space;
-    space.sym()->defName(pos, "mion");
-    space.sym()->defName(pos, "sion");
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
+    scope->sym()->defName(pos, "mion");
+    scope->sym()->defName(pos, "sion");
     semantic::Block block;
     semantic::Block consq_block;
     semantic::Block alter_block;
@@ -330,7 +331,7 @@ TEST_F(StmtNodesTest, StatementsAfterBothBranchesReturned)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos_c, util::mkptr(
                                         new semantic::BoolLiteral(pos, false)))));
 
-    block.compile(space);
+    block.compile(*scope);
     ASSERT_TRUE(error::hasError());
 
     ASSERT_EQ(1, getFlowTerminatedRecs().size());
@@ -341,8 +342,10 @@ TEST_F(StmtNodesTest, StatementsAfterBothBranchesReturned)
 TEST_F(StmtNodesTest, StatementsAfterFoldedBranchReturned)
 {
     misc::position pos(9);
-    semantic::CompilingSpace space;
-    space.sym()->defName(pos, "sonozaki");
+    semantic::GlobalSymbolTable sym;
+    util::sptr<semantic::Scope> scope(
+            new semantic::SyncFunctionScope(pos, util::mkref(sym), {}, false));
+    scope->sym()->defName(pos, "sonozaki");
     semantic::Block block;
     semantic::Block consq_block;
     semantic::Block alter_block;
@@ -360,6 +363,6 @@ TEST_F(StmtNodesTest, StatementsAfterFoldedBranchReturned)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                         new semantic::BoolLiteral(pos, false)))));
 
-    block.compile(space);
+    block.compile(*scope);
     ASSERT_FALSE(error::hasError());
 }

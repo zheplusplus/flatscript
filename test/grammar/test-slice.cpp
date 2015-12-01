@@ -10,7 +10,7 @@ using namespace test;
 TEST(Syntax, LookupAndSlice)
 {
     grammar::parse();
-    grammar::builder.buildAndClear().compile(nulSpace());
+    grammar::builder.buildAndClear().compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

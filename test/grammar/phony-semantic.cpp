@@ -36,7 +36,7 @@ Constructor::Constructor(misc::position const& ps, std::vector<std::string> para
     , body(std::move(b))
 {}
 
-void Class::compile(BaseCompilingSpace&) const {}
+void Class::compile(util::sref<Scope>) const {}
 
 util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bool) const
 {
@@ -47,7 +47,7 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bo
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body.compile(nulSpace());
+    body.compile(nulScope());
     return util::sptr<output::Function const>(nullptr);
 }
 
@@ -58,7 +58,7 @@ util::sptr<output::Function const> RegularAsyncFunction::compile(
     return Function::compile(nulSymbols(), false);
 }
 
-void Block::compile(BaseCompilingSpace&) const
+void Block::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(BLOCK_BEGIN);
     _funcs.iter([&](util::sptr<Function const> const& func, int)
@@ -67,34 +67,34 @@ void Block::compile(BaseCompilingSpace&) const
                 });
     _stmts.iter([&](util::sptr<Statement const> const& stmt, int)
                 {
-                    stmt->compile(nulSpace());
+                    stmt->compile(nulScope());
                 });
     DataTree::actualOne()(BLOCK_END);
 }
 
-void Arithmetics::compile(BaseCompilingSpace&) const
+void Arithmetics::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, ARITHMETICS);
-    expr->compile(nulSpace());
+    expr->compile(nulScope());
 }
 
-void Branch::compile(BaseCompilingSpace&) const
+void Branch::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, BRANCH);
-    predicate->compile(nulSpace());
+    predicate->compile(nulScope());
     DataTree::actualOne()(CONSEQUENCE);
-    consequence.compile(nulSpace());
+    consequence.compile(nulScope());
     DataTree::actualOne()(ALTERNATIVE);
-    alternative.compile(nulSpace());
+    alternative.compile(nulScope());
 }
 
-void NameDef::compile(BaseCompilingSpace&) const
+void NameDef::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, NAME_DEF, name);
-    init->compile(nulSpace());
+    init->compile(nulScope());
 }
 
-void Export::compile(BaseCompilingSpace&) const
+void Export::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, EXPORT);
     std::for_each(export_point.begin()
@@ -104,10 +104,10 @@ void Export::compile(BaseCompilingSpace&) const
                       DataTree::actualOne()(pos, IDENTIFIER, name);
                   });
     DataTree::actualOne()(pos, EXPORT_VALUE);
-    value->compile(nulSpace());
+    value->compile(nulScope());
 }
 
-void Extern::compile(BaseCompilingSpace&) const
+void Extern::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, EXTERN);
     std::for_each(names.begin()
@@ -118,83 +118,89 @@ void Extern::compile(BaseCompilingSpace&) const
                   });
 }
 
-void AttrSet::compile(BaseCompilingSpace&) const
+void AttrSet::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, ATTR_SET);
-    set_point->compile(nulSpace());
-    value->compile(nulSpace());
+    set_point->compile(nulScope());
+    value->compile(nulScope());
 }
 
-void Return::compile(BaseCompilingSpace&) const
+void Return::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, RETURN);
-    ret_val->compile(nulSpace());
+    ret_val->compile(nulScope());
 }
 
-void ExceptionStall::compile(BaseCompilingSpace&) const
+void ExceptionStall::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, TRY);
-    try_block.compile(nulSpace());
+    try_block.compile(nulScope());
     DataTree::actualOne()(pos, CATCH);
-    catch_block.compile(nulSpace());
+    catch_block.compile(nulScope());
 }
 
-void Throw::compile(BaseCompilingSpace&) const
+void Throw::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, THROW);
-    exception->compile(nulSpace());
+    exception->compile(nulScope());
 }
 
-util::sptr<output::Expression const> PreUnaryOp::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> PreUnaryOp::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, PRE_UNARY_OP, op_img)(pos, OPERAND);
-    rhs->compile(nulSpace());
+    rhs->compile(nulScope());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> BinaryOp::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> BinaryOp::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, BINARY_OP, op_img)(pos, OPERAND);
-    lhs->compile(nulSpace());
+    lhs->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
-    rhs->compile(nulSpace());
+    rhs->compile(nulScope());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> TypeOf::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> TypeOf::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, PRE_UNARY_OP, "[ typeof ]")(pos, OPERAND);
-    expr->compile(nulSpace());
+    expr->compile(nulScope());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Reference::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Reference::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, IDENTIFIER, name);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> BoolLiteral::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> BoolLiteral::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, BOOLEAN, util::str(value));
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> IntLiteral::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> IntLiteral::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, INTEGER, util::str(value));
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> FloatLiteral::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> FloatLiteral::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, FLOATING, util::str(value));
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> StringLiteral::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> StringLiteral::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, STRING, value);
+    return nulOutputExpr();
+}
+
+util::sptr<output::Expression const> RegEx::compile(util::sref<Scope>) const
+{
+    DataTree::actualOne()(pos, REGEXP, value);
     return nulOutputExpr();
 }
 
@@ -202,11 +208,11 @@ static void compileList(util::ptrarr<Expression const> const& values)
 {
     values.iter([&](util::sptr<Expression const> const& v, int)
                 {
-                    v->compile(nulSpace());
+                    v->compile(nulScope());
                 });
 }
 
-util::sptr<output::Expression const> ListLiteral::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> ListLiteral::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, LIST_BEGIN);
     compileList(value);
@@ -214,50 +220,50 @@ util::sptr<output::Expression const> ListLiteral::compile(BaseCompilingSpace&) c
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> PipeElement::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> PipeElement::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, PIPE_ELEMENT);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> PipeIndex::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> PipeIndex::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, PIPE_INDEX);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> PipeKey::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> PipeKey::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, PIPE_KEY);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> PipeResult::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> PipeResult::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, PIPE_RESULT);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListAppend::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> ListAppend::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ ++ ]")(pos, OPERAND);
-    lhs->compile(nulSpace());
+    lhs->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
-    rhs->compile(nulSpace());
+    rhs->compile(nulScope());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Call::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Call::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, CALL_BEGIN);
-    callee->compile(nulSpace());
+    callee->compile(nulScope());
     DataTree::actualOne()(pos, ARGUMENTS);
     compileList(args);
     DataTree::actualOne()(pos, CALL_END);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> SuperConstructorCall::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> SuperConstructorCall::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, CALL_BEGIN, "SUPER");
     DataTree::actualOne()(pos, ARGUMENTS);
@@ -266,55 +272,55 @@ util::sptr<output::Expression const> SuperConstructorCall::compile(BaseCompiling
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> MemberAccess::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> MemberAccess::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ . ]")(pos, OPERAND);
-    referee->compile(nulSpace());
+    referee->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
     DataTree::actualOne()(pos, IDENTIFIER, member);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Lookup::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Lookup::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[]")(pos, OPERAND);
-    collection->compile(nulSpace());
+    collection->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
-    key->compile(nulSpace());
+    key->compile(nulScope());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ListSlice::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> ListSlice::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, LIST_SLICE_BEGIN);
-    list->compile(nulSpace());
-    begin->compile(nulSpace());
-    end->compile(nulSpace());
-    step->compile(nulSpace());
+    list->compile(nulScope());
+    begin->compile(nulScope());
+    end->compile(nulScope());
+    step->compile(nulScope());
     DataTree::actualOne()(pos, LIST_SLICE_END);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Undefined::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Undefined::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, UNDEFINED);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Dictionary::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Dictionary::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, DICT_BEGIN);
     items.iter([&](util::ptrkv<Expression const> const& item, int)
                {
                    DataTree::actualOne()(pos, DICT_ITEM);
-                   item.key->compile(nulSpace());
-                   item.value->compile(nulSpace());
+                   item.key->compile(nulScope());
+                   item.value->compile(nulScope());
                });
     DataTree::actualOne()(pos, DICT_END);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Lambda::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Lambda::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, FUNC_DEF);
     std::for_each(param_names.begin()
@@ -323,33 +329,33 @@ util::sptr<output::Expression const> Lambda::compile(BaseCompilingSpace&) const
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body.compile(nulSpace());
+    body.compile(nulScope());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> RegularAsyncLambda::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> RegularAsyncLambda::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, REGULAR_ASYNC_PARAM_INDEX, async_param_index);
-    return Lambda::compile(nulSpace());
+    return Lambda::compile(nulScope());
 }
 
-util::sptr<output::Expression const> RegularAsyncCall::compile(BaseCompilingSpace& s) const
+util::sptr<output::Expression const> RegularAsyncCall::compile(util::sref<Scope> s) const
 {
     this->_compile(s, false);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> RegularAsyncCall::compileAsRoot(BaseCompilingSpace& s) const
+util::sptr<output::Expression const> RegularAsyncCall::compileAsRoot(util::sref<Scope> s) const
 {
     this->_compile(s, false);
     return nulOutputExpr();
 }
 
-util::id RegularAsyncCall::_compile(BaseCompilingSpace&, bool) const
+util::id RegularAsyncCall::_compile(util::sref<Scope>, bool) const
 {
     DataTree::actualOne()(pos, ASYNC_CALL, former_args.size());
     DataTree::actualOne()(pos, CALL_BEGIN);
-    callee->compile(nulSpace());
+    callee->compile(nulScope());
     DataTree::actualOne()(pos, ARGUMENTS);
     compileList(former_args);
     compileList(latter_args);
@@ -357,11 +363,11 @@ util::id RegularAsyncCall::_compile(BaseCompilingSpace&, bool) const
     return util::id(nullptr);
 }
 
-util::id AsyncCall::_compile(BaseCompilingSpace&, bool) const
+util::id AsyncCall::_compile(util::sref<Scope>, bool) const
 {
     DataTree::actualOne()(pos, ASYNC_CALL);
     DataTree::actualOne()(pos, CALL_BEGIN);
-    callee->compile(nulSpace());
+    callee->compile(nulScope());
     DataTree::actualOne()(pos, ARGUMENTS);
     compileList(former_args);
     DataTree::actualOne()(pos, ASYNC_PLACEHOLDER_BEGIN);
@@ -377,41 +383,41 @@ util::id AsyncCall::_compile(BaseCompilingSpace&, bool) const
     return util::id(nullptr);
 }
 
-util::sptr<output::Expression const> This::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> This::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, THIS);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> SuperFunc::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> SuperFunc::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, SUPER_FUNC, property);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Conditional::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> Conditional::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, CONDITIONAL)(pos, OPERAND);
-    predicate->compile(nulSpace());
+    predicate->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
-    consequence->compile(nulSpace());
+    consequence->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
-    alternative->compile(nulSpace());
+    alternative->compile(nulScope());
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ExceptionObj::compile(BaseCompilingSpace&) const
+util::sptr<output::Expression const> ExceptionObj::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, EXCEPTION_OBJ);
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> Pipeline::_compile(BaseCompilingSpace&, bool) const
+util::sptr<output::Expression const> Pipeline::_compile(util::sref<Scope>, bool) const
 {
     DataTree::actualOne()(pos, BINARY_OP, "[ pipeline ]")(pos, OPERAND);
-    list->compile(nulSpace());
+    list->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
-    section.compile(nulSpace());
+    section.compile(nulScope());
     return nulOutputExpr();
 }
 

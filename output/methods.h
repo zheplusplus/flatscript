@@ -2,6 +2,7 @@
 #define __STEKIN_OUTPUT_METHODS_H__
 
 #include <string>
+#include <util/pointer.h>
 
 #include "node-base.h"
 
@@ -31,6 +32,7 @@ namespace output {
         _MethodPtr asyncCatcher(std::string catcher_func_name);
         _MethodPtr ret();
         _MethodPtr asyncRet();
+        _MethodPtr syncPipeRet(util::id pipe_id);
 
     }
 

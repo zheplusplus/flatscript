@@ -22,6 +22,7 @@ all:code-gen main.d env.d globals.d lib
 install:all
 	@install flsc $(INSTALL_DIR)/flsc || echo "Fail to install to $(INSTALL_DIR)."\
 		"Try specifying installation path manully by passing INSTALL_DIR=directory"
+	echo "Installed to $(INSTALL_DIR)"
 
 uninstall:
 	rm -f $(INSTALL_DIR)/flsc
@@ -34,11 +35,16 @@ lib:
 	make -f util/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f misc/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 
+SAMPLETEST=./flsc -e require -i test/sample-test.fls | node
+
 runtest:all test-lib
 	make -f test/util/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f test/grammar/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
 	make -f test/semantic/Makefile MODE=$(MODE) COMPILER=$(COMPILER)
-	./flsc -e require -i test/sample-test.fls | node
+	$(SAMPLETEST)
+
+sample-test:all
+	$(SAMPLETEST)
 
 test-lib:code-gen
 	mkdir -p libs

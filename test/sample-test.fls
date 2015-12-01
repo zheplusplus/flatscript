@@ -85,17 +85,17 @@ try
         'big-literals', 'basic-list', 'return-list', 'list-pipe', 'lookup',
         'list-slice', 'qsort', 'set-attribute', 'dict', 'lambda', 'ref-this',
         'async-calls', 'set-timeout', 'async-pipes', 'branches', 'async-fib',
-        'branch-with-async-sub', 'deliver-space-with-this-decl', 'try-catch',
-        'async-try-catch', 'throw-in-pipeline', 'name-shadowing', 'nested-subs',
-        'class',
+        'branch-with-async-sub', 'return-in-branch', 'nested-subs', 'try-catch',
+        'deliver-space-with-this-decl', 'async-try-catch', 'throw-in-pipeline',
+        'return-in-pipeline', 'name-shadowing', 'class', 'conditional', 'regex',
     ] |: checkFile($, %%)
     [
         'export', 'class',
     ] |: checkDir($, %%)
     [
-        'inv-chars', 'bad-indent', 'tab-as-ind', 'reserved-words', 'slice',
+        'inv-chars', 'bad-indent', 'tab-as-ind', 'throw-nothing', 'slice',
         'statments-after-return', 'super-ctor-without-base-class',
-        'init-super-with-super', 'throw-nothing', 'constructor-not-in-class',
+        'init-super-with-super', 'constructor-not-in-class',
     ] |: checkError($, %%)
 catch
     console.error($e)

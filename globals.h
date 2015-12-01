@@ -10,6 +10,7 @@ namespace flats {
         Globals()
             : use_class_ext(false)
             , use_list_slice(false)
+            , use_list_pipe(false)
             , use_export(false)
         {}
     public:
@@ -20,6 +21,7 @@ namespace flats {
         std::string input_file;
         bool use_class_ext;
         bool use_list_slice;
+        bool use_list_pipe;
         bool use_export;
     };
 

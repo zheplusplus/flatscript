@@ -1,6 +1,9 @@
 #ifndef __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 #define __STEKIN_SEMANTIC_TEST_TEST_COMMON_H__
 
+#include <semantic/scope.h>
+#include <semantic/node-base.h>
+#include <semantic/block.h>
 #include <semantic/function.h>
 #include <semantic/class.h>
 #include <output/node-base.h>
@@ -69,6 +72,7 @@ namespace test {
     extern NodeType const INTEGER;
     extern NodeType const FLOATING;
     extern NodeType const STRING;
+    extern NodeType const REGEXP;
     extern NodeType const LIST;
     extern NodeType const THIS;
     extern NodeType const SUPER_FUNC;
@@ -92,7 +96,9 @@ namespace test {
 
     extern NodeType const ASYNC_PIPELINE;
     extern NodeType const SYNC_PIPELINE;
+    extern NodeType const ROOT_SYNC_PIPELINE;
     extern NodeType const PIPELINE_CONTINUE;
+    extern NodeType const SYNC_PIPELINE_RETURN;
 
     extern NodeType const LIST_SLICE;
 

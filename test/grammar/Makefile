@@ -3,9 +3,8 @@ TESTDIR=test/grammar
 
 test:sample-tests unittest
 
-sample-tests:unittest \
-             test-ok-empty test-err-tab-as-ind test-err-inv-chars test-err-bad-indent \
-             test-err-slice test-err-reserved-words \
+sample-tests:unittest test-ok-empty \
+             test-err-tab-as-ind test-err-inv-chars test-err-bad-indent test-err-slice \
              test-ok-callable test-ok-slice test-ok-break test-ok-multi-level-lambdas \
              test-ok-block-pipe test-ok-mix
 
@@ -19,6 +18,7 @@ TEST_OBJ=$(WORKDIR)/*.o $(TESTDIR)/phony-semantic.o $(TESTDIR)/test-common.o
 
 $(TESTDIR)/test-grammar.out:$(TEST_DEP) \
                             test-expr-nodes.dt \
+                            test-regexp.dt \
                             test-stmt-nodes.dt \
                             test-clause.dt \
                             test-expr-automations.dt \
@@ -28,6 +28,7 @@ $(TESTDIR)/test-grammar.out:$(TEST_DEP) \
                             test-pipeline.dt
 	$(LINK) $(TEST_OBJ) \
 	        $(TESTDIR)/test-expr-nodes.o \
+	        $(TESTDIR)/test-regexp.o \
 	        $(TESTDIR)/test-stmt-nodes.o \
 	        $(TESTDIR)/test-clause.o \
 	        $(TESTDIR)/test-expr-automations.o \

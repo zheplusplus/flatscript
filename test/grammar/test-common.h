@@ -5,7 +5,7 @@
 #include <grammar/function.h>
 #include <grammar/clauses.h>
 #include <semantic/function.h>
-#include <semantic/compiling-space.h>
+#include <semantic/scope.h>
 #include <output/node-base.h>
 #include <output/function.h>
 #include <misc/pos-type.h>
@@ -17,7 +17,7 @@ namespace test {
     extern std::map<std::string, grammar::TokenType> const IMAGE_TYPE_MAP;
 
     util::sref<semantic::SymbolTable> nulSymbols();
-    semantic::CompilingSpace& nulSpace();
+    util::sref<semantic::Scope> nulScope();
 
     struct TestClause
         : grammar::ClauseBase
@@ -82,6 +82,7 @@ namespace test {
     extern NodeType const INTEGER;
     extern NodeType const FLOATING;
     extern NodeType const STRING;
+    extern NodeType const REGEXP;
     extern NodeType const IDENTIFIER;
     extern NodeType const THIS;
     extern NodeType const SUPER_FUNC;

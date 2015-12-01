@@ -386,6 +386,8 @@ namespace grammar {
         util::sptr<semantic::Expression const> reduceAsArg(ArgReducingEnv& env, int index) const;
     };
 
+    util::sptr<Expression const> makeRegEx(misc::position const& pos, std::string v);
+
 }
 
 #endif /* __STEKIN_GRAMMAR_EXPRESSION_NODES_H__ */

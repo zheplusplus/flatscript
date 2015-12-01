@@ -7,19 +7,18 @@
 
 #include "stmt-nodes.h"
 #include "function.h"
-#include "class.h"
-#include "compiling-space.h"
+#include "scope-impl.h"
 #include "common.h"
 
 using namespace semantic;
 
-void Arithmetics::compile(BaseCompilingSpace& space) const
+void Arithmetics::compile(util::sref<Scope> scope) const
 {
-    util::sptr<output::Expression const> cexpr(expr->compileAsRoot(space));
+    util::sptr<output::Expression const> cexpr(expr->compileAsRoot(scope));
     if (cexpr.nul()) {
-        return space.checkNotTerminated(this->pos);
+        return scope->checkNotTerminated(this->pos);
     }
-    space.addStmt(pos, makeArith(std::move(cexpr)));
+    scope->addStmt(pos, makeArith(std::move(cexpr)));
 }
 
 bool Arithmetics::isAsync() const
@@ -27,39 +26,39 @@ bool Arithmetics::isAsync() const
     return expr->isAsync();
 }
 
-void Branch::compile(BaseCompilingSpace& space) const
+void Branch::compile(util::sref<Scope> scope) const
 {
-    if (predicate->isLiteral(space.sym())) {
-        Block const& block(predicate->boolValue(space.sym()) ? consequence : alternative);
-        BranchCompilingSpace sub_space(space);
-        block.compile(sub_space);
-        return space.addStmt(pos, sub_space.deliver());
+    if (predicate->isLiteral(scope->sym())) {
+        Block const& block(predicate->boolValue(scope->sym()) ? consequence : alternative);
+        BranchingSubScope sub_scope(scope);
+        block.compile(sub_scope);
+        return scope->addStmt(pos, sub_scope.deliver());
     }
-    util::sptr<output::Expression const> compiled_pred(predicate->compile(space));
-    BranchCompilingSpace consq_space(space);
-    consequence.compile(consq_space);
-    BranchCompilingSpace alter_space(space);
-    alternative.compile(alter_space);
+    util::sptr<output::Expression const> compiled_pred(predicate->compile(scope));
+    BranchingSubScope consq_scope(scope);
+    consequence.compile(consq_scope);
+    BranchingSubScope alter_scope(scope);
+    alternative.compile(alter_scope);
 
-    space.addStmt(pos, util::mkptr(new output::Branch(
-                        std::move(compiled_pred), consq_space.deliver(), alter_space.deliver())));
-    if (consq_space.terminated() && alter_space.terminated()) {
-        return space.terminate(pos);
+    scope->addStmt(pos, util::mkptr(new output::Branch(
+                        std::move(compiled_pred), consq_scope.deliver(), alter_scope.deliver())));
+    if (consq_scope.terminated() && alter_scope.terminated()) {
+        return scope->terminate(pos);
     }
 
     if (consequence.isAsync() || alternative.isAsync()) {
         util::sptr<output::NoParamCallback> succession(new output::NoParamCallback);
-        if (!consq_space.terminated()) {
-            consq_space.addStmt(pos, makeArith(succession->callMe(
+        if (!consq_scope.terminated()) {
+            consq_scope.addStmt(pos, makeArith(succession->callMe(
                         pos, util::ptrarr<output::Expression const>())));
         }
-        if (!alter_space.terminated()) {
-            alter_space.addStmt(pos, makeArith(succession->callMe(
+        if (!alter_scope.terminated()) {
+            alter_scope.addStmt(pos, makeArith(succession->callMe(
                         pos, util::ptrarr<output::Expression const>())));
         }
         util::sref<output::Block> sf(succession->bodyFlow());
-        space.block()->addFunc(std::move(succession));
-        space.setAsyncSpace(pos, std::vector<std::string>(), sf);
+        scope->block()->addFunc(std::move(succession));
+        scope->setAsyncSpace(pos, std::vector<std::string>(), sf);
     }
 }
 
@@ -68,15 +67,15 @@ bool Branch::isAsync() const
     return predicate->isAsync() || consequence.isAsync() || alternative.isAsync();
 }
 
-void NameDef::compile(BaseCompilingSpace& space) const
+void NameDef::compile(util::sref<Scope> scope) const
 {
-    util::sptr<output::Expression const> init_value(init->compile(space));
-    if (init->isLiteral(space.sym())) {
-        return space.sym()->defConst(pos, name, *init);
+    util::sptr<output::Expression const> init_value(init->compile(scope));
+    if (init->isLiteral(scope->sym())) {
+        return scope->sym()->defConst(pos, name, *init);
     }
-    space.sym()->defName(pos, name);
-    space.addStmt(pos, makeArith(util::mkptr(
-        new output::Assignment(pos, space.makeReference(pos, name), std::move(init_value)))));
+    scope->sym()->defName(pos, name);
+    scope->addStmt(pos, makeArith(util::mkptr(
+        new output::Assignment(pos, scope->sym()->compileRef(pos, name), std::move(init_value)))));
 }
 
 bool NameDef::isAsync() const
@@ -84,11 +83,11 @@ bool NameDef::isAsync() const
     return init->isAsync();
 }
 
-void Return::compile(BaseCompilingSpace& space) const
+void Return::compile(util::sref<Scope> scope) const
 {
-    util::sptr<output::Expression const> r(ret_val->compile(space));
-    space.addStmt(pos, util::mkptr(new output::ExprScheme(space.retMethod(pos), std::move(r))));
-    space.terminate(pos);
+    util::sptr<output::Expression const> r(ret_val->compile(scope));
+    scope->addStmt(pos, util::mkptr(new output::ExprScheme(scope->retMethod(pos), std::move(r))));
+    scope->terminate(pos);
 }
 
 bool Return::isAsync() const
@@ -96,15 +95,15 @@ bool Return::isAsync() const
     return ret_val->isAsync();
 }
 
-void Extern::compile(BaseCompilingSpace& space) const
+void Extern::compile(util::sref<Scope> scope) const
 {
-    space.sym()->addExternNames(pos, names);
+    scope->sym()->addExternNames(pos, names);
 }
 
-void Export::compile(BaseCompilingSpace& space) const
+void Export::compile(util::sref<Scope> scope) const
 {
-    util::sptr<output::Expression const> cval(value->compile(space));
-    space.addStmt(pos, util::mkptr(new output::Export(export_point, std::move(cval))));
+    util::sptr<output::Expression const> cval(value->compile(scope));
+    scope->addStmt(pos, util::mkptr(new output::Export(export_point, std::move(cval))));
 }
 
 bool Export::isAsync() const
@@ -112,11 +111,11 @@ bool Export::isAsync() const
     return value->isAsync();
 }
 
-void AttrSet::compile(BaseCompilingSpace& space) const
+void AttrSet::compile(util::sref<Scope> scope) const
 {
-    util::sptr<output::Expression const> csp(set_point->compile(space));
-    util::sptr<output::Expression const> cval(value->compile(space));
-    space.addStmt(pos, makeArith(util::mkptr(
+    util::sptr<output::Expression const> csp(set_point->compile(scope));
+    util::sptr<output::Expression const> cval(value->compile(scope));
+    scope->addStmt(pos, makeArith(util::mkptr(
             new output::Assignment(pos, std::move(csp), std::move(cval)))));
 }
 
@@ -133,47 +132,47 @@ static util::sptr<output::Statement const> _catch_stmt(
     return makeArith(catch_func->callMe(pos, std::move(args)));
 }
 
-void ExceptionStall::compile(BaseCompilingSpace& space) const
+void ExceptionStall::compile(util::sref<Scope> scope) const
 {
     if (!isAsync()) {
-        RegularSubCompilingSpace try_space(space);
-        try_block.compile(try_space);
-        CatcherSpace catch_space(space);
-        catch_block.compile(catch_space);
-        space.addStmt(pos, util::mkptr(new output::ExceptionStall(
-                        try_space.deliver(), catch_space.deliver())));
-        if (try_space.terminated() && catch_space.terminated()) {
-            space.terminate(pos);
+        BranchingSubScope try_scope(scope);
+        try_block.compile(try_scope);
+        CatchScope catch_scope(scope);
+        catch_block.compile(catch_scope);
+        scope->addStmt(pos, util::mkptr(new output::ExceptionStall(
+                        try_scope.deliver(), catch_scope.deliver())));
+        if (try_scope.terminated() && catch_scope.terminated()) {
+            scope->terminate(pos);
         }
         return;
     }
 
     util::sptr<output::AsyncCatcher> catch_func(new output::AsyncCatcher);
     util::sref<output::AsyncCatcher> catch_func_ref = *catch_func;
-    space.block()->addFunc(std::move(catch_func));
+    scope->block()->addFunc(std::move(catch_func));
 
-    CatcherSpace catch_space(space);
-    catch_space.setAsyncSpace(pos, std::vector<std::string>(), catch_func_ref->bodyFlow());
-    catch_block.compile(catch_space);
+    CatchScope catch_scope(scope);
+    catch_scope.setAsyncSpace(pos, std::vector<std::string>(), catch_func_ref->bodyFlow());
+    catch_block.compile(catch_scope);
 
-    AsyncTrySpace try_space(space, catch_func_ref);
-    try_block.compile(try_space);
+    AsyncTryScope try_scope(scope, catch_func_ref);
+    try_block.compile(try_scope);
 
     util::sptr<output::Block> staller(new output::Block);
     staller->addStmt(_catch_stmt(pos, catch_func_ref));
-    space.addStmt(pos, util::mkptr(new output::ExceptionStall(
-                                    try_space.deliver(), std::move(staller))));
-    if (try_space.terminated() && catch_space.terminated()) {
-        return space.terminate(pos);
+    scope->addStmt(pos, util::mkptr(new output::ExceptionStall(
+                                    try_scope.deliver(), std::move(staller))));
+    if (try_scope.terminated() && catch_scope.terminated()) {
+        return scope->terminate(pos);
     }
 
     util::sptr<output::NoParamCallback> succession(new output::NoParamCallback);
-    if (!try_space.terminated()) {
-        try_space.addStmt(pos, makeArith(succession->callMe(
+    if (!try_scope.terminated()) {
+        try_scope.addStmt(pos, makeArith(succession->callMe(
                 pos, util::ptrarr<output::Expression const>())));
     }
-    if (!catch_space.terminated()) {
-        catch_space.addStmt(pos, makeArith(succession->callMe(
+    if (!catch_scope.terminated()) {
+        catch_scope.addStmt(pos, makeArith(succession->callMe(
                 pos, util::ptrarr<output::Expression const>())));
     }
 
@@ -182,12 +181,12 @@ void ExceptionStall::compile(BaseCompilingSpace& space) const
 
     util::sptr<output::Block> succ_catch(new output::Block);
     succ_catch->addStmt(util::mkptr(new output::ExprScheme(
-        space.throwMethod(), util::mkptr(new output::ExceptionObj(pos)))));
+        scope->throwMethod(), util::mkptr(new output::ExceptionObj(pos)))));
 
     succession->bodyFlow()->addStmt(util::mkptr(
         new output::ExceptionStall(std::move(succ_try), std::move(succ_catch))));
-    space.block()->addFunc(std::move(succession));
-    space.setAsyncSpace(pos, std::vector<std::string>(), succ_try_ref);
+    scope->block()->addFunc(std::move(succession));
+    scope->setAsyncSpace(pos, std::vector<std::string>(), succ_try_ref);
 }
 
 bool ExceptionStall::isAsync() const
@@ -195,12 +194,12 @@ bool ExceptionStall::isAsync() const
     return try_block.isAsync() || catch_block.isAsync();
 }
 
-void Throw::compile(BaseCompilingSpace& space) const
+void Throw::compile(util::sref<Scope> scope) const
 {
     if (exception->isAsync()) {
         return error::asyncNotAllowedInThrow(pos);
     }
-    space.addStmt(pos, util::mkptr(new output::ExprScheme(
-                space.throwMethod(), exception->compile(space))));
-    space.terminate(pos);
+    scope->addStmt(pos, util::mkptr(new output::ExprScheme(
+                scope->throwMethod(), exception->compile(scope))));
+    scope->terminate(pos);
 }

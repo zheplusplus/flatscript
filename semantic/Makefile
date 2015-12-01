@@ -8,7 +8,8 @@ semantic:$(WORKDIR)/const-fold.h $(WORKDIR)/const-fold.cpp \
          list-pipe.d \
          const-fold.d \
          block.d \
-         compiling-space.d \
+         scope-impl.d \
+         symbol-table.d \
          common.d \
          class.d \
          function.d

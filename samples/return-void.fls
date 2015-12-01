@@ -1,4 +1,4 @@
 func return_void()
     return
 
-return return_void()
+console.log(return_void())

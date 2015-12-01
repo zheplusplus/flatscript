@@ -3,7 +3,7 @@
 #include <semantic/expr-nodes.h>
 #include <semantic/stmt-nodes.h>
 #include <semantic/list-pipe.h>
-#include <semantic/compiling-space.h>
+#include <semantic/symbol-table.h>
 #include <output/node-base.h>
 #include <test/phony-errors.h>
 #include <test/common.h>
@@ -17,14 +17,14 @@ typedef SemanticTest PipelinesTest;
 TEST_F(PipelinesTest, AsyncPipeTopExpression)
 {
     misc::position pos(1);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "f");
-    space.sym()->defName(pos, "g");
-    space.sym()->defName(pos, "list");
+    scope->sym()->defName(pos, "f");
+    scope->sym()->defName(pos, "g");
+    scope->sym()->defName(pos, "list");
 
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, semantic::Pipeline::createMapper(
                 pos
@@ -39,7 +39,7 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
                                   , util::mkptr(new semantic::Reference(pos, "g"))
                                   , util::ptrarr<semantic::Expression const>())))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -76,14 +76,14 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
 TEST_F(PipelinesTest, AsyncPipeNestedExpression)
 {
     misc::position pos(2);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "f");
-    space.sym()->addExternNames(pos, { "g" });
-    space.sym()->defName(pos, "list");
+    scope->sym()->defName(pos, "f");
+    scope->sym()->addExternNames(pos, { "g" });
+    scope->sym()->defName(pos, "list");
 
     fargs.append(util::mkptr(new semantic::AsyncCall(pos
                                                    , util::mkptr(new semantic::Reference(pos, "g"))
@@ -102,8 +102,8 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
                                   , util::mkptr(new semantic::Reference(pos, "h"))
                                   , util::ptrarr<semantic::Expression const>())))));
 
-    block.compile(space);
-    space.deliver()->write(dummyos());
+    block.compile(*scope);
+    scope->deliver()->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -146,14 +146,14 @@ TEST_F(PipelinesTest, RefNameDefInAsyncWithinPipeSection)
 {
     misc::position pos(3);
     misc::position pos_err(300);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
-    space.sym()->defName(pos, "f");
-    space.sym()->defName(pos, "g");
-    space.sym()->defName(pos, "list");
+    scope->sym()->defName(pos, "f");
+    scope->sym()->defName(pos, "g");
+    scope->sym()->defName(pos, "list");
 
     fargs.append(util::mkptr(new semantic::AsyncCall(pos
                                                    , util::mkptr(new semantic::Reference(pos, "g"))
@@ -171,7 +171,7 @@ TEST_F(PipelinesTest, RefNameDefInAsyncWithinPipeSection)
                                   , util::mkptr(new semantic::Reference(pos_err, "h"))
                                   , util::ptrarr<semantic::Expression const>())))));
 
-    compile(block, space.sym());
+    compile(block, scope->sym());
     ASSERT_TRUE(error::hasError());
 
     std::vector<NameNotDefRec> nodefs(getNameNotDefRecs());
@@ -183,12 +183,12 @@ TEST_F(PipelinesTest, RefNameDefInAsyncWithinPipeSection)
 TEST_F(PipelinesTest, PipeBlock)
 {
     misc::position pos(4);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> args;
 
-    space.sym()->defName(pos, "merin");
-    space.sym()->defName(pos, "sakuya");
+    scope->sym()->defName(pos, "merin");
+    scope->sym()->defName(pos, "sakuya");
 
     semantic::Block pipe_sec;
     pipe_sec.addStmt(util::mkptr(new semantic::NameDef(
@@ -205,13 +205,13 @@ TEST_F(PipelinesTest, PipeBlock)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                     new semantic::Reference(pos, "merin")))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (ARITHMETICS)
-                (pos, SYNC_PIPELINE)
+                (pos, ROOT_SYNC_PIPELINE)
                     (pos, REFERENCE, "merin")
                     (SCOPE_BEGIN)
                         (FWD_DECL, "scarlet")
@@ -231,12 +231,12 @@ TEST_F(PipelinesTest, PipeBlock)
 TEST_F(PipelinesTest, PipeAsyncBlock)
 {
     misc::position pos(4);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> args;
 
-    space.sym()->defName(pos, "merin");
-    space.sym()->defName(pos, "sakuya");
+    scope->sym()->defName(pos, "merin");
+    scope->sym()->defName(pos, "sakuya");
 
     semantic::Block pipe_sec;
 
@@ -255,7 +255,7 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::Reference(pos, "merin")))));
 
-    compile(block, space.sym())->write(dummyos());
+    compile(block, scope->sym())->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -281,16 +281,54 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
     ;
 }
 
-TEST_F(PipelinesTest, ReturnInPipelineContext)
+TEST_F(PipelinesTest, ReturnInRootPipelineContext)
 {
     misc::position pos(5);
     misc::position pos_a(500);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
     util::ptrarr<semantic::Expression const> args;
 
-    space.sym()->defName(pos, "marisa");
-    space.sym()->defName(pos, "reimu");
+    scope->sym()->defName(pos, "marisa");
+    scope->sym()->defName(pos, "reimu");
+
+    semantic::Block pipe_sec;
+
+    args.append(util::mkptr(new semantic::IntLiteral(pos, 1654)));
+    pipe_sec.addStmt(util::mkptr(new semantic::Return(
+                    pos_a, util::mkptr(new semantic::Call(
+                                    pos
+                                  , util::mkptr(new semantic::Reference(pos, "marisa"))
+                                  , util::ptrarr<semantic::Expression const>())))));
+    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Pipeline(
+                  pos, util::mkptr(new semantic::Reference(pos, "reimu")), std::move(pipe_sec))))));
+
+    compile(block, scope->sym())->write(dummyos());
+
+    DataTree::expectOne()
+        (SCOPE_BEGIN)
+            (ARITHMETICS)
+                (pos, ROOT_SYNC_PIPELINE)
+                    (pos, REFERENCE, "reimu")
+                    (SCOPE_BEGIN)
+                        (SYNC_PIPELINE_RETURN)
+                            (pos, CALL, 0)
+                                (pos, REFERENCE, "marisa")
+                    (SCOPE_END)
+        (SCOPE_END)
+    ;
+}
+
+TEST_F(PipelinesTest, ReturnInPipelineContext)
+{
+    misc::position pos(8);
+    misc::position pos_a(800);
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
+    semantic::Block block;
+    util::ptrarr<semantic::Expression const> args;
+
+    scope->sym()->defName(pos, "marisa");
+    scope->sym()->defName(pos, "reimu");
 
     semantic::Block pipe_sec;
 
@@ -302,13 +340,15 @@ TEST_F(PipelinesTest, ReturnInPipelineContext)
                                   , util::ptrarr<semantic::Expression const>()
                                   , std::vector<std::string>({ "x" })
                                   , util::ptrarr<semantic::Expression const>())))));
-    block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Pipeline(
-                  pos, util::mkptr(new semantic::Reference(pos, "reimu")), std::move(pipe_sec))))));
+    block.addStmt(util::mkptr(new semantic::NameDef(pos, "n20151203", util::mkptr(
+                new semantic::Pipeline(pos
+                                     , util::mkptr(new semantic::Reference(pos, "reimu"))
+                                     , std::move(pipe_sec))))));
 
-    compile(block, space.sym());
+    compile(block, scope->sym());
     ASSERT_TRUE(error::hasError());
 
-    std::vector<ReturnNotAllowedInPipeRec> recs(getReturnNotAllowedInPipeRecs());
+    std::vector<ReturnNotAllowedInExprPipeRec> recs(getReturnNotAllowedInExprPipeRecs());
     ASSERT_EQ(1, recs.size());
     ASSERT_EQ(pos_a, recs[0].pos);
 }
@@ -318,7 +358,7 @@ TEST_F(PipelinesTest, RedefineExternalNameSameAsAsyncParam)
     misc::position pos(6);
     misc::position pos_ap(600);
     misc::position pos_extern(601);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
     block.addStmt(util::mkptr(new semantic::Extern(pos, std::vector<std::string>{ "g" })));
@@ -334,7 +374,7 @@ TEST_F(PipelinesTest, RedefineExternalNameSameAsAsyncParam)
                                  , util::mkptr(new semantic::Reference(pos, "h"))
                                  , util::ptrarr<semantic::Expression const>())))));
 
-    block.compile(space);
+    block.compile(*scope);
     ASSERT_TRUE(error::hasError());
 
     std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();
@@ -349,7 +389,7 @@ TEST_F(PipelinesTest, RedefineAsyncParamSameAsExternalName)
     misc::position pos(7);
     misc::position pos_extern(700);
     misc::position pos_ap(701);
-    semantic::CompilingSpace space;
+    util::sptr<semantic::Scope> scope(semantic::Scope::global());
     semantic::Block block;
 
     block.addStmt(util::mkptr(new semantic::Extern(pos, std::vector<std::string>{ "g" })));
@@ -365,7 +405,7 @@ TEST_F(PipelinesTest, RedefineAsyncParamSameAsExternalName)
                                  , util::mkptr(new semantic::Reference(pos, "h"))
                                  , util::ptrarr<semantic::Expression const>())))));
 
-    block.compile(space);
+    block.compile(*scope);
     ASSERT_TRUE(error::hasError());
 
     std::vector<NameAlreadyInLocalRec> redefs = getNameAlreadyInLocalRecs();

@@ -22,7 +22,7 @@ TEST_F(AutomationTest, ReduceNameDef)
     finish(pos);
     ASSERT_TRUE(stack->empty());
 
-    clause.compile().compile(nulSpace());
+    clause.compile().compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -110,7 +110,7 @@ TEST_F(AutomationTest, BreakAfterColon)
     ASSERT_TRUE(stack->empty());
     ASSERT_TRUE(stack->empty());
 
-    clause.compile().compile(nulSpace());
+    clause.compile().compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
