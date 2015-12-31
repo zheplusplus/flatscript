@@ -1,9 +1,10 @@
 #include <algorithm>
 
 #include <semantic/block.h>
+#include <semantic/stmt-nodes.h>
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
-#include <semantic/stmt-nodes.h>
+#include <semantic/loop.h>
 #include <semantic/function.h>
 #include <output/list-pipe.h>
 #include <output/function.h>
@@ -28,8 +29,9 @@ namespace {
 
 }
 
-Constructor::Constructor(misc::position const& ps, std::vector<std::string> params, Block b
-                       , std::string const&, bool, util::ptrarr<Expression const>)
+Constructor::Constructor(misc::position const& ps, std::vector<std::string> params
+                       , util::sptr<Statement const> b, std::string const&
+                       , bool, util::ptrarr<Expression const>)
     : pos(ps)
     , param_names(std::move(params))
     , super_init(nullptr)
@@ -47,7 +49,7 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bo
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body.compile(nulScope());
+    body->compile(nulScope());
     return util::sptr<output::Function const>(nullptr);
 }
 
@@ -83,9 +85,9 @@ void Branch::compile(util::sref<Scope>) const
     DataTree::actualOne()(pos, BRANCH);
     predicate->compile(nulScope());
     DataTree::actualOne()(CONSEQUENCE);
-    consequence.compile(nulScope());
+    consequence->compile(nulScope());
     DataTree::actualOne()(ALTERNATIVE);
-    alternative.compile(nulScope());
+    alternative->compile(nulScope());
 }
 
 void NameDef::compile(util::sref<Scope>) const
@@ -134,15 +136,34 @@ void Return::compile(util::sref<Scope>) const
 void ExceptionStall::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, TRY);
-    try_block.compile(nulScope());
+    try_block->compile(nulScope());
     DataTree::actualOne()(pos, CATCH);
-    catch_block.compile(nulScope());
+    catch_block->compile(nulScope());
 }
 
 void Throw::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, THROW);
     exception->compile(nulScope());
+}
+
+void RangeIteration::compile(util::sref<Scope>) const
+{
+    DataTree::actualOne()(pos, FOR_RANGE, this->reference);
+    this->begin->compile(nulScope());
+    this->end->compile(nulScope());
+    this->step->compile(nulScope());
+    this->loop->compile(nulScope());
+}
+
+void Break::compile(util::sref<Scope>) const
+{
+    DataTree::actualOne()(pos, BREAK);
+}
+
+void Continue::compile(util::sref<Scope>) const
+{
+    DataTree::actualOne()(pos, CONTINUE);
 }
 
 util::sptr<output::Expression const> PreUnaryOp::compile(util::sref<Scope>) const
@@ -329,7 +350,7 @@ util::sptr<output::Expression const> Lambda::compile(util::sref<Scope>) const
                   {
                       DataTree::actualOne()(pos, PARAMETER, param);
                   });
-    body.compile(nulScope());
+    body->compile(nulScope());
     return nulOutputExpr();
 }
 
@@ -351,7 +372,7 @@ util::sptr<output::Expression const> RegularAsyncCall::compileAsRoot(util::sref<
     return nulOutputExpr();
 }
 
-util::id RegularAsyncCall::_compile(util::sref<Scope>, bool) const
+util::uid RegularAsyncCall::_compile(util::sref<Scope>, bool) const
 {
     DataTree::actualOne()(pos, ASYNC_CALL, former_args.size());
     DataTree::actualOne()(pos, CALL_BEGIN);
@@ -360,10 +381,10 @@ util::id RegularAsyncCall::_compile(util::sref<Scope>, bool) const
     compileList(former_args);
     compileList(latter_args);
     DataTree::actualOne()(pos, CALL_END);
-    return util::id(nullptr);
+    return util::uid::next_id();
 }
 
-util::id AsyncCall::_compile(util::sref<Scope>, bool) const
+util::uid AsyncCall::_compile(util::sref<Scope>, bool) const
 {
     DataTree::actualOne()(pos, ASYNC_CALL);
     DataTree::actualOne()(pos, CALL_BEGIN);
@@ -380,7 +401,7 @@ util::id AsyncCall::_compile(util::sref<Scope>, bool) const
     DataTree::actualOne()(pos, ASYNC_PLACEHOLDER_END);
     compileList(latter_args);
     DataTree::actualOne()(pos, CALL_END);
-    return util::id(nullptr);
+    return util::uid::next_id();
 }
 
 util::sptr<output::Expression const> This::compile(util::sref<Scope>) const
@@ -417,7 +438,7 @@ util::sptr<output::Expression const> Pipeline::_compile(util::sref<Scope>, bool)
     DataTree::actualOne()(pos, BINARY_OP, "[ pipeline ]")(pos, OPERAND);
     list->compile(nulScope());
     DataTree::actualOne()(pos, OPERAND);
-    section.compile(nulScope());
+    section->compile(nulScope());
     return nulOutputExpr();
 }
 
@@ -478,10 +499,12 @@ bool Pipeline::isAsync() const { return false; }
 bool Arithmetics::isAsync() const { return false; }
 bool Branch::isAsync() const { return false; }
 bool NameDef::isAsync() const { return false; }
+bool RangeIteration::isAsync() const { return false; }
 bool Return::isAsync() const { return false; }
 bool Export::isAsync() const { return false; }
 bool AttrSet::isAsync() const { return false; }
 bool ExceptionStall::isAsync() const { return false; }
+bool Block::isAsync() const { return true; }
 bool Conditional::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Conditional::literalType(util::sref<SymbolTable const>) const { return ""; }
 bool Conditional::boolValue(util::sref<SymbolTable const>) const { return false; }

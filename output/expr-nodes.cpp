@@ -245,7 +245,7 @@ std::string RegularAsyncCallbackArg::str() const
             "    if ($cb_err) #RAISE_EXC\n"
             "#BODY\n"
             "})"
-                , "#CALLBACK_RESULT", formAsyncRef(util::id(this)))
+                , "#CALLBACK_RESULT", formAsyncRef(this->id))
                 , "#RAISE_EXC", thrower->scheme("$cb_err"))
                 , "#BODY", body_os.str())
         ;

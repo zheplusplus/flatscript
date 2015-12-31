@@ -1,14 +1,7 @@
-#include <map>
-#include <algorithm>
-
-#include <semantic/function.h>
-#include <util/arrays.h>
 #include <report/errors.h>
 
 #include "expr-automations.h"
 #include "stmt-nodes.h"
-#include "expr-nodes.h"
-#include "function.h"
 #include "class.h"
 
 using namespace grammar;
@@ -45,7 +38,8 @@ void PipelineAutomation::accepted(AutomationStack&, util::sptr<Expression const>
     }
 }
 
-void PipelineAutomation::accepted(AutomationStack& stack, misc::position const& pos, Block block)
+void PipelineAutomation::accepted(AutomationStack& stack, misc::position const& pos
+                                , util::sptr<Block const> block)
 {
     checkEmptyExpr(*_cache_list);
     stack.reduced(util::mkptr(new BlockPipeline(pos, std::move(_cache_list), std::move(block))));
@@ -118,7 +112,7 @@ ConditionalAutomation::ConditionalAutomation()
     _actions[IF] = [&](AutomationStack& stack, TypedToken const& token)
                    {
                        if (!_before_if) {
-                           return error::unexpectedToken(token.pos, token.image);
+                           return token.unexpected();
                        }
                        _before_if = false;
                        activated(stack);
@@ -126,7 +120,7 @@ ConditionalAutomation::ConditionalAutomation()
     _actions[ELSE] = [&](AutomationStack& stack, TypedToken const& token)
                      {
                          if (!_before_else) {
-                             return error::unexpectedToken(token.pos, token.image);
+                             return token.unexpected();
                          }
                          _before_else = false;
                          activated(stack);
@@ -395,7 +389,7 @@ ArithAutomation::ArithAutomation()
     _actions[SUPER] = [&](AutomationStack& stack, TypedToken const& token)
                       {
                           if (!this->_need_factor) {
-                              return error::unexpectedToken(token.pos, token.image);
+                              return token.unexpected();
                           }
                           this->_need_factor = false;
                           stack.push(util::mkptr(new SuperCallAutomation(token.pos)));
@@ -427,14 +421,13 @@ void ArithAutomation::_reduceBinaryOrPostfix(int pri)
     }
 }
 
-void ArithAutomation::pushFactor(
-            AutomationStack& stack, util::sptr<Expression const> factor, std::string const& image)
+void ArithAutomation::pushFactor(AutomationStack&, FactorToken& factor)
 {
     if (_need_factor) {
         _need_factor = false;
-        return _factor_stack.push_back(std::move(factor));
+        return _factor_stack.push_back(std::move(factor.expr));
     }
-    AutomationBase::pushFactor(stack, std::move(factor), image);
+    factor.unexpected();
 }
 
 void ArithAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
@@ -483,7 +476,7 @@ void ArithAutomation::finish(
 bool ArithAutomation::_reduce(AutomationStack& stack, Token const& token)
 {
     if (_need_factor && !_empty()) {
-        error::unexpectedToken(token.pos, token.image);
+        token.unexpected();
         return false;
     }
     if (_empty()) {
@@ -512,7 +505,7 @@ void ArithAutomation::_pushOp(AutomationStack& stack, Token const& token)
         _reduceBinaryOrPostfix(BINARY_PRI_MAPPING.find(token.image)->second);
         return _op_stack.push_back(util::mkptr(new BinaryOperator(token.pos, token.image)));
     }
-    error::unexpectedToken(token.pos, token.image);
+    token.unexpected();
 }
 
 void ArithAutomation::_pushOpenParen(AutomationStack& stack, misc::position const&)
@@ -642,7 +635,7 @@ void NestedOrParamsAutomation::_reduceAsNested(AutomationStack& stack, misc::pos
 void NestedOrParamsAutomation::_matchCloser(AutomationStack& stack, TypedToken const& closer)
 {
     if (_wait_for_closing) {
-        return error::unexpectedToken(closer.pos, closer.image);
+        return closer.unexpected();
     }
     if (!_wait_for_colon) {
         _reduceAsLambda(stack);
@@ -682,17 +675,17 @@ bool NestedOrParamsAutomation::_reduce(AutomationStack& stack, Token const& toke
 
 void NestedOrParamsAutomation::_reduceAsLambda(AutomationStack& stack)
 {
-    Block body;
+    util::sptr<Block> body(new Block);
     misc::position pos(_lambda_ret_val->pos);
     if (_lambda_ret_val->empty()) {
         error::invalidEmptyExpr(_lambda_ret_val->pos);
     }
-    body.addStmt(util::mkptr(new Return(pos, std::move(_lambda_ret_val))));
+    body->addStmt(util::mkptr(new Return(pos, std::move(_lambda_ret_val))));
     _reduceAsLambda(stack, pos, std::move(body));
 }
 
 void NestedOrParamsAutomation::_reduceAsLambda(
-                                    AutomationStack& stack, misc::position const& pos, Block body)
+    AutomationStack& stack, misc::position const& pos, util::sptr<Block const> body)
 {
     ParamReducingEnv env;
     int index(0);
@@ -720,7 +713,7 @@ void NestedOrParamsAutomation::accepted(AutomationStack&, util::sptr<Expression 
 }
 
 void NestedOrParamsAutomation::accepted(
-                                AutomationStack& stack, misc::position const& pos, Block body)
+            AutomationStack& stack, misc::position const& pos, util::sptr<Block const> body)
 {
     _reduceAsLambda(stack, pos, std::move(body));
 }
@@ -806,7 +799,7 @@ void DictAutomation::activated(AutomationStack& stack)
 void DictAutomation::_matchCloseBrace(AutomationStack& stack, Token const& closer)
 {
     if (!(_wait_for_key || _key_cache->empty())) {
-        error::unexpectedToken(closer.pos, closer.image);
+        closer.unexpected();
     }
     stack.reduced(util::mkptr(new Dictionary(closer.pos, std::move(_items))));
 }
@@ -877,11 +870,10 @@ AsyncPlaceholderAutomation::AsyncPlaceholderAutomation(misc::position const& ps)
     });
 }
 
-void AsyncPlaceholderAutomation::pushFactor(
-            AutomationStack& stack, util::sptr<Expression const> factor, std::string const& image)
+void AsyncPlaceholderAutomation::pushFactor(AutomationStack& stack, FactorToken& factor)
 {
     stack.push(util::mkptr(new PipelineAutomation));
-    stack.top()->pushFactor(stack, std::move(factor), image);
+    stack.top()->pushFactor(stack, factor);
 }
 
 void AsyncPlaceholderAutomation::accepted(AutomationStack& stack, util::sptr<Expression const> expr)
@@ -928,14 +920,12 @@ SuperCallAutomation::SuperCallAutomation(misc::position const& ps)
     });
 }
 
-void SuperCallAutomation::pushFactor(AutomationStack&
-                                   , util::sptr<Expression const> factor
-                                   , std::string const& image)
+void SuperCallAutomation::pushFactor(AutomationStack&, FactorToken& factor)
 {
     if (!this->_wait_property) {
-        return error::unexpectedToken(factor->pos, image);
+        return factor.unexpected();
     }
-    this->_property = factor->reduceAsProperty();
+    this->_property = factor.expr->reduceAsProperty();
     this->_actions[OPEN_PAREN] =
         [this](AutomationStack& stack, TypedToken const&)
         {

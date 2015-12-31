@@ -6,6 +6,7 @@ semantic:$(WORKDIR)/const-fold.h $(WORKDIR)/const-fold.cpp \
          stmt-nodes.d \
          expr-nodes.d \
          list-pipe.d \
+         loop.d \
          const-fold.d \
          block.d \
          scope-impl.d \

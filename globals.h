@@ -19,6 +19,7 @@ namespace flats {
     public:
         std::set<std::string> external_syms;
         std::string input_file;
+        std::string export_point;
         bool use_class_ext;
         bool use_list_slice;
         bool use_list_pipe;

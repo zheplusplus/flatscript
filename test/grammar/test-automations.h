@@ -26,28 +26,33 @@ struct AutomationTest
 
     void pushBoolean(misc::position const& pos, bool value)
     {
-        stack->top()->pushFactor(
-                    *stkptr, util::mkptr(new grammar::BoolLiteral(pos, value)), util::str(value));
+        grammar::FactorToken t(pos, util::mkptr(new grammar::BoolLiteral(pos, value)),
+                               value ? "true" : "false");
+        stack->top()->pushFactor(*stkptr, t);
     }
 
     void pushInteger(misc::position const& pos, std::string const& image)
     {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::IntLiteral(pos, image)), image);
+        grammar::FactorToken t(pos, util::mkptr(new grammar::IntLiteral(pos, image)), image);
+        stack->top()->pushFactor(*stkptr, t);
     }
 
     void pushString(misc::position const& pos, std::string const& image)
     {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::StringLiteral(pos, image)), image);
+        grammar::FactorToken t(pos, util::mkptr(new grammar::StringLiteral(pos, image)), image);
+        stack->top()->pushFactor(*stkptr, t);
     }
 
     void pushIdent(misc::position const& pos, std::string const& image)
     {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::Identifier(pos, image)), image);
+        grammar::FactorToken t(pos, util::mkptr(new grammar::Identifier(pos, image)), image);
+        stack->top()->pushFactor(*stkptr, t);
     }
 
     void pushPipeElement(misc::position const& pos)
     {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::PipeElement(pos)), "$");
+        grammar::FactorToken t(pos, util::mkptr(new grammar::PipeElement(pos)), "$");
+        stack->top()->pushFactor(*stkptr, t);
     }
 
     void pushOp(misc::position const& pos, std::string const& op)
@@ -57,12 +62,14 @@ struct AutomationTest
 
     void pushRegularAsyncParam(misc::position const& pos)
     {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::RegularAsyncParam(pos)), "%%");
+        grammar::FactorToken t(pos, util::mkptr(new grammar::RegularAsyncParam(pos)), "%%");
+        stack->top()->pushFactor(*stkptr, t);
     }
 
     void pushThis(misc::position const& pos)
     {
-        stack->top()->pushFactor(*stkptr, util::mkptr(new grammar::This(pos)), "this");
+        grammar::FactorToken t(pos, util::mkptr(new grammar::This(pos)), "this");
+        stack->top()->pushFactor(*stkptr, t);
     }
 
     void pushPipeSep(misc::position const& pos, std::string const& op)

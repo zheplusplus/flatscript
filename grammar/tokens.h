@@ -4,14 +4,16 @@
 #include <util/pointer.h>
 #include <misc/pos-type.h>
 
+#include "node-base.h"
 #include "fwd-decl.h"
 
 namespace grammar {
 
     enum TokenType {
-        IF, ELSE, IFNOT, PIPE_SEP, COMMA, COLON, OPEN_PAREN, CLOSE_PAREN,
-        OPEN_BRACKET, CLOSE_BRACKET, OPEN_BRACE, CLOSE_BRACE, OPERATOR, FUNC,
-        RETURN, TRY, CATCH, THROW, CLASS, SUPER, CONSTRUCTOR, TOKEN_TYPE_COUNT
+        COMMA, OPERATOR, OPEN_PAREN, CLOSE_PAREN, OPEN_BRACKET, CLOSE_BRACKET,
+        OPEN_BRACE, CLOSE_BRACE, PIPE_SEP, COLON, IF, ELSE, IFNOT, FOR, BREAK,
+        CONTINUE, TRY, CATCH, THROW, FUNC, RETURN, CLASS, SUPER, CONSTRUCTOR,
+        EXTERN, EXPORT, TOKEN_TYPE_COUNT
     };
 
     struct Token {
@@ -21,10 +23,12 @@ namespace grammar {
         misc::position const pos;
         std::string const image;
 
-        Token(misc::position const& ps, std::string const& img)
+        Token(misc::position const& ps, std::string img)
             : pos(ps)
-            , image(img)
+            , image(std::move(img))
         {}
+
+        void unexpected() const;
 
         virtual void act(AutomationStack& stack) = 0;
     };
@@ -32,8 +36,8 @@ namespace grammar {
     struct TypedToken
         : Token
     {
-        TypedToken(misc::position const& ps, std::string const& img, TokenType tp)
-            : Token(ps, img)
+        TypedToken(misc::position const& ps, std::string img, TokenType tp)
+            : Token(ps, std::move(img))
             , type(tp)
         {}
 
@@ -45,16 +49,14 @@ namespace grammar {
     struct FactorToken
         : Token
     {
-        FactorToken(misc::position const& pos
-                  , util::sptr<Expression const> f
-                  , std::string const& value)
-            : Token(pos, value)
-            , factor(std::move(f))
+        FactorToken(misc::position const& pos, util::sptr<Expression const> e, std::string value)
+            : Token(pos, std::move(value))
+            , expr(std::move(e))
         {}
 
         void act(AutomationStack& stack);
 
-        util::sptr<Expression const> factor;
+        util::sptr<Expression const> expr;
     };
 
 }

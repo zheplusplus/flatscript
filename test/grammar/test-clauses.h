@@ -6,7 +6,7 @@
 #include <grammar/clause-builder.h>
 #include <grammar/expr-nodes.h>
 #include <grammar/tokens.h>
-#include <grammar/syntax-types.h>
+#include <grammar/yy-misc.h>
 #include <test/phony-errors.h>
 
 #include "test-common.h"

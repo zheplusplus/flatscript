@@ -3,15 +3,8 @@
 
 namespace grammar {
 
-    struct Statement;
-    struct Expression;
-    struct Block;
     struct ClauseBase;
-    struct ClauseBuilder;
-    struct Function;
-    struct Class;
     struct Constructor;
-    struct AutomationBase;
     struct AutomationStack;
 
 }

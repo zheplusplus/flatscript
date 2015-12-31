@@ -1,30 +1,31 @@
 #ifndef __STEKIN_GRAMMAR_BLOCK_H__
 #define __STEKIN_GRAMMAR_BLOCK_H__
 
-#include <semantic/fwd-decl.h>
 #include <util/arrays.h>
+#include <semantic/block.h>
 
+#include "node-base.h"
+#include "function.h"
 #include "fwd-decl.h"
 
 namespace grammar {
 
-    struct Block {
+    struct Block
+        : Statement
+    {
         Block();
-
-        Block(Block const&) = delete;
-
-        Block(Block&& rhs)
-            : _stmts(std::move(rhs._stmts))
-            , _funcs(std::move(rhs._funcs))
-            , _ctor(std::move(rhs._ctor))
-        {}
 
         util::sref<Constructor const> getCtor() const
         {
             return *this->_ctor;
         }
 
-        semantic::Block compile() const;
+        util::sptr<semantic::Statement const> compile() const
+        {
+            return this->compileToBlock();
+        }
+
+        util::sptr<semantic::Block const> compileToBlock() const;
 
         void addStmt(util::sptr<Statement> stmt)
         {
@@ -36,10 +37,11 @@ namespace grammar {
             this->_funcs.append(std::move(func));
         }
 
-        void setCtor(misc::position const& pos, std::vector<std::string> params, Block body
-                   , bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args);
-        void acceptElse(misc::position const& else_pos, Block block);
-        void acceptCatch(misc::position const& catch_pos, Block block);
+        void setCtor(misc::position const& pos, std::vector<std::string> params
+                   , util::sptr<Block const> body, bool super_init
+                   , std::vector<util::sptr<Expression const>> super_ctor_args);
+        void acceptElse(misc::position const& else_pos, util::sptr<Statement const> block);
+        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
     private:
         util::ptrarr<Statement> _stmts;
         util::ptrarr<Function const> _funcs;

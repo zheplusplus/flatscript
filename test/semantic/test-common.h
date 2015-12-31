@@ -90,6 +90,13 @@ namespace test {
     extern NodeType const PIPE_KEY;
     extern NodeType const PIPE_RESULT;
 
+    extern NodeType const SYNC_FOR_RANGE;
+    extern NodeType const ASYNC_FOR_RANGE;
+    extern NodeType const BREAK;
+    extern NodeType const CONTINUE;
+    extern NodeType const SYNC_BREAK;
+    extern NodeType const CALL_NEXT;
+
     extern NodeType const CALL;
     extern NodeType const SUPER_CONSTRUCTOR_CALL;
     extern NodeType const ASYNC_REFERENCE;
@@ -97,7 +104,6 @@ namespace test {
     extern NodeType const ASYNC_PIPELINE;
     extern NodeType const SYNC_PIPELINE;
     extern NodeType const ROOT_SYNC_PIPELINE;
-    extern NodeType const PIPELINE_CONTINUE;
     extern NodeType const SYNC_PIPELINE_RETURN;
 
     extern NodeType const LIST_SLICE;
@@ -117,6 +123,10 @@ namespace test {
     extern NodeType const BRANCH;
     extern NodeType const TRY;
     extern NodeType const CATCH;
+
+    extern NodeType const CLASS_INIT_FN;
+    extern NodeType const CLASS_INIT_ST;
+    extern NodeType const MEMBER_FUNC;
 
     extern NodeType const FUNCTION;
     extern NodeType const PARAMETER;

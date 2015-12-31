@@ -1,10 +1,9 @@
 #include <output/list-pipe.h>
 #include <output/stmt-nodes.h>
-#include <output/function.h>
 #include <report/errors.h>
 
 #include "scope.h"
-#include "function.h"
+#include "block.h"
 #include "list-pipe.h"
 #include "stmt-nodes.h"
 #include "expr-nodes.h"
@@ -13,12 +12,13 @@ using namespace semantic;
 
 util::sptr<output::Expression const> Pipeline::_compile(util::sref<Scope> scope, bool root) const
 {
-    return section.isAsync() ? this->_compileAsync(scope, root) : this->_compileSync(scope, root);
+    return this->section->isAsync() ? this->_compileAsync(scope, root)
+                                    : this->_compileSync(scope, root);
 }
 
 bool Pipeline::isAsync() const
 {
-    return list->isAsync() || section.isAsync();
+    return this->list->isAsync() || this->section->isAsync();
 }
 
 util::sptr<output::Expression const> Pipeline::_compileAsync(
@@ -30,48 +30,51 @@ util::sptr<output::Expression const> Pipeline::_compileAsync(
     util::sptr<output::Block> succession_flow(new output::Block);
     scope->setAsyncSpace(pos, std::vector<std::string>(), *succession_flow);
 
-    util::sptr<Scope> pipe_scope(scope->makeAsyncPipelineScope(util::id(this), root));
-    section.compile(*pipe_scope);
+    util::sptr<Scope> pipe_scope(scope->makeAsyncPipelineScope(this->id, root));
+    this->section->compile(*pipe_scope);
     current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(util::mkptr(
                                 new output::AsyncPipeline(pos
                                                         , std::move(compl_list)
                                                         , pipe_scope->deliver()
                                                         , std::move(succession_flow)
-                                                        , util::id(this)
+                                                        , this->id
                                                         , scope->throwMethod())), false)));
     if (root) {
         return util::sptr<output::Expression const>(nullptr);
     }
-    return util::mkptr(new output::PipeResult(pos));
+    return util::mkptr(new output::PipeResult(pos, this->id));
 }
 
 util::sptr<output::Expression const> Pipeline::_compileSync(
                         util::sref<Scope> scope, bool root) const
 {
     util::sptr<output::Expression const> clist(list->compile(scope));
-    util::sptr<Scope> pipe_scope(scope->makeSyncPipelineScope(util::id(this), root));
-    section.compile(*pipe_scope);
+    util::sptr<Scope> pipe_scope(scope->makeSyncPipelineScope(this->id, root));
+    this->section->compile(*pipe_scope);
     if (root) {
         output::Method ext_return(output::method::place());
+        bool has_ret = false;
         if (pipe_scope->firstReturn().not_nul()) {
             ext_return = scope->retMethod(misc::position(pipe_scope->firstReturn()->line));
+            has_ret = true;
         }
         return util::mkptr(new output::RootSyncPipeline(
                   pos, std::move(clist), pipe_scope->deliver(), std::move(ext_return)
-                , util::id(this)));
+                , this->id, has_ret, pipe_scope->hasBreak()));
     }
-    return util::mkptr(new output::SyncPipeline(pos, std::move(clist), pipe_scope->deliver()));
+    return util::mkptr(new output::SyncPipeline(
+                pos, std::move(clist), pipe_scope->deliver(), this->id));
 }
 
-static Block pushElementToResult(util::sptr<Expression const> sec)
+static util::sptr<Statement const> pushElementToResult(util::sptr<Expression const> sec)
 {
-    Block push;
     misc::position sec_pos(sec->pos);
+    util::sptr<Block> push(new Block(sec_pos));
     util::sptr<Expression const> callee(
-            new MemberAccess(sec->pos, util::mkptr(new PipeResult(sec->pos)), "push"));
+            new MemberAccess(sec_pos, util::mkptr(new PipeResult(sec_pos)), "push"));
     util::ptrarr<Expression const> args;
     args.append(std::move(sec));
-    push.addStmt(util::mkptr(new Arithmetics(sec_pos, util::mkptr(new Call(
+    push->addStmt(util::mkptr(new Arithmetics(sec_pos, util::mkptr(new Call(
                             sec_pos, std::move(callee), std::move(args))))));
     return std::move(push);
 }
@@ -85,13 +88,13 @@ util::sptr<Expression const> Pipeline::createMapper(
 util::sptr<Expression const> Pipeline::createFilter(
       misc::position const& pos, util::sptr<Expression const> ls, util::sptr<Expression const> sec)
 {
-    Block block;
     misc::position sec_pos(sec->pos);
-    block.addStmt(util::mkptr(new Branch(
+    util::sptr<Block> block(new Block(sec_pos));
+    block->addStmt(util::mkptr(new Branch(
                     sec_pos
                   , std::move(sec)
                   , pushElementToResult(util::mkptr(new PipeElement(sec_pos)))
-                  , Block())));
+                  , util::mkptr(new Block(sec_pos)))));
     return util::mkptr(new Pipeline(pos, std::move(ls), std::move(block)));
 }
 
@@ -100,7 +103,7 @@ util::sptr<output::Expression const> PipeElement::compile(util::sref<Scope> scop
     if (!scope->inPipe()) {
         error::pipeReferenceNotInListContext(pos);
     }
-    return util::mkptr(new output::PipeElement(pos));
+    return util::mkptr(new output::PipeElement(pos, scope->scopeId()));
 }
 
 util::sptr<output::Expression const> PipeIndex::compile(util::sref<Scope> scope) const
@@ -108,7 +111,7 @@ util::sptr<output::Expression const> PipeIndex::compile(util::sref<Scope> scope)
     if (!scope->inPipe()) {
         error::pipeReferenceNotInListContext(pos);
     }
-    return util::mkptr(new output::PipeIndex(pos));
+    return util::mkptr(new output::PipeIndex(pos, scope->scopeId()));
 }
 
 util::sptr<output::Expression const> PipeKey::compile(util::sref<Scope> scope) const
@@ -116,7 +119,7 @@ util::sptr<output::Expression const> PipeKey::compile(util::sref<Scope> scope) c
     if (!scope->inPipe()) {
         error::pipeReferenceNotInListContext(pos);
     }
-    return util::mkptr(new output::PipeKey(pos));
+    return util::mkptr(new output::PipeKey(pos, scope->scopeId()));
 }
 
 util::sptr<output::Expression const> PipeResult::compile(util::sref<Scope> scope) const
@@ -124,5 +127,5 @@ util::sptr<output::Expression const> PipeResult::compile(util::sref<Scope> scope
     if (!scope->inPipe()) {
         error::pipeReferenceNotInListContext(pos);
     }
-    return util::mkptr(new output::PipeResult(pos));
+    return util::mkptr(new output::PipeResult(pos, scope->scopeId()));
 }

@@ -102,11 +102,11 @@ with {
 }
 
 break {
-    return KW_RESERVED;
+    return KW_BREAK;
 }
 
 continue {
-    return KW_RESERVED;
+    return KW_CONTINUE;
 }
 
 yield {
@@ -114,7 +114,7 @@ yield {
 }
 
 for {
-    return KW_RESERVED;
+    return KW_FOR;
 }
 
 gen {

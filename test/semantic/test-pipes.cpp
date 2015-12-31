@@ -18,7 +18,7 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
 {
     misc::position pos(1);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -60,7 +60,8 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
                                                 (pos, PIPE_RESULT)
                                                 (pos, REFERENCE, "push")
                                             (pos, ASYNC_REFERENCE)
-                                    (PIPELINE_CONTINUE)
+                                    (CALL_NEXT)
+                                        (CONTINUE)
                                 (SCOPE_END)
                     (SCOPE_END)
                     (SCOPE_BEGIN)
@@ -77,7 +78,7 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
 {
     misc::position pos(2);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -129,7 +130,8 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
                                             (pos, CALL, 1)
                                                 (pos, REFERENCE, "f")
                                                 (pos, ASYNC_REFERENCE)
-                                    (PIPELINE_CONTINUE)
+                                    (CALL_NEXT)
+                                        (CONTINUE)
                                 (SCOPE_END)
                     (SCOPE_END)
                     (SCOPE_BEGIN)
@@ -147,7 +149,7 @@ TEST_F(PipelinesTest, RefNameDefInAsyncWithinPipeSection)
     misc::position pos(3);
     misc::position pos_err(300);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -184,18 +186,18 @@ TEST_F(PipelinesTest, PipeBlock)
 {
     misc::position pos(4);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> args;
 
     scope->sym()->defName(pos, "merin");
     scope->sym()->defName(pos, "sakuya");
 
-    semantic::Block pipe_sec;
-    pipe_sec.addStmt(util::mkptr(new semantic::NameDef(
+    util::sptr<semantic::Block> pipe_sec(new semantic::Block(pos));
+    pipe_sec->addStmt(util::mkptr(new semantic::NameDef(
                     pos, "scarlet", util::mkptr(new semantic::Reference(pos, "sakuya")))));
 
     args.append(util::mkptr(new semantic::IntLiteral(pos, 20130204)));
-    pipe_sec.addStmt(util::mkptr(new semantic::Arithmetics(
+    pipe_sec->addStmt(util::mkptr(new semantic::Arithmetics(
                     pos, util::mkptr(new semantic::Call(
                                     pos
                                   , util::mkptr(new semantic::Reference(pos, "scarlet"))
@@ -232,23 +234,23 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
 {
     misc::position pos(4);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> args;
 
     scope->sym()->defName(pos, "merin");
     scope->sym()->defName(pos, "sakuya");
 
-    semantic::Block pipe_sec;
+    util::sptr<semantic::Block> pipe_sec(new semantic::Block(pos));
 
     args.append(util::mkptr(new semantic::IntLiteral(pos, 1042)));
-    pipe_sec.addStmt(util::mkptr(new semantic::Arithmetics(
+    pipe_sec->addStmt(util::mkptr(new semantic::Arithmetics(
                     pos, util::mkptr(new semantic::AsyncCall(
                                     pos
                                   , util::mkptr(new semantic::Reference(pos, "sakuya"))
                                   , util::ptrarr<semantic::Expression const>()
                                   , std::vector<std::string>({ "scarlet" })
                                   , util::ptrarr<semantic::Expression const>())))));
-    pipe_sec.addStmt(util::mkptr(new semantic::Arithmetics(
+    pipe_sec->addStmt(util::mkptr(new semantic::Arithmetics(
                     pos, util::mkptr(new semantic::Reference(pos, "scarlet")))));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Pipeline(
                   pos, util::mkptr(new semantic::Reference(pos, "merin")), std::move(pipe_sec))))));
@@ -271,7 +273,8 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
                                     (PARAMETER, "scarlet")
                                     (MANGLE_AS_PARAM)
                                     (SCOPE_BEGIN)
-                                        (PIPELINE_CONTINUE)
+                                        (CALL_NEXT)
+                                            (CONTINUE)
                                     (SCOPE_END)
                     (SCOPE_END)
                     (SCOPE_BEGIN)
@@ -286,16 +289,16 @@ TEST_F(PipelinesTest, ReturnInRootPipelineContext)
     misc::position pos(5);
     misc::position pos_a(500);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> args;
 
     scope->sym()->defName(pos, "marisa");
     scope->sym()->defName(pos, "reimu");
 
-    semantic::Block pipe_sec;
+    util::sptr<semantic::Block> pipe_sec(new semantic::Block(pos));
 
     args.append(util::mkptr(new semantic::IntLiteral(pos, 1654)));
-    pipe_sec.addStmt(util::mkptr(new semantic::Return(
+    pipe_sec->addStmt(util::mkptr(new semantic::Return(
                     pos_a, util::mkptr(new semantic::Call(
                                     pos
                                   , util::mkptr(new semantic::Reference(pos, "marisa"))
@@ -324,16 +327,16 @@ TEST_F(PipelinesTest, ReturnInPipelineContext)
     misc::position pos(8);
     misc::position pos_a(800);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> args;
 
     scope->sym()->defName(pos, "marisa");
     scope->sym()->defName(pos, "reimu");
 
-    semantic::Block pipe_sec;
+    util::sptr<semantic::Block> pipe_sec(new semantic::Block(pos));
 
     args.append(util::mkptr(new semantic::IntLiteral(pos, 1654)));
-    pipe_sec.addStmt(util::mkptr(new semantic::Return(
+    pipe_sec->addStmt(util::mkptr(new semantic::Return(
                     pos_a, util::mkptr(new semantic::AsyncCall(
                                     pos
                                   , util::mkptr(new semantic::Reference(pos, "marisa"))
@@ -359,7 +362,7 @@ TEST_F(PipelinesTest, RedefineExternalNameSameAsAsyncParam)
     misc::position pos_ap(600);
     misc::position pos_extern(601);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
 
     block.addStmt(util::mkptr(new semantic::Extern(pos, std::vector<std::string>{ "g" })));
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
@@ -390,7 +393,7 @@ TEST_F(PipelinesTest, RedefineAsyncParamSameAsExternalName)
     misc::position pos_extern(700);
     misc::position pos_ap(701);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
 
     block.addStmt(util::mkptr(new semantic::Extern(pos, std::vector<std::string>{ "g" })));
     block.addStmt(util::mkptr(new semantic::Extern(pos_extern, std::vector<std::string>{ "h" })));

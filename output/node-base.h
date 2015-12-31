@@ -3,10 +3,8 @@
 
 #include <ostream>
 
-#include <util/pointer.h>
+#include <util/uid.h>
 #include <misc/pos-type.h>
-
-#include "fwd-decl.h"
 
 namespace output {
 
@@ -17,9 +15,11 @@ namespace output {
         virtual bool mayThrow() const = 0;
 
         misc::position const pos;
+        util::uid const id;
 
         explicit Expression(misc::position const ps)
             : pos(ps)
+            , id(util::uid::next_id())
         {}
 
         Expression(Expression const&) = delete;

@@ -29,7 +29,7 @@ TEST_F(AnonymousFunctionTest, AsNameDef)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -70,7 +70,7 @@ TEST_F(AnonymousFunctionTest, TerminateByEnd)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -121,7 +121,7 @@ TEST_F(AnonymousFunctionTest, FuncAsArg)
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -168,7 +168,7 @@ TEST_F(AnonymousFunctionTest, TerminateByReturn)
                 ->add(id(pos_b, "souitirou"))
                 ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

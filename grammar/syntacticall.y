@@ -6,28 +6,19 @@
     int indent_type;
     int line_num_type;
 
-    grammar::Ident* ident_type;
-    grammar::NameList* names_type;
     grammar::TokenSequence* token_sequence_type;
     grammar::Token* token_type;
 }
 
 %type <indent_type> indent
-
 %type <line_num_type> eol
-
-%type <ident_type> ident
-
-%type <names_type> name_list
-%type <names_type> additional_name
-%type <names_type> member_name
 
 %type <token_type> token
 %type <token_sequence_type> token_sequence
 
 %token INDENT EOL
 %token KW_FUNC KW_IF KW_IFNOT KW_ELSE KW_RETURN KW_EXTERN KW_EXPORT KW_RESERVED
-%token KW_TRY KW_CATCH KW_THROW
+%token KW_TRY KW_CATCH KW_THROW KW_FOR KW_BREAK KW_CONTINUE
 %token OPERATOR PIPE_SEP
 %token BOOL_TRUE BOOL_FALSE
 %token INT_LITERAL DOUBLE_LITERAL STRING_LITERAL TRIPLE_QUOTED_STRING_LITERAL
@@ -68,44 +59,9 @@ stmt_list:
 ;
 
 stmt:
-    arithmetics {}
-    |
-    extern {}
-    |
-    export {}
-;
-
-arithmetics:
     indent token_sequence eol
     {
         grammar::builder.addArith($1, misc::position($3), $2->deliver());
-    }
-;
-
-extern:
-    indent KW_EXTERN name_list eol
-    {
-        grammar::builder.addExtern($1, misc::position($4), $3->deliver());
-    }
-;
-
-export:
-    indent KW_EXPORT member_name ':' token_sequence eol
-    {
-        std::vector<std::string> names = $3->deliver();
-        grammar::builder.addExport($1, misc::position($6), std::move(names), $5->deliver());
-    }
-;
-
-member_name:
-    member_name '.' ident
-    {
-        $$ = $1->add($3->deliver());
-    }
-    |
-    ident
-    {
-        $$ = (new grammar::NameList)->add($1->deliver());
     }
 ;
 
@@ -157,6 +113,21 @@ token:
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::THROW);
     }
     |
+    KW_FOR
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::FOR);
+    }
+    |
+    KW_BREAK
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::BREAK);
+    }
+    |
+    KW_CONTINUE
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CONTINUE);
+    }
+    |
     KW_ELSE
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::ELSE);
@@ -181,6 +152,16 @@ token:
     KW_CONSTRUCTOR
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::CONSTRUCTOR);
+    }
+    |
+    KW_EXTERN
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::EXTERN);
+    }
+    |
+    KW_EXPORT
+    {
+        $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::EXPORT);
     }
     |
     OPERATOR
@@ -252,11 +233,11 @@ token:
         grammar::lineno += breaks;
     }
     |
-    ident
+    IDENT
     {
         misc::position here(grammar::here());
-        std::string id($1->deliver());
-        $$ = new grammar::FactorToken(here, util::mkptr(new grammar::Identifier(here, id)), id);
+        $$ = new grammar::FactorToken(here, util::mkptr(
+                new grammar::Identifier(here, yytext)), yytext);
     }
     |
     PIPE_ELEMENT
@@ -334,30 +315,5 @@ token:
     ','
     {
         $$ = new grammar::TypedToken(grammar::here(), yytext, grammar::COMMA);
-    }
-;
-
-name_list:
-    additional_name ident
-    {
-        $$ = $1->add($2->deliver());
-    }
-;
-
-additional_name:
-    name_list ','
-    {
-        $$ = $1;
-    }
-    |
-    {
-        $$ = new grammar::NameList;
-    }
-;
-
-ident:
-    IDENT
-    {
-        $$ = new grammar::Ident(grammar::here(), yytext);
     }
 ;

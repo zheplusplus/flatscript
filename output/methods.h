@@ -3,6 +3,7 @@
 
 #include <string>
 #include <util/pointer.h>
+#include <util/uid.h>
 
 #include "node-base.h"
 
@@ -32,7 +33,9 @@ namespace output {
         _MethodPtr asyncCatcher(std::string catcher_func_name);
         _MethodPtr ret();
         _MethodPtr asyncRet();
-        _MethodPtr syncPipeRet(util::id pipe_id);
+        _MethodPtr syncPipeRet(util::uid pipe_id);
+        _MethodPtr syncBreak();
+        _MethodPtr callNext();
 
     }
 

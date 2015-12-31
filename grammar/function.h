@@ -3,7 +3,7 @@
 
 #include <semantic/function.h>
 
-#include "block.h"
+#include "node-base.h"
 
 namespace grammar {
 
@@ -12,7 +12,7 @@ namespace grammar {
                , std::string const& n
                , std::vector<std::string> const& params
                , int async_param_idx
-               , Block b)
+               , util::sptr<Statement const> b)
             : pos(ps)
             , name(n)
             , param_names(params)
@@ -26,7 +26,7 @@ namespace grammar {
         std::string const name;
         std::vector<std::string> const param_names;
         int const async_param_index;
-        Block const body;
+        util::sptr<Statement const> const body;
     };
 
 }

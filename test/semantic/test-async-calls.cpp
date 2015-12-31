@@ -18,7 +18,7 @@ TEST_F(AsyncCallsTest, TopFlowCalls)
 {
     misc::position pos(1);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -107,9 +107,9 @@ TEST_F(AsyncCallsTest, InBranch)
 {
     misc::position pos(2);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
-    semantic::Block consq_block;
-    semantic::Block alter_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -118,16 +118,16 @@ TEST_F(AsyncCallsTest, InBranch)
     scope->sym()->defName(pos, "read");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "f20130106")));
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "read"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "content" })
                                       , std::move(largs))))));
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                               new semantic::Reference(pos, "content")))));
 
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::Reference(pos, "x")))));
 
     block.addStmt(util::mkptr(new semantic::Branch(
@@ -176,9 +176,9 @@ TEST_F(AsyncCallsTest, AsBranchPredicate)
 {
     misc::position pos(3);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
-    semantic::Block consq_block;
-    semantic::Block alter_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -186,9 +186,9 @@ TEST_F(AsyncCallsTest, AsBranchPredicate)
     scope->sym()->defName(pos, "n");
     scope->sym()->defName(pos, "write");
 
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::Reference(pos, "m")))));
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::Reference(pos, "err")))));
 
     largs.append(util::mkptr(new semantic::Reference(pos, "n")));
@@ -237,7 +237,7 @@ TEST_F(AsyncCallsTest, ConflictDefinition)
     misc::position pos_b(401);
     misc::position pos_c(402);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -278,7 +278,7 @@ TEST_F(AsyncCallsTest, NestedAsyncArgs)
 {
     misc::position pos(5);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -348,7 +348,7 @@ TEST_F(AsyncCallsTest, AsyncCallInConditionalConsequence)
 {
     misc::position pos(16);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
 
     scope->sym()->defName(pos, "suzuha");
     scope->sym()->defName(pos, "yuki");
@@ -432,7 +432,7 @@ TEST_F(AsyncCallsTest, RegularAsyncCall)
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
-    semantic::Block body;
+    semantic::Block body(pos);
 
     scope->sym()->defName(pos, "yurine");
 

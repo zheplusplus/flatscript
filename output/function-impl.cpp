@@ -1,7 +1,6 @@
 #include <util/string.h>
 
-#include "function.h"
-#include "class.h"
+#include "function-impl.h"
 #include "expr-nodes.h"
 #include "name-mangler.h"
 
@@ -69,7 +68,7 @@ util::sref<Statement const> AnonymousCallback::body() const
 
 std::string AnonymousCallback::mangledName() const
 {
-    return formAnonymousFunc(util::id(this));
+    return formAnonymousFunc(this->id);
 }
 
 util::sref<Block> AnonymousCallback::bodyFlow()

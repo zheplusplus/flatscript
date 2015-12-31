@@ -89,6 +89,10 @@ NodeType const test::PIPE_INDEX("pipe index");
 NodeType const test::PIPE_KEY("pipe key");
 NodeType const test::PIPE_RESULT("pipe result");
 
+NodeType const test::FOR_RANGE("for range");
+NodeType const test::BREAK("break");
+NodeType const test::CONTINUE("continue");
+
 NodeType const test::CALL_BEGIN("call begin");
 NodeType const test::CALL_END("call end");
 NodeType const test::ARGUMENTS("arguments");

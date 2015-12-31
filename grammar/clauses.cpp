@@ -1,42 +1,41 @@
-#include <semantic/function.h>
 #include <report/errors.h>
 
 #include "clauses.h"
 #include "stmt-nodes.h"
-#include "expr-nodes.h"
 #include "stmt-automations.h"
 
 using namespace grammar;
 
 void ClauseBase::acceptFunc(util::sptr<Function const> func)
 {
-    _block.addFunc(std::move(func));
+    _block->addFunc(std::move(func));
 }
 
 void ClauseBase::acceptClass(util::sptr<Class> cls)
 {
-    _block.addStmt(std::move(cls));
+    _block->addStmt(std::move(cls));
 }
 
 void ClauseBase::acceptCtor(misc::position const& ct_pos, std::vector<std::string>
-                          , Block, bool, std::vector<util::sptr<Expression const>>)
+                          , util::sptr<Block const>, bool
+                          , std::vector<util::sptr<Expression const>>)
 {
     error::ctorNotAllowed(ct_pos);
 }
 
 void ClauseBase::acceptStmt(util::sptr<Statement> stmt)
 {
-    _block.addStmt(std::move(stmt));
+    _block->addStmt(std::move(stmt));
 }
 
-void ClauseBase::acceptElse(misc::position const& else_pos, Block block)
+void ClauseBase::acceptElse(misc::position const& else_pos, util::sptr<Statement const> block)
 {
-    _block.acceptElse(else_pos, std::move(block));
+    _block->acceptElse(else_pos, std::move(block));
 }
 
-void ClauseBase::acceptCatch(misc::position const& catch_pos, Block block)
+void ClauseBase::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block)
 {
-    _block.acceptCatch(catch_pos, std::move(block));
+    _block->acceptCatch(catch_pos, std::move(block));
 }
 
 bool ClauseBase::shrinkOn(int level) const
@@ -98,6 +97,14 @@ void IfnotClause::deliver()
                 new BranchAlterOnly(pos, std::move(_predicate), std::move(_block))));
 }
 
+void ForClause::deliver()
+{
+    misc::position pos(this->_begin->pos);
+    this->_parent->acceptStmt(util::mkptr(new RangeIteration(
+            pos, std::move(this->_ref), std::move(this->_begin), std::move(this->_end)
+          , std::move(this->_step), std::move(this->_block))));
+}
+
 void FunctionClause::deliver()
 {
     this->_parent->acceptFunc(util::mkptr(
@@ -123,10 +130,11 @@ void ClassClause::acceptStmt(util::sptr<Statement> stmt)
 
 void ClassClause::acceptCtor(
         misc::position const& ct_pos, std::vector<std::string> params
-      , Block body, bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args)
+      , util::sptr<Block const> body, bool super_init
+      , std::vector<util::sptr<Expression const>> super_ctor_args)
 {
-    this->_block.setCtor(ct_pos, std::move(params), std::move(body), super_init
-                       , std::move(super_ctor_args));
+    this->_block->setCtor(ct_pos, std::move(params), std::move(body), super_init
+                        , std::move(super_ctor_args));
 }
 
 void CtorClause::deliver()

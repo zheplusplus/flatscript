@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include <output/node-base.h>
+#include <util/uid.h>
 
 #include "node-base.h"
 
@@ -89,12 +90,15 @@ namespace semantic {
     {
         explicit SubSymbolTable(util::sref<SymbolTable> ext_sym)
             : SymbolTable(ext_sym)
+            , id(util::uid::next_id())
         {}
 
         void defParam(misc::position const&, std::string const&) {}
 
         void defFunc(misc::position const& pos, std::string const& name);
         std::set<std::string> localNames() const;
+
+        util::uid const id;
     private:
         util::sptr<output::Expression const> _makeReference(
             misc::position const& pos, std::string const& name);

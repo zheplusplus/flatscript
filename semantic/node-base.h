@@ -2,12 +2,10 @@
 #define __STEKIN_SEMANTIC_NODE_BASE_H__
 
 #include <string>
-#include <utility>
 #include <gmpxx.h>
 
-#include <output/fwd-decl.h>
 #include <util/pointer.h>
-#include <misc/pos-type.h>
+#include <output/node-base.h>
 
 #include "fwd-decl.h"
 
@@ -18,6 +16,11 @@ namespace semantic {
 
         virtual bool isAsync() const = 0;
         virtual void compile(util::sref<Scope> scope) const = 0;
+
+        void compile(Scope& scope) const
+        {
+            this->compile(util::mkref(scope));
+        }
 
         virtual ~Statement() {}
 

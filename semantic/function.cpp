@@ -1,7 +1,7 @@
 #include <output/expr-nodes.h>
+#include <output/function-impl.h>
 
 #include "function.h"
-#include "node-base.h"
 #include "scope-impl.h"
 
 using namespace semantic;
@@ -25,7 +25,7 @@ util::sptr<output::Statement const> Function::_compileBody(
         util::sref<SymbolTable> st, bool class_scope) const
 {
     SyncFunctionScope body_scope(pos, st, param_names, class_scope);
-    body.compile(body_scope);
+    this->body->compile(body_scope);
     return body_scope.deliver();
 }
 
@@ -48,21 +48,21 @@ util::sptr<output::Statement const> RegularAsyncFunction::_compileBody(
         util::sref<SymbolTable> st, bool class_scope) const
 {
     RegularAsyncFuncScope body_scope(pos, st, param_names, class_scope);
-    body.compile(body_scope);
+    this->body->compile(body_scope);
     return body_scope.deliver();
 }
 
 util::sptr<output::Expression const> Lambda::compile(util::sref<Scope> scope) const
 {
     SyncFunctionScope body_scope(pos, scope->sym(), param_names, false);
-    body.compile(body_scope);
+    this->body->compile(body_scope);
     return util::mkptr(new output::Lambda(pos, param_names, body_scope.deliver(), false));
 }
 
 util::sptr<output::Expression const> RegularAsyncLambda::compile(util::sref<Scope> scope) const
 {
     RegularAsyncFuncScope body_scope(pos, scope->sym(), param_names, false);
-    body.compile(body_scope);
+    this->body->compile(body_scope);
     return util::mkptr(new output::RegularAsyncLambda(
                     pos, param_names, async_param_index, body_scope.deliver()));
 }

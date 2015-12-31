@@ -27,7 +27,12 @@ std::vector<std::string> output::formNames(std::vector<std::string> const& names
     return mapStrings(names, formName);
 }
 
-std::string output::formSubName(std::string const& name, util::id space_id)
+std::string output::formClassName(std::string const& name)
+{
+    return "$cls_" + name;
+}
+
+std::string output::formSubName(std::string const& name, util::uid space_id)
 {
     return "$s_" + name + '$' + space_id.str();
 }
@@ -42,12 +47,12 @@ std::vector<std::string> output::formTransientParams(std::vector<std::string> co
     return mapStrings(params, formTransientParam);
 }
 
-std::string output::formAsyncRef(util::id const& id)
+std::string output::formAsyncRef(util::uid const& id)
 {
     return "$ar_" + id.str();
 }
 
-std::string output::formAnonymousFunc(util::id const& id)
+std::string output::formAnonymousFunc(util::uid const& id)
 {
     return "$anf_" + id.str();
 }

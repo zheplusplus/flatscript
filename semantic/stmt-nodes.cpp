@@ -1,12 +1,10 @@
-#include <algorithm>
-
-#include <output/function.h>
+#include <output/function-impl.h>
 #include <output/stmt-nodes.h>
 #include <output/expr-nodes.h>
+#include <output/list-pipe.h>
 #include <report/errors.h>
 
 #include "stmt-nodes.h"
-#include "function.h"
 #include "scope-impl.h"
 #include "common.h"
 
@@ -29,16 +27,16 @@ bool Arithmetics::isAsync() const
 void Branch::compile(util::sref<Scope> scope) const
 {
     if (predicate->isLiteral(scope->sym())) {
-        Block const& block(predicate->boolValue(scope->sym()) ? consequence : alternative);
+        auto block(predicate->boolValue(scope->sym()) ? *this->consequence : *this->alternative);
         BranchingSubScope sub_scope(scope);
-        block.compile(sub_scope);
+        block->compile(sub_scope);
         return scope->addStmt(pos, sub_scope.deliver());
     }
     util::sptr<output::Expression const> compiled_pred(predicate->compile(scope));
     BranchingSubScope consq_scope(scope);
-    consequence.compile(consq_scope);
+    this->consequence->compile(consq_scope);
     BranchingSubScope alter_scope(scope);
-    alternative.compile(alter_scope);
+    this->alternative->compile(alter_scope);
 
     scope->addStmt(pos, util::mkptr(new output::Branch(
                         std::move(compiled_pred), consq_scope.deliver(), alter_scope.deliver())));
@@ -46,15 +44,13 @@ void Branch::compile(util::sref<Scope> scope) const
         return scope->terminate(pos);
     }
 
-    if (consequence.isAsync() || alternative.isAsync()) {
+    if (this->consequence->isAsync() || this->alternative->isAsync()) {
         util::sptr<output::NoParamCallback> succession(new output::NoParamCallback);
         if (!consq_scope.terminated()) {
-            consq_scope.addStmt(pos, makeArith(succession->callMe(
-                        pos, util::ptrarr<output::Expression const>())));
+            consq_scope.addStmt(pos, makeArith(succession->callMe(pos)));
         }
         if (!alter_scope.terminated()) {
-            alter_scope.addStmt(pos, makeArith(succession->callMe(
-                        pos, util::ptrarr<output::Expression const>())));
+            alter_scope.addStmt(pos, makeArith(succession->callMe(pos)));
         }
         util::sref<output::Block> sf(succession->bodyFlow());
         scope->block()->addFunc(std::move(succession));
@@ -64,7 +60,8 @@ void Branch::compile(util::sref<Scope> scope) const
 
 bool Branch::isAsync() const
 {
-    return predicate->isAsync() || consequence.isAsync() || alternative.isAsync();
+    return this->predicate->isAsync() || this->consequence->isAsync()
+                                      || this->alternative->isAsync();
 }
 
 void NameDef::compile(util::sref<Scope> scope) const
@@ -127,18 +124,16 @@ bool AttrSet::isAsync() const
 static util::sptr<output::Statement const> _catch_stmt(
     misc::position const& pos, util::sref<output::AsyncCatcher> catch_func)
 {
-    util::ptrarr<output::Expression const> args;
-    args.append(util::mkptr(new output::ExceptionObj(pos)));
-    return makeArith(catch_func->callMe(pos, std::move(args)));
+    return makeArith(catch_func->callMe(pos, util::mkptr(new output::ExceptionObj(pos))));
 }
 
 void ExceptionStall::compile(util::sref<Scope> scope) const
 {
     if (!isAsync()) {
         BranchingSubScope try_scope(scope);
-        try_block.compile(try_scope);
+        this->try_block->compile(try_scope);
         CatchScope catch_scope(scope);
-        catch_block.compile(catch_scope);
+        this->catch_block->compile(catch_scope);
         scope->addStmt(pos, util::mkptr(new output::ExceptionStall(
                         try_scope.deliver(), catch_scope.deliver())));
         if (try_scope.terminated() && catch_scope.terminated()) {
@@ -153,10 +148,10 @@ void ExceptionStall::compile(util::sref<Scope> scope) const
 
     CatchScope catch_scope(scope);
     catch_scope.setAsyncSpace(pos, std::vector<std::string>(), catch_func_ref->bodyFlow());
-    catch_block.compile(catch_scope);
+    this->catch_block->compile(catch_scope);
 
     AsyncTryScope try_scope(scope, catch_func_ref);
-    try_block.compile(try_scope);
+    this->try_block->compile(try_scope);
 
     util::sptr<output::Block> staller(new output::Block);
     staller->addStmt(_catch_stmt(pos, catch_func_ref));
@@ -168,12 +163,10 @@ void ExceptionStall::compile(util::sref<Scope> scope) const
 
     util::sptr<output::NoParamCallback> succession(new output::NoParamCallback);
     if (!try_scope.terminated()) {
-        try_scope.addStmt(pos, makeArith(succession->callMe(
-                pos, util::ptrarr<output::Expression const>())));
+        try_scope.addStmt(pos, makeArith(succession->callMe(pos)));
     }
     if (!catch_scope.terminated()) {
-        catch_scope.addStmt(pos, makeArith(succession->callMe(
-                pos, util::ptrarr<output::Expression const>())));
+        catch_scope.addStmt(pos, makeArith(succession->callMe(pos)));
     }
 
     util::sptr<output::Block> succ_try(new output::Block);
@@ -191,7 +184,7 @@ void ExceptionStall::compile(util::sref<Scope> scope) const
 
 bool ExceptionStall::isAsync() const
 {
-    return try_block.isAsync() || catch_block.isAsync();
+    return this->try_block->isAsync() || this->catch_block->isAsync();
 }
 
 void Throw::compile(util::sref<Scope> scope) const
@@ -202,4 +195,20 @@ void Throw::compile(util::sref<Scope> scope) const
     scope->addStmt(pos, util::mkptr(new output::ExprScheme(
                 scope->throwMethod(), exception->compile(scope))));
     scope->terminate(pos);
+}
+
+void Break::compile(util::sref<Scope> scope) const
+{
+    scope->addStmt(pos, util::mkptr(new output::ExprScheme(
+            scope->breakMethod(this->pos)
+          , util::mkptr(new output::PipeBreak(this->pos, scope->scopeId())))));
+    scope->terminate(this->pos);
+}
+
+void Continue::compile(util::sref<Scope> scope) const
+{
+    scope->addStmt(pos, util::mkptr(new output::ExprScheme(
+            scope->continueMethod(this->pos)
+          , util::mkptr(new output::PipeContinue(this->pos, scope->scopeId())))));
+    scope->terminate(this->pos);
 }

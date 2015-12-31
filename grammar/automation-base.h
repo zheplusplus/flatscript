@@ -5,15 +5,13 @@
 #include <map>
 #include <functional>
 
-#include <util/arrays.h>
-#include <misc/pos-type.h>
-
 #include "tokens.h"
 #include "block.h"
 
 namespace grammar {
 
     struct ClauseStackWrapper;
+    struct AutomationBase;
 
     typedef std::function<void (AutomationStack&, TypedToken const&)> TokenAction;
     typedef std::function<util::sptr<AutomationBase> (TypedToken const&)> AutomationCreator;
@@ -27,19 +25,17 @@ namespace grammar {
         virtual void resumed(AutomationStack&) {};
 
         void nextToken(AutomationStack& stack, TypedToken const& token);
-        static void discardToken(AutomationStack&, TypedToken const& token);
-
-        virtual void pushFactor(AutomationStack& stack
-                              , util::sptr<Expression const> factor
-                              , std::string const& image);
+        virtual void pushFactor(AutomationStack& stack, FactorToken& factor);
 
         virtual void accepted(AutomationStack&, util::sptr<Expression const> expr) = 0;
         virtual void accepted(AutomationStack&, std::vector<util::sptr<Expression const>>) {}
-        virtual void accepted(AutomationStack&, misc::position const&, Block) {}
+        virtual void accepted(AutomationStack&, misc::position const&, util::sptr<Block const>) {}
         virtual bool finishOnBreak(bool sub_empty) const = 0;
         virtual void finish(ClauseStackWrapper& clauses
                           , AutomationStack& stack
                           , misc::position const& pos) = 0;
+
+        static void discardToken(AutomationStack&, TypedToken const& token);
     protected:
         util::sref<AutomationBase const> _previous;
         TokenAction _actions[TOKEN_TYPE_COUNT];

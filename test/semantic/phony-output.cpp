@@ -4,7 +4,7 @@
 #include <output/stmt-nodes.h>
 #include <output/expr-nodes.h>
 #include <output/list-pipe.h>
-#include <output/function.h>
+#include <output/function-impl.h>
 #include <output/class.h>
 #include <output/methods.h>
 #include <output/name-mangler.h>
@@ -56,7 +56,23 @@ void Function::write(std::ostream&) const
     body()->write(dummyos());
 }
 
-void Class::write(std::ostream&) const {}
+void ClassInitFunc::write(std::ostream&) const
+{
+    DataTree::actualOne()(CLASS_INIT_FN, name, member_funcs.size());
+    DataTree::actualOne()(CLASS_INIT_FN, inherit ? 1 : 0);
+    for (auto const& fn: member_funcs) {
+        DataTree::actualOne()(MEMBER_FUNC, fn.first);
+        fn.second->str();
+    }
+}
+
+void ClassInitCall::write(std::ostream&) const
+{
+    DataTree::actualOne()(CLASS_INIT_ST, name, base_class_or_nul.nul() ? 0 : 1);
+    if (base_class_or_nul.not_nul()) {
+        base_class_or_nul->str();
+    }
+}
 
 util::sptr<Expression const> Function::callMe(
         misc::position const& pos, util::ptrarr<Expression const> args) const
@@ -171,15 +187,31 @@ void ExceptionStall::write(std::ostream&) const
     catch_block->write(dummyos());
 }
 
+void SyncRangeIteration::write(std::ostream&) const
+{
+    DataTree::actualOne()(SYNC_FOR_RANGE, util::str(this->step)
+                                                + ':' + (this->has_ret ? 'R' : '-')
+                                                + ':' + (this->has_break ? 'B' : '-'));
+    this->reference->str();
+    this->begin->str();
+    this->end->str();
+    this->section->write(dummyos());
+}
+
+void AsyncRangeIteration::write(std::ostream&) const
+{
+    DataTree::actualOne()(ASYNC_FOR_RANGE, this->step);
+    this->reference->str();
+    this->begin->str();
+    this->end->str();
+    this->section->write(dummyos());
+    this->succession->write(dummyos());
+}
+
 void ExprScheme::write(std::ostream&) const
 {
     method->scheme("");
     expr->str();
-}
-
-void PipelineContinue::write(std::ostream&) const
-{
-    DataTree::actualOne()(PIPELINE_CONTINUE);
 }
 
 std::string Undefined::str() const
@@ -246,6 +278,18 @@ std::string PipeKey::str() const
 std::string PipeResult::str() const
 {
     DataTree::actualOne()(pos, PIPE_RESULT);
+    return "";
+}
+
+std::string PipeBreak::str() const
+{
+    DataTree::actualOne()(pos, BREAK);
+    return "";
+}
+
+std::string PipeContinue::str() const
+{
+    DataTree::actualOne()(pos, CONTINUE);
     return "";
 }
 
@@ -508,15 +552,25 @@ Method method::asyncRet()
     return make_method(REGULAR_ASYNC_RETURN);
 }
 
-Method method::syncPipeRet(util::id)
+Method method::syncPipeRet(util::uid)
 {
     return make_method(SYNC_PIPELINE_RETURN);
+}
+
+Method method::syncBreak()
+{
+    return make_method(SYNC_BREAK);
+}
+
+Method method::callNext()
+{
+    return make_method(CALL_NEXT);
 }
 
 int Block::count() const { return 0; }
 int Export::count() const { return 0; }
 int ExceptionStall::count() const { return 0; }
 std::string output::formName(std::string const& name) { return name; }
-std::string output::formSubName(std::string const& name, util::id) { return name + '$'; }
+std::string output::formSubName(std::string const& name, util::uid) { return name + '$'; }
 bool ListLiteral::mayThrow() const { return false; }
 bool Block::mayThrow() const { return false; }

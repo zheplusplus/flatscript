@@ -1,12 +1,11 @@
 #ifndef __STEKIN_GRAMMAR_NODE_BASE_H__
 #define __STEKIN_GRAMMAR_NODE_BASE_H__
 
-#include <semantic/fwd-decl.h>
 #include <util/pointer.h>
 #include <misc/pos-type.h>
+#include <semantic/node-base.h>
 
 #include "reducing-env.h"
-#include "fwd-decl.h"
 
 namespace grammar {
 
@@ -14,8 +13,8 @@ namespace grammar {
         misc::position const pos;
 
         virtual util::sptr<semantic::Statement const> compile() const = 0;
-        virtual void acceptElse(misc::position const& else_pos, Block&& block);
-        virtual void acceptCatch(misc::position const& catch_pos, Block&& block);
+        virtual void acceptElse(misc::position const& else_pos, util::sptr<Statement const> block);
+        virtual void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
 
         virtual ~Statement() {}
 

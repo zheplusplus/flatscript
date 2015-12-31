@@ -6,20 +6,6 @@
 
 namespace util {
 
-    struct id {
-        explicit id(void const* i)
-            : _id(i)
-        {}
-
-        std::string str() const;
-
-        bool operator<(id const& rhs) const;
-        bool operator==(id const& rhs) const;
-        bool operator!=(id const& rhs) const;
-    private:
-        void const* const _id;
-    };
-
     template <typename RawType>
     struct sref {
         typedef RawType value_type;
@@ -76,11 +62,6 @@ namespace util {
         {
             return _ptr;
         }
-
-        util::id id() const
-        {
-            return util::id(_ptr);
-        }
     private:
         pointer _ptr;
 
@@ -115,16 +96,6 @@ namespace util {
         sref<RawType> operator*() const
         {
             return sref<RawType>(base_type::get());
-        }
-
-        util::id id() const
-        {
-            return util::id(base_type::get());
-        }
-
-        std::string str() const
-        {
-            return id().str();
         }
 
         bool nul() const

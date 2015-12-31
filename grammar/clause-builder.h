@@ -1,8 +1,7 @@
 #ifndef __STEKIN_GRAMMAR_CLAUSE_BUILDER_H__
 #define __STEKIN_GRAMMAR_CLAUSE_BUILDER_H__
 
-#include "automation-base.h"
-#include "block.h"
+#include "tokens.h"
 
 namespace grammar {
 
@@ -11,25 +10,13 @@ namespace grammar {
 
         ClauseBuilder(ClauseBuilder const&) = delete;
 
-        void addArith(int indent_len
-                    , misc::position const& pos
-                    , std::vector<util::sptr<Token>> const& sequence);
-        void addExtern(int indent_len
-                     , misc::position const& pos
-                     , std::vector<std::string> const& names);
-        void addExport(int indent_len
-                     , misc::position const& pos
-                     , std::vector<std::string> const& names
-                     , std::vector<util::sptr<Token>> const& sequence);
-
-        semantic::Block buildAndClear();
+        void addArith(int indent, misc::position const& pos, std::vector<util::sptr<Token>> seq);
+        util::sptr<semantic::Statement const> buildAndClear();
     private:
         bool _shrinkTo(int level, misc::position const& pos);
         bool _prepareLevel(int level, misc::position const& pos, std::string const& token);
-        void _pushSequence(misc::position const& pos
-                         , std::vector<util::sptr<Token>> const& sequence);
 
-        Block* _global;
+        util::sref<Statement> _global;
         std::vector<util::sptr<ClauseBase>> _clauses;
     };
 

@@ -3,7 +3,7 @@
 
 #include <output/function.h>
 
-#include "block.h"
+#include "node-base.h"
 
 namespace semantic {
 
@@ -14,7 +14,7 @@ namespace semantic {
         Function(misc::position const& ps
                , std::string const& func_name
                , std::vector<std::string> const& params
-               , Block func_body)
+               , util::sptr<Statement const> func_body)
             : pos(ps)
             , name(func_name)
             , param_names(params)
@@ -34,7 +34,7 @@ namespace semantic {
         misc::position const pos;
         std::string const name;
         std::vector<std::string> const param_names;
-        Block const body;
+        util::sptr<Statement const> const body;
     protected:
         virtual util::sptr<output::Statement const> _compileBody(
                     util::sref<SymbolTable> st, bool class_scope) const;
@@ -47,7 +47,7 @@ namespace semantic {
                            , std::string const& func_name
                            , std::vector<std::string> const& params
                            , int async_param_idx
-                           , Block func_body)
+                           , util::sptr<Statement const> func_body)
             : Function(pos, func_name, params, std::move(func_body))
             , async_param_index(async_param_idx)
         {}
@@ -66,10 +66,12 @@ namespace semantic {
     struct Lambda
         : Expression
     {
-        Lambda(misc::position const& pos, std::vector<std::string> const& p, Block b)
-            : Expression(pos)
-            , param_names(p)
-            , body(std::move(b))
+        Lambda(misc::position const& pos
+             , std::vector<std::string> const& p
+             , util::sptr<Statement const> b)
+                : Expression(pos)
+                , param_names(p)
+                , body(std::move(b))
         {}
 
         util::sptr<output::Expression const> compile(util::sref<Scope> scope) const;
@@ -77,7 +79,7 @@ namespace semantic {
         bool isAsync() const { return false; }
 
         std::vector<std::string> const param_names;
-        Block const body;
+        util::sptr<Statement const> const body;
     };
 
     struct RegularAsyncLambda
@@ -86,7 +88,7 @@ namespace semantic {
         RegularAsyncLambda(misc::position const& pos
                          , std::vector<std::string> const& params
                          , int async_param_idx
-                         , Block body)
+                         , util::sptr<Statement const> body)
             : Lambda(pos, params, std::move(body))
             , async_param_index(async_param_idx)
         {}

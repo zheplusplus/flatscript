@@ -1,98 +1,42 @@
 #ifndef __STEKIN_OUTPUT_FUNCTION_H__
 #define __STEKIN_OUTPUT_FUNCTION_H__
 
-#include "fwd-decl.h"
-#include "block.h"
+#include <util/arrays.h>
+
+#include "node-base.h"
 
 namespace output {
 
     struct Function {
         virtual ~Function() {}
         Function(Function const&) = delete;
-        Function() = default;
+
+        Function()
+            : id(util::uid::next_id())
+        {}
 
         void write(std::ostream& os) const;
         util::sptr<Expression const> callMe(
                 misc::position const& pos, util::ptrarr<Expression const> args) const;
 
+        util::sptr<Expression const> callMe(
+                misc::position const& pos, util::sptr<Expression const> arg) const
+        {
+            util::ptrarr<Expression const> args;
+            args.append(std::move(arg));
+            return this->callMe(pos, std::move(args));
+        }
+
+        util::sptr<Expression const> callMe(misc::position const& pos) const
+        {
+            return this->callMe(pos, util::ptrarr<Expression const>());
+        }
+
         virtual util::sref<Statement const> body() const = 0;
         virtual std::string mangledName() const = 0;
         virtual std::vector<std::string> parameters() const = 0;
-    };
 
-    struct RegularFunction
-        : Function
-    {
-        RegularFunction(std::string const& func_name
-                      , std::vector<std::string> const& p
-                      , util::sptr<Statement const> b)
-            : name(func_name)
-            , params(p)
-            , body_stmt(std::move(b))
-        {}
-
-        util::sref<Statement const> body() const;
-        std::string mangledName() const;
-        std::vector<std::string> parameters() const;
-
-        std::string const name;
-        std::vector<std::string> const params;
-        util::sptr<Statement const> const body_stmt;
-    };
-
-    struct RegularAsyncFunction
-        : RegularFunction
-    {
-        RegularAsyncFunction(std::string const& func_name
-                           , std::vector<std::string> const& params
-                           , int index
-                           , util::sptr<Statement const> body)
-            : RegularFunction(func_name, params, std::move(body))
-            , async_param_index(index)
-        {}
-
-        std::vector<std::string> parameters() const;
-
-        int const async_param_index;
-    };
-
-    struct AnonymousCallback
-        : Function
-    {
-        AnonymousCallback()
-            : _body(new Block)
-        {}
-
-        util::sref<Statement const> body() const;
-        std::string mangledName() const;
-
-        util::sref<Block> bodyFlow();
-    private:
-        util::sptr<Block> const _body;
-    };
-
-    struct ConditionalCallback
-        : AnonymousCallback
-    {
-        ConditionalCallback() = default;
-
-        std::vector<std::string> parameters() const;
-    };
-
-    struct NoParamCallback
-        : AnonymousCallback
-    {
-        NoParamCallback() = default;
-
-        std::vector<std::string> parameters() const;
-    };
-
-    struct AsyncCatcher
-        : AnonymousCallback
-    {
-        AsyncCatcher() = default;
-
-        std::vector<std::string> parameters() const;
+        util::uid const id;
     };
 
 }

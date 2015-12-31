@@ -1,18 +1,16 @@
 #include <semantic/expr-nodes.h>
-#include <semantic/function.h>
-#include <semantic/class.h>
 #include <report/errors.h>
 
 #include "node-base.h"
 
 using namespace grammar;
 
-void Statement::acceptElse(misc::position const& else_pos, Block&&)
+void Statement::acceptElse(misc::position const& else_pos, util::sptr<Statement const>)
 {
     error::partialStmtNotMatch(else_pos, "else", "if");
 }
 
-void Statement::acceptCatch(misc::position const& catch_pos, Block&&)
+void Statement::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const>)
 {
     error::partialStmtNotMatch(catch_pos, "catch", "try");
 }

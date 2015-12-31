@@ -83,19 +83,20 @@ try
         'empty', 'write', 'latency-ref', 'fib', 'nest-func', 'return-void',
         'pair', 'sqrt', 'find-root', 'fixed-point', 'vector-multi', 'string',
         'big-literals', 'basic-list', 'return-list', 'list-pipe', 'lookup',
-        'list-slice', 'qsort', 'set-attribute', 'dict', 'lambda', 'ref-this',
-        'async-calls', 'set-timeout', 'async-pipes', 'branches', 'async-fib',
+        'list-slice', 'set-attribute', 'dict', 'lambda', 'ref-this', 'branches',
+        'async-calls', 'set-timeout', 'async-pipes', 'qsort', 'async-fib',
         'branch-with-async-sub', 'return-in-branch', 'nested-subs', 'try-catch',
         'deliver-space-with-this-decl', 'async-try-catch', 'throw-in-pipeline',
         'return-in-pipeline', 'name-shadowing', 'class', 'conditional', 'regex',
+        'same-name-in-sub-scopes', 'class-xref', 'loop-controls', 'for-range',
     ] |: checkFile($, %%)
     [
         'export', 'class',
     ] |: checkDir($, %%)
     [
-        'inv-chars', 'bad-indent', 'tab-as-ind', 'throw-nothing', 'slice',
-        'statments-after-return', 'super-ctor-without-base-class',
-        'init-super-with-super', 'constructor-not-in-class',
+        'inv-chars', 'bad-indent', 'tab-as-ind', 'statments-after-return',
+        'slice', 'super-ctor-without-base-class', 'init-super-with-super',
+        'constructor-not-in-class', 'throw-nothing', 'invalid-for-range-head',
     ] |: checkError($, %%)
 catch
     console.error($e)

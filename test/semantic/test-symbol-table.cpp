@@ -226,16 +226,16 @@ TEST_F(SymbolTableTest, ForbidDef)
     misc::position pos(11);
     misc::position def_pos(1100);
 
-    semantic::Block block;
+    semantic::Block block(pos);
     refSym()->defName(pos, "ryou");
-    semantic::Block consq_block;
-    consq_block.addFunc(util::mkptr(new semantic::Function(
-        def_pos, "leela", std::vector<std::string>(), semantic::Block())));
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    consq_block->addFunc(util::mkptr(new semantic::Function(
+        def_pos, "leela", std::vector<std::string>(), util::mkptr(new semantic::Block(pos)))));
     block.addStmt(util::mkptr(new semantic::Branch(
                      pos
                    , util::mkptr(new semantic::Reference(pos, "ryou"))
                    , std::move(consq_block)
-                   , semantic::Block())));
+                   , util::mkptr(new semantic::Block(pos)))));
 
     compile(block, refSym());
 

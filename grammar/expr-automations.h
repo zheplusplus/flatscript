@@ -13,7 +13,8 @@ namespace grammar {
 
         void activated(AutomationStack& stack);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
-        void accepted(AutomationStack& stack, misc::position const& pos, Block block);
+        void accepted(AutomationStack& stack, misc::position const& pos
+                    , util::sptr<Block const> block);
         bool finishOnBreak(bool sub_empty) const;
         void finish(ClauseStackWrapper&, AutomationStack&, misc::position const&);
     protected:
@@ -53,9 +54,7 @@ namespace grammar {
     struct ArithAutomation
         : AutomationBase
     {
-        void pushFactor(AutomationStack& stack
-                      , util::sptr<Expression const> factor
-                      , std::string const& image);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
         void accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list);
         bool finishOnBreak(bool sub_empty) const;
@@ -130,7 +129,8 @@ namespace grammar {
         NestedOrParamsAutomation();
 
         void accepted(AutomationStack& stack, util::sptr<Expression const> expr);
-        void accepted(AutomationStack& stack, misc::position const& pos, Block block);
+        void accepted(AutomationStack& stack, misc::position const& pos
+                    , util::sptr<Block const> block);
         bool finishOnBreak(bool sub_empty) const;
         void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const& pos);
     private:
@@ -140,7 +140,8 @@ namespace grammar {
         bool _reduce(AutomationStack& stack, Token const& token);
         void _reduceAsNested(AutomationStack& stack, misc::position const& rp);
         void _reduceAsLambda(AutomationStack& stack);
-        void _reduceAsLambda(AutomationStack& stack, misc::position const& pos, Block body);
+        void _reduceAsLambda(AutomationStack& stack, misc::position const& pos
+                           , util::sptr<Block const> body);
         bool _afterColon() const;
 
         bool _wait_for_closing;
@@ -188,9 +189,7 @@ namespace grammar {
     {
         explicit AsyncPlaceholderAutomation(misc::position const& ps);
 
-        void pushFactor(AutomationStack& stack
-                      , util::sptr<Expression const> factor
-                      , std::string const& image);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
         void accepted(AutomationStack& stack, util::sptr<Expression const> expr);
         void accepted(AutomationStack& stack, std::vector<util::sptr<Expression const>> list);
         bool finishOnBreak(bool) const { return false; }
@@ -206,9 +205,7 @@ namespace grammar {
     {
         explicit SuperCallAutomation(misc::position const& ps);
 
-        void pushFactor(AutomationStack& stack
-                      , util::sptr<Expression const> factor
-                      , std::string const& image);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
         void accepted(AutomationStack&, util::sptr<Expression const>) {}
         void accepted(AutomationStack& stack, std::vector<util::sptr<Expression const>> list);
         bool finishOnBreak(bool) const;

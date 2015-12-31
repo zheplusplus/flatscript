@@ -1,7 +1,6 @@
 #include <report/errors.h>
 
 #include "class.h"
-#include "function.h"
 #include "stmt-nodes.h"
 #include "expr-nodes.h"
 #include "scope-impl.h"
@@ -20,7 +19,7 @@ static util::sptr<Statement const> superInitCall(
 }
 
 Constructor::Constructor(misc::position const& ps, std::vector<std::string> params
-                       , Block b, std::string const& class_name, bool si
+                       , util::sptr<Statement const> b, std::string const& class_name, bool si
                        , util::ptrarr<Expression const> super_ctor_args)
     : pos(ps)
     , param_names(std::move(params))
@@ -45,7 +44,7 @@ util::sptr<output::Constructor const> Constructor::compile(
         this->super_init->compile(util::mkref(ctor_scope));
     }
     ctor_scope.allowSuper(has_base_class);
-    this->body.compile(util::mkref(ctor_scope));
+    this->body->compile(util::mkref(ctor_scope));
     return util::mkptr(new output::Constructor(this->param_names, ctor_scope.deliver()));
 }
 
@@ -62,20 +61,19 @@ void Class::compile(util::sref<Scope> scope) const
             this->hasBaseClass()
           ? this->base_class->compile(scope)
           : util::sptr<output::Expression const>(nullptr));
-    scope->sym()->defName(this->pos, this->name);
 
     util::sptr<output::Block const> class_body(new output::Block);
     std::map<std::string, misc::position> memfn_defs_pos;
-    std::map<std::string, util::sptr<output::Expression const>> memfuncs;
-    this->body.getFuncs().iter(
+    std::map<std::string, util::sref<Function const>> memfuncs;
+    this->body->getFuncs().iter(
         [&](util::sptr<Function const> const& func, int)
         {
             if (memfn_defs_pos.find(func->name) != memfn_defs_pos.end()) {
                 return error::duplicateMemFunc(memfn_defs_pos[func->name], func->pos, func->name);
             }
             memfn_defs_pos.insert(std::make_pair(func->name, func->pos));
-            memfuncs.insert(std::make_pair(func->name, func->compileToLambda(scope->sym(), true)));
+            memfuncs.insert(std::make_pair(func->name, *func));
         });
-    scope->addStmt(this->pos, util::mkptr(new output::Class(
-            this->name, std::move(base_class), std::move(memfuncs), std::move(ct))));
+    scope->addClass(this->pos, this->name, std::move(base_class)
+                  , std::move(ct), std::move(memfuncs));
 }

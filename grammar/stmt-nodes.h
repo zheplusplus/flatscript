@@ -2,7 +2,6 @@
 #define __STEKIN_GRAMMAR_STATEMENT_NODES_H__
 
 #include "node-base.h"
-#include "block.h"
 
 namespace grammar {
 
@@ -22,7 +21,7 @@ namespace grammar {
     struct Branch
         : Statement
     {
-        Branch(misc::position const& pos, util::sptr<Expression const> p, Block c)
+        Branch(misc::position const& pos, util::sptr<Expression const> p, util::sptr<Statement const> c)
             : Statement(pos)
             , predicate(std::move(p))
             , consequence(std::move(c))
@@ -30,19 +29,19 @@ namespace grammar {
         {}
 
         util::sptr<semantic::Statement const> compile() const;
-        void acceptElse(misc::position const& else_pos, Block&& block);
+        void acceptElse(misc::position const& else_pos, util::sptr<Statement const> block);
 
         util::sptr<Expression const> const predicate;
-        Block const consequence;
+        util::sptr<Statement const> const consequence;
     private:
-        util::sptr<Block const> _alternative;
+        util::sptr<Statement const> _alternative;
         misc::position _else_pos;
     };
 
     struct BranchAlterOnly
         : Statement
     {
-        BranchAlterOnly(misc::position const& pos, util::sptr<Expression const> p, Block a)
+        BranchAlterOnly(misc::position const& pos, util::sptr<Expression const> p, util::sptr<Statement const> a)
             : Statement(pos)
             , predicate(std::move(p))
             , alternative(std::move(a))
@@ -51,7 +50,7 @@ namespace grammar {
         util::sptr<semantic::Statement const> compile() const;
 
         util::sptr<Expression const> const predicate;
-        Block const alternative;
+        util::sptr<Statement const> const alternative;
     };
 
     struct Return
@@ -85,9 +84,9 @@ namespace grammar {
     struct Extern
         : Statement
     {
-        Extern(misc::position const& pos, std::vector<std::string> const& n)
+        Extern(misc::position const& pos, std::vector<std::string> n)
             : Statement(pos)
-            , names(n)
+            , names(std::move(n))
         {}
 
         util::sptr<semantic::Statement const> compile() const;
@@ -99,7 +98,7 @@ namespace grammar {
         : Statement
     {
         Export(misc::position const& pos
-             , std::vector<std::string> const e
+             , std::vector<std::string> e
              , util::sptr<Expression const> v)
                 : Statement(pos)
                 , export_point(std::move(e))
@@ -132,18 +131,18 @@ namespace grammar {
     struct ExceptionStall
         : Statement
     {
-        ExceptionStall(misc::position const& pos, Block f)
+        ExceptionStall(misc::position const& pos, util::sptr<Statement const> f)
             : Statement(pos)
             , flow(std::move(f))
             , _catch(nullptr)
         {}
 
         util::sptr<semantic::Statement const> compile() const;
-        void acceptCatch(misc::position const& catch_pos, Block&& block);
+        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
 
-        Block const flow;
+        util::sptr<Statement const> const flow;
     private:
-        util::sptr<Block const> _catch;
+        util::sptr<Statement const> _catch;
         misc::position _catch_pos;
     };
 
@@ -158,6 +157,52 @@ namespace grammar {
         util::sptr<semantic::Statement const> compile() const;
 
         util::sptr<Expression const> const exception;
+    };
+
+    struct Break
+        : Statement
+    {
+        explicit Break(misc::position const& pos)
+            : Statement(pos)
+        {}
+
+        util::sptr<semantic::Statement const> compile() const;
+    };
+
+    struct Continue
+        : Statement
+    {
+        explicit Continue(misc::position const& pos)
+            : Statement(pos)
+        {}
+
+        util::sptr<semantic::Statement const> compile() const;
+    };
+
+    struct RangeIteration
+        : Statement
+    {
+        RangeIteration(misc::position const& pos
+                     , std::string r
+                     , util::sptr<Expression const> b
+                     , util::sptr<Expression const> e
+                     , util::sptr<Expression const> s
+                     , util::sptr<Statement const> lp)
+            : Statement(pos)
+            , reference(std::move(r))
+            , begin(std::move(b))
+            , end(std::move(e))
+            , step(std::move(s))
+            , loop(std::move(lp))
+        {}
+
+        util::sptr<semantic::Statement const> compile() const;
+
+        std::string const reference;
+        util::sptr<Expression const> const begin;
+        util::sptr<Expression const> const end;
+        util::sptr<Expression const> const step;
+        util::sptr<Statement const> loop;
     };
 
 }

@@ -1,17 +1,22 @@
 #ifndef __STEKIN_SEMANTIC_LIST_PIPELINE_H__
 #define __STEKIN_SEMANTIC_LIST_PIPELINE_H__
 
-#include "block.h"
+#include <util/uid.h>
+
+#include "node-base.h"
 
 namespace semantic {
 
     struct Pipeline
         : Expression
     {
-        Pipeline(misc::position const& pos, util::sptr<Expression const> ls, Block sec)
+        Pipeline(misc::position const& pos
+               , util::sptr<Expression const> ls
+               , util::sptr<Statement const> sec)
             : Expression(pos)
             , list(std::move(ls))
             , section(std::move(sec))
+            , id(util::uid::next_id())
         {}
 
         util::sptr<output::Expression const> compile(util::sref<Scope> scope) const
@@ -27,7 +32,8 @@ namespace semantic {
         bool isAsync() const;
 
         util::sptr<Expression const> const list;
-        Block const section;
+        util::sptr<Statement const> const section;
+        util::uid const id;
     private:
         util::sptr<output::Expression const> _compile(util::sref<Scope> scope, bool root) const;
         util::sptr<output::Expression const> _compileSync(util::sref<Scope> scope, bool root) const;

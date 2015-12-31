@@ -25,12 +25,9 @@ static std::string constructor(std::string const& name, util::sptr<Constructor c
         ;
 }
 
-static std::string inherit(std::string const& name, util::sptr<Expression const> const& base)
+static std::string inherit(std::string const& name, bool inherit)
 {
-    if (base.nul()) {
-        return "";
-    }
-    return "$extend(" + name + "," + base->str() + ");";
+    return inherit ? "$extend(" + name + ",$b);" : "";
 }
 
 static std::string memfuncs(std::string const& name
@@ -59,18 +56,34 @@ static std::string creator(std::string const& name, util::sptr<Constructor const
         ;
 }
 
-void Class::write(std::ostream& os) const
+void ClassInitFunc::write(std::ostream& os) const
 {
-    os << output::formName(this->name)
-       <<
+    os <<
         util::replace_all(
         util::replace_all(
         util::replace_all(
         util::replace_all(
-            "=(function(){#CONSTRUCTOR #INHERIT #MEMFUNCS #CREATORFN})();"
-                , "#CONSTRUCTOR", ::constructor(this->name, this->ctor_or_nul))
-                , "#INHERIT", ::inherit(this->name, this->base_class_or_nul))
-                , "#MEMFUNCS", ::memfuncs(this->name, this->member_funcs))
-                , "#CREATORFN", ::creator(this->name, this->ctor_or_nul))
+        util::replace_all(
+            this->inherit
+                ?  "function #NAME($b){#CONSTRUCTOR #INHERIT #MEMFUNCS #CREATORFN}"
+                :  "function #NAME(){#CONSTRUCTOR #INHERIT #MEMFUNCS #CREATORFN}"
+                    , "#NAME", output::formClassName(this->name))
+                    , "#CONSTRUCTOR", ::constructor(this->name, this->ctor_or_nul))
+                    , "#INHERIT", ::inherit(this->name, this->inherit))
+                    , "#MEMFUNCS", ::memfuncs(this->name, this->member_funcs))
+                    , "#CREATORFN", ::creator(this->name, this->ctor_or_nul))
+        ;
+}
+
+void ClassInitCall::write(std::ostream& os) const
+{
+    os <<
+        util::replace_all(
+        util::replace_all(
+        util::replace_all(
+            "#NAME = #MANGLED(#BASE);"
+                , "#NAME", output::formName(this->name))
+                , "#MANGLED", output::formClassName(this->name))
+                , "#BASE", this->base_class_or_nul.nul() ? "" : this->base_class_or_nul->str())
         ;
 }

@@ -6,7 +6,6 @@
 
 #include "node-base.h"
 #include "automation-base.h"
-#include "function.h"
 #include "class.h"
 #include "tokens.h"
 
@@ -16,6 +15,7 @@ namespace grammar {
         explicit ClauseBase(int ind)
             : indent(ind)
             , _member_indent(-1)
+            , _block(new Block)
         {}
 
         ClauseBase(ClauseBase const&) = delete;
@@ -27,11 +27,11 @@ namespace grammar {
         virtual void acceptClass(util::sptr<Class> cls);
         virtual void acceptCtor(misc::position const& ct_pos
                               , std::vector<std::string> ct_params
-                              , Block ct_bl, bool super_init
+                              , util::sptr<Block const> ct_bl, bool super_init
                               , std::vector<util::sptr<Expression const>> super_ctor_args);
         virtual void acceptStmt(util::sptr<Statement> stmt);
-        void acceptElse(misc::position const& else_pos, Block block);
-        void acceptCatch(misc::position const& catch_pos, Block block);
+        void acceptElse(misc::position const& else_pos, util::sptr<Statement const> block);
+        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
 
         virtual void acceptExpr(util::sptr<Expression const>) {}
         virtual void deliver() = 0;
@@ -46,7 +46,7 @@ namespace grammar {
     protected:
         AutomationStack _stack;
         int _member_indent;
-        Block _block;
+        util::sptr<Block> _block;
     };
 
     struct IfClause
@@ -90,6 +90,32 @@ namespace grammar {
                   , util::sref<ClauseBase> parent)
             : IfClause(indent_len, std::move(pred), parent)
         {}
+    };
+
+    struct ForClause
+        : ClauseBase
+    {
+        void deliver();
+
+        ForClause(int indent_len
+                , std::string ref
+                , util::sptr<Expression const> begin
+                , util::sptr<Expression const> end
+                , util::sptr<Expression const> step
+                , util::sref<ClauseBase> parent)
+            : ClauseBase(indent_len)
+            , _ref(std::move(ref))
+            , _begin(std::move(begin))
+            , _end(std::move(end))
+            , _step(std::move(step))
+            , _parent(parent)
+        {}
+    protected:
+        std::string _ref;
+        util::sptr<Expression const> _begin;
+        util::sptr<Expression const> _end;
+        util::sptr<Expression const> _step;
+        util::sref<ClauseBase> const _parent;
     };
 
     struct FunctionClause
@@ -136,7 +162,7 @@ namespace grammar {
         void acceptStmt(util::sptr<Statement> stmt);
         void acceptCtor(misc::position const& ct_pos
                       , std::vector<std::string> ct_params
-                      , Block ct_bl, bool super_init
+                      , util::sptr<Block const> ct_bl, bool super_init
                       , std::vector<util::sptr<Expression const>> super_ctor_args);
 
         misc::position const pos;

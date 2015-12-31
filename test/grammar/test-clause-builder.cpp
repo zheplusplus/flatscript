@@ -12,7 +12,7 @@ TEST_F(ClauseBuilderTest, Empty)
     misc::position pos(1);
 
     grammar::ClauseBuilder builder;
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -41,7 +41,7 @@ TEST_F(ClauseBuilderTest, IfBranch)
                         pos, util::mkptr(new grammar::Identifier(pos, "mayoi")), "mayoi")))
                                   ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -168,7 +168,7 @@ TEST_F(ClauseBuilderTest, ClauseBuilder)
                                 new grammar::Identifier(item_pos1, "widowmaker")), "widowmaker")))
                               ->deliver());
 
-    builder0.buildAndClear().compile(nulScope());
+    builder0.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -238,7 +238,7 @@ TEST_F(ClauseBuilderTest, PushExprSequence)
                             pos, util::mkptr(new grammar::Identifier(pos, "kirisiki")), "kirisiki"))
           ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -397,7 +397,7 @@ TEST_F(ClauseBuilderTest, RegularAsyncFunc)
                 ->add(id(pos, "meiling"))
                 ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -509,7 +509,7 @@ TEST_F(ClauseBuilderTest, TryWithCatch)
                         pos, util::mkptr(new grammar::Identifier(pos, "kozou")), "kozou")))
                                   ->deliver());
 
-    builder.buildAndClear().compile(nulScope());
+    builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

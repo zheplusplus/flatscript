@@ -3,4 +3,4 @@
 using namespace flats;
 
 Globals Globals::g;
-std::string const Globals::version("0.5.3-2015-12-29-Satoko");
+std::string const Globals::version("0.6.0-2016-01-13-Chiaki");

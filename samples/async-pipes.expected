@@ -13,4 +13,17 @@ Index: 3
 1:2
 2:3
 3:1
+-- references in nested --
++ 0
++ 1
+. 0 0
++ 1
++ 2
+. 1 1
++ aa
++ ab
+. a 0
++ ba
++ bb
+. b 1
 End

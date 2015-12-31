@@ -174,7 +174,7 @@ std::set<std::string> SubSymbolTable::localNames() const
 {
     std::set<std::string> names;
     for (std::pair<std::string, misc::position> const& def: this->_name_defs) {
-        names.insert(output::formSubName(def.first, util::id(this)));
+        names.insert(output::formSubName(def.first, this->id));
     }
     return names;
 }
@@ -182,5 +182,5 @@ std::set<std::string> SubSymbolTable::localNames() const
 util::sptr<output::Expression const> SubSymbolTable::_makeReference(
     misc::position const& pos, std::string const& name)
 {
-    return util::mkptr(new output::SubReference(pos, name, util::id(this)));
+    return util::mkptr(new output::SubReference(pos, name, this->id));
 }

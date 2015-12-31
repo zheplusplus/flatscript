@@ -19,9 +19,9 @@ TEST_F(StmtNodesTest, AsyncScopeInBranchWithConstantPredicate)
 {
     misc::position pos(1);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
-    semantic::Block consq_block;
-    semantic::Block alter_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
 
@@ -29,16 +29,16 @@ TEST_F(StmtNodesTest, AsyncScopeInBranchWithConstantPredicate)
     scope->sym()->defName(pos, "read");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "f20130123")));
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::AsyncCall(pos
                                       , util::mkptr(new semantic::Reference(pos, "read"))
                                       , std::move(fargs)
                                       , std::vector<std::string>({ "content" })
                                       , std::move(largs))))));
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                             new semantic::Reference(pos, "content")))));
 
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                             new semantic::Reference(pos, "x")))));
 
     block.addStmt(util::mkptr(new semantic::Branch(
@@ -74,19 +74,18 @@ TEST_F(StmtNodesTest, ReferenceThisInBranch)
 {
     misc::position pos(2);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
-
-    semantic::Block consq_block;
-    semantic::Block alter_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
 
     scope->sym()->defName(pos, "houjou");
     scope->sym()->defName(pos, "ryuuguu");
 
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::This(pos))
                                    , util::mkptr(new semantic::StringLiteral(pos, "maebara")))))));
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Call(pos
                                  , util::mkptr(new semantic::Reference(pos, "ryuuguu"))
                                  , util::ptrarr<semantic::Expression const>())))));
@@ -124,18 +123,17 @@ TEST_F(StmtNodesTest, ReferenceThisInBranchWithConstantPredicate)
 {
     misc::position pos(3);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
-
-    semantic::Block consq_block;
-    semantic::Block alter_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
 
     scope->sym()->defName(pos, "rena");
 
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::This(pos))
                                    , util::mkptr(new semantic::StringLiteral(pos, "keiiti")))))));
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Call(pos
                                  , util::mkptr(new semantic::Reference(pos, "rena"))
                                  , util::ptrarr<semantic::Expression const>())))));
@@ -164,14 +162,13 @@ TEST_F(StmtNodesTest, ReferenceThisInLambda)
 {
     misc::position pos(4);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
-
-    semantic::Block lambda_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> lambda_block(new semantic::Block(pos));
 
     scope->sym()->defName(pos, "satoko");
     scope->sym()->defName(pos, "satosi");
 
-    lambda_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    lambda_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::Reference(pos, "satoko"))
                                    , util::mkptr(new semantic::This(pos)))))));
@@ -201,14 +198,13 @@ TEST_F(StmtNodesTest, ReferenceThisInHostFunction)
 {
     misc::position pos(5);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
-
-    semantic::Block lambda_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> lambda_block(new semantic::Block(pos));
 
     scope->sym()->defName(pos, "furukawa");
     scope->sym()->defName(pos, "okasaki");
 
-    lambda_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    lambda_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lookup(pos
                                    , util::mkptr(new semantic::Reference(pos, "furukawa"))
                                    , util::mkptr(new semantic::StringLiteral(pos, "okasaki")))))));
@@ -246,7 +242,7 @@ TEST_F(StmtNodesTest, ReferenceThisInAsyncScope)
 {
     misc::position pos(6);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
 
     scope->sym()->defName(pos, "tomoya");
     scope->sym()->defName(pos, "nagisa");
@@ -289,7 +285,7 @@ TEST_F(StmtNodesTest, StatementsAfterReturn)
     misc::position pos_a(700);
     misc::position pos_b(701);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
-    semantic::Block block;
+    semantic::Block block(pos);
 
     block.addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
                                         new semantic::IntLiteral(pos, 328)))));
@@ -315,13 +311,13 @@ TEST_F(StmtNodesTest, StatementsAfterBothBranchesReturned)
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
     scope->sym()->defName(pos, "mion");
     scope->sym()->defName(pos, "sion");
-    semantic::Block block;
-    semantic::Block consq_block;
-    semantic::Block alter_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
 
-    consq_block.addStmt(util::mkptr(new semantic::Return(pos_a, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Return(pos_a, util::mkptr(
                                         new semantic::IntLiteral(pos, 328)))));
-    alter_block.addStmt(util::mkptr(new semantic::Return(pos_b, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Return(pos_b, util::mkptr(
                                         new semantic::Reference(pos, "mion")))));
     block.addStmt(util::mkptr(new semantic::Branch(
                     pos
@@ -346,13 +342,13 @@ TEST_F(StmtNodesTest, StatementsAfterFoldedBranchReturned)
     util::sptr<semantic::Scope> scope(
             new semantic::SyncFunctionScope(pos, util::mkref(sym), {}, false));
     scope->sym()->defName(pos, "sonozaki");
-    semantic::Block block;
-    semantic::Block consq_block;
-    semantic::Block alter_block;
+    semantic::Block block(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
 
-    consq_block.addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
                                         new semantic::FloatLiteral(pos, 9.49)))));
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                         new semantic::Reference(pos, "sonozaki")))));
 
     block.addStmt(util::mkptr(new semantic::Branch(

@@ -36,4 +36,17 @@ list |:
     console.log($i + ':' + $)
     setTimeout(%, 1)
 
+console.log('-- references in nested --')
+
+func nestedPiping(x, %%)
+    x |:
+        i: $
+        x |:
+            setTimeout(%, 1)
+            console.log('+', i + $)
+        console.log('.', $, $i)
+
+nestedPiping([0, 1], %%)
+nestedPiping('ab', %%)
+
 console.log('End')

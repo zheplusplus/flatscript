@@ -1,6 +1,8 @@
 #ifndef __STEKIN_OUTPUT_GLOBAL_H__
 #define __STEKIN_OUTPUT_GLOBAL_H__
 
+#include <util/pointer.h>
+
 #include "node-base.h"
 
 namespace output {

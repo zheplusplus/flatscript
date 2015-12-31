@@ -95,7 +95,7 @@ Method method::asyncRet()
         }, false);
 }
 
-Method method::syncPipeRet(util::id pipe_id)
+Method method::syncPipeRet(util::uid pipe_id)
 {
     return make_method(
         [=](std::string const& r)
@@ -110,5 +110,23 @@ Method method::syncPipeRet(util::id pipe_id)
                         , "#RESULT", r)
                         , "#PIPE_ID", pipe_id.str())
                 ;
+        }, false);
+}
+
+Method method::syncBreak()
+{
+    return make_method(
+        [](std::string const& r)
+        {
+            return "return " + r + "=true;";
+        }, false);
+}
+
+Method method::callNext()
+{
+    return make_method(
+        [](std::string const& r)
+        {
+            return "return " + r + "();";
         }, false);
 }

@@ -20,17 +20,17 @@ TEST_F(FunctionTest, RegularAsyncFunction)
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
-    semantic::Block body;
+    util::sptr<semantic::Block> body(new semantic::Block(pos));
     scope->sym()->defName(pos, "setTimeout");
 
     largs.append(util::mkptr(new semantic::IntLiteral(pos, "1600")));
-    body.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::AsyncCall(
+    body->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::AsyncCall(
                                         pos
                                       , util::mkptr(new semantic::Reference(pos, "setTimeout"))
                                       , std::move(fargs)
                                       , std::vector<std::string>()
                                       , std::move(largs))))));
-    body.addStmt(util::mkptr(
+    body->addStmt(util::mkptr(
                 new semantic::Return(pos, util::mkptr(new semantic::Reference(pos, "light")))));
     semantic::RegularAsyncFunction af(
                 pos, "li", std::vector<std::string>({ "light", "dark" }), 1, std::move(body));
@@ -76,11 +76,11 @@ TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> fargs;
     util::ptrarr<semantic::Expression const> largs;
-    semantic::Block body;
+    util::sptr<semantic::Block> body(new semantic::Block(pos));
     scope->sym()->defName(pos, "x20130308");
 
     largs.append(util::mkptr(new semantic::StringLiteral(pos, "200d0308")));
-    body.addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
+    body->addStmt(util::mkptr(new semantic::Return(pos, util::mkptr(
                         new semantic::RegularAsyncCall(
                                         pos
                                       , util::mkptr(new semantic::Reference(pos, "x20130308"))
@@ -129,11 +129,11 @@ TEST_F(FunctionTest, RegularAsyncFunctionAutoReturn)
     misc::position pos(3);
     util::sptr<semantic::Scope> scope(semantic::Scope::global());
     util::ptrarr<semantic::Expression const> args;
-    semantic::Block body;
+    util::sptr<semantic::Block> body(new semantic::Block(pos));
     scope->sym()->defName(pos, "setTimeout");
 
     args.append(util::mkptr(new semantic::IntLiteral(pos, "1357")));
-    body.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
+    body->addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Call(
                                         pos
                                       , util::mkptr(new semantic::Reference(pos, "setTimeout"))
                                       , std::move(args))))));

@@ -1,12 +1,8 @@
-#include <map>
-
 #include <output/expr-nodes.h>
 #include <output/stmt-nodes.h>
-#include <output/function.h>
-#include <util/string.h>
+#include <output/function-impl.h>
 #include <report/errors.h>
 
-#include "function.h"
 #include "expr-nodes.h"
 #include "scope-impl.h"
 #include "const-fold.h"
@@ -340,7 +336,7 @@ util::sptr<output::Expression const> RegularAsyncCall::compileAsRoot(util::sref<
     return util::sptr<output::Expression const>(nullptr);
 }
 
-util::id RegularAsyncCall::_compile(util::sref<Scope> scope, bool) const
+util::uid RegularAsyncCall::_compile(util::sref<Scope> scope, bool) const
 {
     util::sptr<output::Expression const> compl_callee(callee->compile(scope));
     util::ptrarr<output::Expression const> compl_fargs(compileList(former_args, scope));
@@ -352,7 +348,7 @@ util::id RegularAsyncCall::_compile(util::sref<Scope> scope, bool) const
 
     util::sptr<output::Expression const> callback(new output::RegularAsyncCallbackArg(
                                             pos, std::move(async_flow), scope->throwMethod()));
-    util::id compl_call_id(callback.id());
+    util::uid compl_call_id(callback->id);
     compl_fargs.append(std::move(callback)).append(std::move(compl_largs));
 
     current_flow->addStmt(makeArith(util::mkptr(
@@ -360,7 +356,7 @@ util::id RegularAsyncCall::_compile(util::sref<Scope> scope, bool) const
     return compl_call_id;
 }
 
-util::id AsyncCall::_compile(util::sref<Scope> scope, bool root) const
+util::uid AsyncCall::_compile(util::sref<Scope> scope, bool root) const
 {
     util::sptr<output::Expression const> compl_callee(callee->compile(scope));
     util::ptrarr<output::Expression const> compl_fargs(compileList(former_args, scope));
@@ -375,7 +371,7 @@ util::id AsyncCall::_compile(util::sref<Scope> scope, bool root) const
 
     util::sptr<output::Expression const> compl_call(util::mkptr(
                         new output::Call(pos, std::move(compl_callee), std::move(compl_fargs))));
-    util::id compl_call_id(compl_call.id());
+    util::uid compl_call_id(compl_call->id);
     current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(std::move(compl_call), !root)));
     return compl_call_id;
 }

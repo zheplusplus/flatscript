@@ -3,16 +3,6 @@
 
 #include <util/pointer.h>
 
-TEST(Pointer, Id)
-{
-    ASSERT_EQ("0", util::id(nullptr).str());
-
-    std::stringstream os1;
-    util::id id_os(&os1);
-    os1 << &os1;
-    ASSERT_EQ(os1.str(), id_os.str());
-}
-
 TEST(Pointer, SRef)
 {
     std::stringstream os1;
@@ -41,9 +31,6 @@ TEST(Pointer, SRef)
     std::stringstream os4;
     util::sref<int const> ref(&x);
     os4 << &x;
-    ASSERT_EQ(os4.str(), ref.id().str());
-
-    ASSERT_EQ("0", util::sref<int const>(nullptr).id().str());
 }
 
 TEST(Pointer, SPtr)
@@ -73,12 +60,8 @@ TEST(Pointer, SPtr)
         ASSERT_TRUE(count0.not_nul());
         ASSERT_TRUE((*count0).not_nul());
         ASSERT_EQ(1, count);
-        util::sref<counter> refcount0 = *count0;
         util::sptr<counter> count1(std::move(count0));
         ASSERT_EQ(1, count);
-        util::sref<counter> refcount1 = *count1;
-        ASSERT_EQ(refcount0.id().str(), refcount1.id().str());
-        ASSERT_EQ(refcount0.id().str(), count1.id().str());
         ASSERT_TRUE(count0.nul());
         ASSERT_TRUE((*count0).nul());
 

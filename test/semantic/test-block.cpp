@@ -42,7 +42,7 @@ TEST_F(BlockTest, Block)
                                  , "+"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "235.7"))));
 
-    semantic::Block block0;
+    semantic::Block block0(pos);
     refSym()->defName(pos, "kobayakawa");
     refSym()->defName(pos, "yutaka");
     refSym()->defName(pos, "tamura");
@@ -54,17 +54,15 @@ TEST_F(BlockTest, Block)
     block0.addStmt(util::mkptr(new semantic::NameDef(pos, "soujirou", std::move(binary))));
     block0.addStmt(util::mkptr(new semantic::NameDef(pos, "iwasaki", util::mkptr(
                                                 new semantic::Reference(pos, "minami")))));
-
-    semantic::Block consq_block;
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
     misc::position pos_consq(100);
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos_consq, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos_consq, util::mkptr(
                                         new semantic::Reference(pos_consq, "kobayakawa")))));
-
-    semantic::Block alter_block;
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
     misc::position pos_alter(101);
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos_alter , util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos_alter , util::mkptr(
                                         new semantic::Reference(pos_alter, "yutaka")))));
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos_alter , util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos_alter , util::mkptr(
                                         new semantic::Reference(pos_alter, "hiyori")))));
 
     block0.addStmt(util::mkptr(new semantic::Branch(
@@ -109,16 +107,14 @@ TEST_F(BlockTest, TwoPathBranchFoldedOnFalse)
                                  , ">"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::Block block0;
-
-    semantic::Block consq_block;
+    semantic::Block block0(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
     misc::position pos_consq(600);
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos_consq, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos_consq, util::mkptr(
                                             new semantic::Reference(pos_consq, "yui")))));
-
-    semantic::Block alter_block;
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
     misc::position pos_alter(601);
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
                                             new semantic::Reference(pos_alter, "narumi")))));
 
     block0.addStmt(util::mkptr(new semantic::Branch(
@@ -151,16 +147,14 @@ TEST_F(BlockTest, TwoPathBranchFoldedOnTrue)
                                  , "<"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::Block block0;
-
-    semantic::Block consq_block;
+    semantic::Block block0(pos);
+    util::sptr<semantic::Block> consq_block(new semantic::Block(pos));
     misc::position pos_consq(700);
-    consq_block.addStmt(util::mkptr(new semantic::Arithmetics(pos_consq, util::mkptr(
+    consq_block->addStmt(util::mkptr(new semantic::Arithmetics(pos_consq, util::mkptr(
                                                 new semantic::Reference(pos_consq, "yui")))));
-
-    semantic::Block alter_block;
+    util::sptr<semantic::Block> alter_block(new semantic::Block(pos));
     misc::position pos_alter(701);
-    alter_block.addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
+    alter_block->addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
                                                 new semantic::Reference(pos_alter, "narumi")))));
 
     block0.addStmt(util::mkptr(new semantic::Branch(
@@ -192,15 +186,14 @@ TEST_F(BlockTest, IfNotFoldedOnFalse)
                                  , ">"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::Block block0;
-
-    semantic::Block block_alter;
+    semantic::Block block0(pos);
+    util::sptr<semantic::Block> block_alter(new semantic::Block(pos));
     misc::position pos_alter(801);
-    block_alter.addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
+    block_alter->addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
                                             new semantic::Reference(pos_alter, "narumi")))));
 
     block0.addStmt(util::mkptr(new semantic::Branch(
-                            pos, std::move(binary), semantic::Block(), std::move(block_alter))));
+        pos, std::move(binary), util::mkptr(new semantic::Block(pos)), std::move(block_alter))));
     block0.addStmt(util::mkptr(new semantic::Return(
                     pos, util::mkptr(new semantic::Undefined(pos)))));
 
@@ -228,15 +221,14 @@ TEST_F(BlockTest, IfNotFoldedOnTrue)
                                  , "<"
                                  , util::mkptr(new semantic::FloatLiteral(pos, "11235.8"))));
 
-    semantic::Block block0;
-
-    semantic::Block block_alter;
+    semantic::Block block0(pos);
+    util::sptr<semantic::Block> block_alter(new semantic::Block(pos));
     misc::position pos_alter(801);
-    block_alter.addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
+    block_alter->addStmt(util::mkptr(new semantic::Arithmetics(pos_alter, util::mkptr(
                                             new semantic::Reference(pos_alter, "narumi")))));
 
     block0.addStmt(util::mkptr(new semantic::Branch(
-                        pos, std::move(binary), semantic::Block(), std::move(block_alter))));
+        pos, std::move(binary), util::mkptr(new semantic::Block(pos)), std::move(block_alter))));
     block0.addStmt(util::mkptr(new semantic::Return(
                     pos, util::mkptr(new semantic::Undefined(pos)))));
 

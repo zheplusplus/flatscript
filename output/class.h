@@ -2,9 +2,10 @@
 #define __STEKIN_OUTPUT_CLASS_H__
 
 #include <map>
+#include <vector>
 #include <string>
+#include <util/pointer.h>
 
-#include "fwd-decl.h"
 #include "node-base.h"
 
 namespace output {
@@ -19,16 +20,33 @@ namespace output {
         util::sptr<Statement const> const body;
     };
 
-    struct Class
+    struct ClassInitFunc
         : Statement
     {
-        Class(std::string n, util::sptr<Expression const> base
-            , std::map<std::string, util::sptr<Expression const>> memfns
-            , util::sptr<Constructor const> ct)
-                : name(std::move(n))
-                , base_class_or_nul(std::move(base))
-                , member_funcs(std::move(memfns))
-                , ctor_or_nul(std::move(ct))
+        ClassInitFunc(std::string n, bool inh
+                    , std::map<std::string, util::sptr<Expression const>> memfns
+                    , util::sptr<Constructor const> ct)
+            : name(std::move(n))
+            , member_funcs(std::move(memfns))
+            , ctor_or_nul(std::move(ct))
+            , inherit(inh)
+        {}
+
+        void write(std::ostream& os) const;
+        bool mayThrow() const { return false; }
+
+        std::string const name;
+        std::map<std::string, util::sptr<Expression const>> const member_funcs;
+        util::sptr<Constructor const> ctor_or_nul;
+        bool const inherit;
+    };
+
+    struct ClassInitCall
+        : Statement
+    {
+        ClassInitCall(std::string n, util::sptr<Expression const> base)
+            : name(std::move(n))
+            , base_class_or_nul(std::move(base))
         {}
 
         void write(std::ostream& os) const;
@@ -36,8 +54,6 @@ namespace output {
 
         std::string const name;
         util::sptr<Expression const> const base_class_or_nul;
-        std::map<std::string, util::sptr<Expression const>> const member_funcs;
-        util::sptr<Constructor const> ctor_or_nul;
     };
 
 }

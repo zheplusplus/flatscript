@@ -1,9 +1,7 @@
 #include <util/string.h>
 
-#include "name-mangler.h"
 #include "block.h"
-#include "function.h"
-#include "class.h"
+#include "name-mangler.h"
 
 using namespace output;
 

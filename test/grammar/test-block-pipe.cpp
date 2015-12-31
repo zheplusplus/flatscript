@@ -10,7 +10,7 @@ using namespace test;
 TEST(Syntax, BlockPipe)
 {
     grammar::parse();
-    grammar::builder.buildAndClear().compile(nulScope());
+    grammar::builder.buildAndClear()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()

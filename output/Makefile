@@ -8,7 +8,7 @@ output:block.d \
        list-pipe.d \
        methods.d \
        name-mangler.d \
-       function.d \
+       function-impl.d \
        class.d \
        global.d
 

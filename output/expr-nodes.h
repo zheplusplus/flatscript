@@ -126,14 +126,14 @@ namespace output {
     struct SubReference
         : Reference
     {
-        SubReference(misc::position const& pos, std::string const& name, util::id sid)
+        SubReference(misc::position const& pos, std::string const& name, util::uid sid)
             : Reference(pos, name)
             , space_id(sid)
         {}
 
         std::string str() const;
 
-        util::id const space_id;
+        util::uid const space_id;
     };
 
     struct TransientParamReference
@@ -370,14 +370,14 @@ namespace output {
     struct AsyncReference
         : PrimeFactor
     {
-        AsyncReference(misc::position const& pos, util::id const& id)
+        AsyncReference(misc::position const& pos, util::uid const& id)
             : PrimeFactor(pos)
             , ref_id(id)
         {}
 
         std::string str() const;
 
-        util::id const ref_id;
+        util::uid const ref_id;
     };
 
     struct RegularAsyncCallbackArg

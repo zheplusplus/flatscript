@@ -1,10 +1,7 @@
 #include <semantic/node-base.h>
-#include <semantic/function.h>
 #include <report/errors.h>
 
 #include "block.h"
-#include "node-base.h"
-#include "function.h"
 #include "class.h"
 
 using namespace grammar;
@@ -27,13 +24,15 @@ namespace {
 }
 
 Block::Block()
-    : _ctor(nullptr)
+    : Statement(misc::position())
+    , _ctor(nullptr)
 {
     _stmts.append(util::mkptr(new PlaceholderStatement));
 }
 
-void Block::setCtor(misc::position const& pos, std::vector<std::string> params, Block body
-                  , bool super_init, std::vector<util::sptr<Expression const>> super_ctor_args)
+void Block::setCtor(misc::position const& pos, std::vector<std::string> params
+                  , util::sptr<Block const> body, bool super_init
+                  , std::vector<util::sptr<Expression const>> super_ctor_args)
 {
     if (this->_ctor.not_nul()) {
         return error::duplicateCtor(this->_ctor->pos, pos);
@@ -42,26 +41,26 @@ void Block::setCtor(misc::position const& pos, std::vector<std::string> params, 
                                             , super_init, std::move(super_ctor_args)));
 }
 
-void Block::acceptElse(misc::position const& else_pos, Block block)
+void Block::acceptElse(misc::position const& else_pos, util::sptr<Statement const> block)
 {
     _stmts.back()->acceptElse(else_pos, std::move(block));
 }
 
-void Block::acceptCatch(misc::position const& catch_pos, Block block)
+void Block::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block)
 {
     _stmts.back()->acceptCatch(catch_pos, std::move(block));
 }
 
-semantic::Block Block::compile() const
+util::sptr<semantic::Block const> Block::compileToBlock() const
 {
-    semantic::Block block;
+    util::sptr<semantic::Block> block(new semantic::Block(this->_stmts[0]->pos));
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
-                    block.addFunc(func->compile());
+                    block->addFunc(func->compile());
                 });
     _stmts.iter([&](util::sptr<Statement> const& stmt, int)
                 {
-                    block.addStmt(stmt->compile());
+                    block->addStmt(stmt->compile());
                 }, 1);
     return std::move(block);
 }

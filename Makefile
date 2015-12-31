@@ -20,9 +20,9 @@ all:code-gen main.d env.d globals.d lib
 	     -o flsc
 
 install:all
-	@install flsc $(INSTALL_DIR)/flsc || echo "Fail to install to $(INSTALL_DIR)."\
-		"Try specifying installation path manully by passing INSTALL_DIR=directory"
-	echo "Installed to $(INSTALL_DIR)"
+	@install flsc $(INSTALL_DIR)/flsc && echo "Installed to $(INSTALL_DIR)" || \
+	    echo "Fail to install to $(INSTALL_DIR)." \
+		     "Try specifying installation path by passing INSTALL_DIR=directory" \
 
 uninstall:
 	rm -f $(INSTALL_DIR)/flsc

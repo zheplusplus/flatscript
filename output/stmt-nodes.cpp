@@ -29,7 +29,7 @@ void Branch::write(std::ostream& os) const
 void AsyncCallResultDef::write(std::ostream& os) const
 {
     if (this->need_decl) {
-        os << "var " << formAsyncRef(async_result.id()) << "=";
+        os << "var " << formAsyncRef(this->async_result->id) << "=";
     }
     os << async_result->str() << ";" << std::endl;
 }

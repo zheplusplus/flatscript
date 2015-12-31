@@ -19,7 +19,7 @@ util::sptr<output::Statement const> test::compile(
                                         semantic::Block& b, util::sref<semantic::SymbolTable> sym)
 {
     semantic::SyncFunctionScope scope(misc::position(), sym, std::vector<std::string>(), false);
-    b.compile(scope);
+    b.compile(util::mkref(scope));
     return scope.deliver();
 }
 
@@ -99,6 +99,13 @@ NodeType const test::PIPE_INDEX("pipe index");
 NodeType const test::PIPE_KEY("pipe key");
 NodeType const test::PIPE_RESULT("pipe result");
 
+NodeType const test::SYNC_FOR_RANGE("sync for range");
+NodeType const test::ASYNC_FOR_RANGE("async for range");
+NodeType const test::BREAK("break");
+NodeType const test::CONTINUE("continue");
+NodeType const test::SYNC_BREAK("sync break");
+NodeType const test::CALL_NEXT("call next");
+
 NodeType const test::CALL("call");
 NodeType const test::SUPER_CONSTRUCTOR_CALL("super constructor call");
 NodeType const test::ASYNC_REFERENCE("asynchronous reference");
@@ -106,7 +113,6 @@ NodeType const test::ASYNC_REFERENCE("asynchronous reference");
 NodeType const test::ASYNC_PIPELINE("asynchronous pipeline");
 NodeType const test::SYNC_PIPELINE("synchronous pipeline");
 NodeType const test::ROOT_SYNC_PIPELINE("root synchronous pipeline");
-NodeType const test::PIPELINE_CONTINUE("pipeline continue");
 NodeType const test::SYNC_PIPELINE_RETURN("sync pipeline return");
 
 NodeType const test::LIST_SLICE("list slice");
@@ -126,6 +132,10 @@ NodeType const test::DEC_THIS("declare this");
 NodeType const test::BRANCH("branch");
 NodeType const test::TRY("try");
 NodeType const test::CATCH("catch");
+
+NodeType const test::CLASS_INIT_FN("class init func");
+NodeType const test::CLASS_INIT_ST("class init stmt");
+NodeType const test::MEMBER_FUNC("member func");
 
 NodeType const test::FUNCTION("function");
 NodeType const test::PARAMETER("parameter");

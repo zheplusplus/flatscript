@@ -46,4 +46,16 @@ console.log(ls |:
     # oh lost push
 )
 
+console.log('-- references in nested --')
+
+func nestedPiping(x)
+    x |:
+        i: $
+        x |:
+            console.log('+', i + $)
+        console.log('.', $, $i, $k)
+
+nestedPiping([0, 1])
+nestedPiping('ab')
+
 console.log('End')

@@ -1,6 +1,5 @@
 #include <stdexcept>
 #include <globals.h>
-#include <semantic/node-base.h>
 
 #include "yy-misc.h"
 #include "clauses.h"
@@ -33,4 +32,22 @@ void grammar::parse()
         }
     }
     ::yyparse();
+}
+
+TokenSequence::TokenSequence(Token* token)
+{
+    _list.push_back(util::mkptr(token));
+}
+
+TokenSequence* TokenSequence::add(Token* token)
+{
+    _list.push_back(util::mkptr(token));
+    return this;
+}
+
+std::vector<util::sptr<Token>> TokenSequence::deliver()
+{
+    std::vector<util::sptr<Token>> list(std::move(_list));
+    delete this;
+    return std::move(list);
 }

@@ -1,24 +1,19 @@
 #include <stdexcept>
-#include <algorithm>
 #include <iostream>
 #include <sstream>
 
 #include <grammar/yy-misc.h>
-#include <grammar/node-base.h>
-#include <grammar/function.h>
-#include <grammar/class.h>
 #include <semantic/scope.h>
-#include <output/function.h>
-#include <output/class.h>
+#include <semantic/node-base.h>
 #include <output/global.h>
 #include <report/errors.h>
 
 #include "env.h"
 
-static util::sptr<output::Statement const> compileGlobal(semantic::Block flow)
+static util::sptr<output::Statement const> compileGlobal(util::sptr<semantic::Statement const> flow)
 {
     util::sptr<semantic::Scope> global_scope(semantic::Scope::global());
-    flow.compile(*global_scope);
+    flow->compile(*global_scope);
     return global_scope->deliver();
 }
 
@@ -28,7 +23,7 @@ static int compile()
     if (error::hasError()) {
         return 1;
     }
-    semantic::Block global_flow(grammar::builder.buildAndClear());
+    util::sptr<semantic::Statement const> global_flow(grammar::builder.buildAndClear());
     if (error::hasError()) {
         return 1;
     }
@@ -44,7 +39,9 @@ static int compile()
 
 int main(int argc, char* argv[])
 {
-    flats::initEnv(argc, argv);
+    if (!flats::initEnv(argc - 1, argv + 1)) {
+        return 1;
+    }
     try {
         return compile();
     } catch (std::exception& e) {

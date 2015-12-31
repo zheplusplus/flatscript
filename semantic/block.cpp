@@ -1,9 +1,4 @@
-#include <output/node-base.h>
-#include <output/function.h>
-
 #include "block.h"
-#include "function.h"
-#include "node-base.h"
 #include "scope.h"
 #include "symbol-table.h"
 

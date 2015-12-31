@@ -1,14 +1,9 @@
-#include <algorithm>
-
-#include <semantic/function.h>
 #include <report/errors.h>
 
 #include "clauses.h"
 #include "stmt-automations.h"
 #include "expr-automations.h"
 #include "stmt-nodes.h"
-#include "function.h"
-#include "class.h"
 
 using namespace grammar;
 
@@ -72,17 +67,38 @@ ExprStmtAutomation::ExprStmtAutomation(util::sref<ClauseBase> clause)
                        };
     _actions[THROW] = [this](AutomationStack& stack, TypedToken const& token)
                       {
-                          stack.replace(util::mkptr(
-                               new ThrowAutomation(token.pos, this->_clause)));
+                          stack.replace(util::mkptr(new ThrowAutomation(token.pos, this->_clause)));
                       };
+    _actions[FOR] = [this](AutomationStack& stack, TypedToken const& token)
+                    {
+                        stack.replace(util::mkptr(new ForAutomation(token.pos)));
+                    };
+    _actions[BREAK] = [this](AutomationStack& stack, TypedToken const& token)
+                      {
+                          this->_clause->acceptStmt(util::mkptr(new Break(token.pos)));
+                          stack.replace(util::mkptr(new IgnoreAny(false)));
+                      };
+    _actions[CONTINUE] = [this](AutomationStack& stack, TypedToken const& token)
+                         {
+                             this->_clause->acceptStmt(util::mkptr(new Continue(token.pos)));
+                             stack.replace(util::mkptr(new IgnoreAny(false)));
+                         };
+    _actions[EXTERN] = [this](AutomationStack& stack, TypedToken const& token)
+                       {
+                           stack.replace(util::mkptr(
+                               new ExternAutomation(token.pos, this->_clause)));
+                       };
+    _actions[EXPORT] = [this](AutomationStack& stack, TypedToken const& token)
+                       {
+                           stack.replace(util::mkptr(
+                               new ExportAutomation(token.pos, this->_clause)));
+                       };
 }
 
-void ExprStmtAutomation::pushFactor(AutomationStack& stack
-                                  , util::sptr<Expression const> factor
-                                  , std::string const& image)
+void ExprStmtAutomation::pushFactor(AutomationStack& stack, FactorToken& factor)
 {
     stack.push(util::mkptr(new PipelineAutomation));
-    stack.top()->pushFactor(stack, std::move(factor), image);
+    stack.top()->pushFactor(stack, factor);
 }
 
 void ExprStmtAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
@@ -142,11 +158,6 @@ void IfAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
     _pred_cache = std::move(expr);
 }
 
-bool IfAutomation::finishOnBreak(bool sub_empty) const
-{
-    return !sub_empty;
-}
-
 void IfAutomation::finish(
                 ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
 {
@@ -174,16 +185,71 @@ void IfnotAutomation::finish(
     stack.pop();
 }
 
-void FunctionAutomation::pushFactor(
-                AutomationStack&, util::sptr<Expression const> factor, std::string const& image)
+void ForAutomation::pushFactor(AutomationStack& stack, FactorToken& factor)
+{
+    if (this->_before_ref) {
+        this->_before_ref = false;
+        this->_ref = factor.expr->reduceAsName();
+    } else if (factor.image == "range") {
+        stack.push(util::mkptr(new PipelineAutomation));
+        this->_actions[COMMA] = [this](AutomationStack& stack, TypedToken const&)
+                                {
+                                    stack.push(util::mkptr(new PipelineAutomation));
+                                };
+    } else {
+        factor.unexpected();
+        stack.push(util::mkptr(new IgnoreAny(true)));
+        this->_finished = true;
+    }
+}
+
+void ForAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
+{
+    this->_range_args.push_back(std::move(expr));
+    this->_finished = true;
+}
+
+void ForAutomation::finish(ClauseStackWrapper& wrapper, AutomationStack& stack
+                         , misc::position const&)
+{
+    for (auto const& e: this->_range_args) {
+        if (e->empty()) {
+            error::invalidEmptyExpr(e->pos);
+        }
+    }
+    if (this->_range_args.size() > 3) {
+        error::excessiveExprInForRange(this->_range_args[3]->pos);
+    }
+
+    util::sptr<Expression const> begin(new IntLiteral(this->_pos, "0"));
+    util::sptr<Expression const> end(new EmptyExpr(this->_pos));
+    util::sptr<Expression const> step(new IntLiteral(this->_pos, "1"));
+
+    if (this->_range_args.size() == 1) {
+        end = std::move(this->_range_args[0]);
+    } else if (this->_range_args.size() == 2) {
+        begin = std::move(this->_range_args[0]);
+        end = std::move(this->_range_args[1]);
+    } else if (this->_range_args.size() == 3) {
+        begin = std::move(this->_range_args[0]);
+        end = std::move(this->_range_args[1]);
+        step = std::move(this->_range_args[2]);
+    }
+
+    wrapper.pushClause(util::mkptr(new ForClause(
+        wrapper.last_indent, std::move(this->_ref), std::move(begin), std::move(end)
+      , std::move(step), wrapper.lastClause())));
+    stack.pop();
+}
+
+void FunctionAutomation::pushFactor(AutomationStack&, FactorToken& factor)
 {
     if (!_before_open_paren) {
-        error::unexpectedToken(factor->pos, image);
-        return;
+        return factor.unexpected();
     }
     _before_open_paren = false;
-    _pos = factor->pos;
-    _func_name = factor->reduceAsName();
+    _pos = factor.pos;
+    _func_name = factor.expr->reduceAsName();
     _actions[OPEN_PAREN] = [=](AutomationStack& stack, TypedToken const&)
                            {
                                _actions[OPEN_PAREN] = AutomationBase::discardToken;
@@ -277,11 +343,10 @@ util::sptr<ClauseBase> CatchAutomation::createClause(ClauseStackWrapper& wrapper
     return util::mkptr(new CatchClause(wrapper.last_indent, pos, wrapper.lastClause()));
 }
 
-void ClassAutomation::pushFactor(
-                AutomationStack&, util::sptr<Expression const> factor, std::string const& image)
+void ClassAutomation::pushFactor(AutomationStack&, FactorToken& factor)
 {
     if (_class_name.empty()) {
-        _class_name = factor->reduceAsName();
+        _class_name = factor.expr->reduceAsName();
         _actions[COLON] = [this](AutomationStack& stack, TypedToken const&)
                           {
                               stack.push(util::mkptr(new ConditionalAutomation));
@@ -289,7 +354,7 @@ void ClassAutomation::pushFactor(
                           };
         return;
     }
-    error::unexpectedToken(factor->pos, image);
+    factor.unexpected();
 }
 
 void ClassAutomation::accepted(AutomationStack&, util::sptr<Expression const> expr)
@@ -371,4 +436,148 @@ void CtorAutomation::_acceptSuperArgs(
     self->_super_ctor_args = std::move(list);
     self->_super_init = true;
     self->_finished = true;
+}
+
+namespace {
+
+    struct IdentListAutomation
+        : AutomationBase
+    {
+        explicit IdentListAutomation(TokenType seperator)
+            : _need_sep(false)
+        {
+            this->_actions[seperator] = [this](AutomationStack& s, TypedToken const& t)
+                                        {
+                                            this->pushSep(s, t);
+                                        };
+        }
+
+        void pushSep(AutomationStack& s, TypedToken const& t)
+        {
+            if (!this->_need_sep) {
+                AutomationBase::discardToken(s, t);
+            }
+            this->_need_sep = false;
+        }
+
+        void pushFactor(AutomationStack&, FactorToken& factor)
+        {
+            if (this->_need_sep) {
+                return factor.unexpected();
+            }
+            this->_list.push_back(std::move(factor.expr));
+            this->_need_sep = true;
+        }
+
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+
+        bool finishOnBreak(bool) const
+        {
+            return this->_need_sep && !this->_list.empty();
+        }
+
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
+        {
+            stack.reduced(std::move(this->_list));
+        }
+    protected:
+        std::vector<util::sptr<Expression const>> _list;
+        bool _need_sep;
+    };
+
+    struct ExportPointAutomation
+        : IdentListAutomation
+    {
+        ExportPointAutomation()
+            : IdentListAutomation(OPERATOR)
+        {
+            this->_actions[OPERATOR] = [this](AutomationStack& s, TypedToken const& t)
+                                       {
+                                           if (t.image != ".") {
+                                               return AutomationBase::discardToken(s, t);
+                                           }
+                                           this->pushSep(s, t);
+                                       };
+            this->_actions[COLON] = [this](AutomationStack& stack, TypedToken const& t)
+                                    {
+                                        if (!this->_need_sep) {
+                                            AutomationBase::discardToken(stack, t);
+                                        }
+                                        stack.reduced(std::move(this->_list));
+                                    };
+        }
+    };
+
+}
+
+void ExternAutomation::activated(AutomationStack& stack)
+{
+    stack.push(util::mkptr(new IdentListAutomation(COMMA)));
+}
+
+void ExternAutomation::accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list)
+{
+    for (auto const& e: list) {
+        this->_externs.push_back(e->reduceAsName());
+    }
+}
+
+void ExternAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
+{
+    this->_clause->acceptStmt(util::mkptr(new Extern(this->_pos, std::move(this->_externs))));
+    stack.pop();
+}
+
+void ExportAutomation::activated(AutomationStack& stack)
+{
+    stack.push(util::mkptr(new ExportPointAutomation));
+}
+
+void ExportAutomation::accepted(AutomationStack& stack
+                              , std::vector<util::sptr<Expression const>> list)
+{
+    for (auto const& e: list) {
+        this->_export_point.push_back(e->reduceAsName());
+    }
+    stack.push(util::mkptr(new PipelineAutomation));
+}
+
+void ExportAutomation::accepted(AutomationStack&, util::sptr<Expression const> e)
+{
+    this->_value = std::move(e);
+}
+
+void ExportAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
+{
+    this->_clause->acceptStmt(util::mkptr(
+            new Export(this->_pos, std::move(this->_export_point), std::move(this->_value))));
+    stack.pop();
+}
+
+IgnoreAny::IgnoreAny(bool reported)
+    : _reported(reported)
+{
+    std::fill(_actions, _actions + TOKEN_TYPE_COUNT
+            , [this](AutomationStack&, TypedToken const& token)
+              {
+                  this->_report(token);
+              });
+}
+
+void IgnoreAny::pushFactor(AutomationStack&, FactorToken& factor)
+{
+    this->_report(factor);
+}
+
+void IgnoreAny::_report(Token const& t)
+{
+    if (!this->_reported) {
+        t.unexpected();
+        this->_reported = true;
+    }
+}
+
+void IgnoreAny::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
+{
+    stack.pop();
 }

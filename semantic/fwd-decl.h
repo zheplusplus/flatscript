@@ -3,14 +3,9 @@
 
 namespace semantic {
 
-    struct Statement;
-    struct Expression;
-    struct PipeBase;
-    struct Block;
-    struct Function;
-    struct Class;
     struct SymbolTable;
     struct Scope;
+    struct Function;
 
 }
 

@@ -6,6 +6,7 @@
 #include <util/arrays.h>
 
 #include "node-base.h"
+#include "function.h"
 
 namespace output {
 

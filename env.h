@@ -3,7 +3,7 @@
 
 namespace flats {
 
-    void initEnv(int argc, char* argv[]);
+    bool initEnv(int argc, char* argv[]);
 
 }
 

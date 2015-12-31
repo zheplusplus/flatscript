@@ -1,12 +1,12 @@
+#include <map>
 #include <globals.h>
 #include <semantic/expr-nodes.h>
 #include <semantic/list-pipe.h>
+#include <semantic/function.h>
 #include <util/string.h>
 #include <report/errors.h>
 
 #include "expr-nodes.h"
-#include "function.h"
-#include "class.h"
 
 using namespace grammar;
 
@@ -205,13 +205,13 @@ util::sptr<semantic::Expression const> Dictionary::reduceAsExpr() const
 
 util::sptr<semantic::Expression const> Lambda::reduceAsExpr() const
 {
-    return util::mkptr(new semantic::Lambda(pos, param_names, body.compile()));
+    return util::mkptr(new semantic::Lambda(pos, param_names, body->compile()));
 }
 
 util::sptr<semantic::Expression const> RegularAsyncLambda::reduceAsExpr() const
 {
     return util::mkptr(new semantic::RegularAsyncLambda(
-                            pos, param_names, async_param_index, body.compile()));
+                            pos, param_names, async_param_index, body->compile()));
 }
 
 util::sptr<semantic::Expression const> AsyncPlaceholder::reduceAsExpr() const
@@ -248,7 +248,7 @@ util::sptr<semantic::Expression const> Pipeline::reduceAsExpr() const
 
 util::sptr<semantic::Expression const> BlockPipeline::reduceAsExpr() const
 {
-    return util::mkptr(new semantic::Pipeline(pos, list->reduceAsExpr(), section.compile()));
+    return util::mkptr(new semantic::Pipeline(pos, list->reduceAsExpr(), section->compile()));
 }
 
 util::sptr<semantic::Expression const> Conditional::reduceAsExpr() const
@@ -277,7 +277,6 @@ util::sptr<semantic::Expression const> RegularAsyncParam::reduceAsArg(
     return util::sptr<semantic::Expression const>(nullptr);
 }
 
-#include <iostream>
 namespace {
 
     struct RegEx

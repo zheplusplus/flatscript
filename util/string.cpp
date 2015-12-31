@@ -16,7 +16,7 @@ std::string util::replace_all(std::string src
         src.replace(occurrence, origin_length, replacement);
         occurrence += replace_length;
     }
-    return src;
+    return std::move(src);
 }
 
 std::string util::join(std::string const& sep, std::vector<std::string> const& values)
@@ -32,7 +32,7 @@ std::string util::join(std::string const& sep, std::vector<std::string> const& v
                       result += sep;
                       result += v;
                   });
-    return result;
+    return std::move(result);
 }
 
 template <typename T>
@@ -83,6 +83,11 @@ std::string util::str(mpf_class const& f)
     return str_from_something(f);
 }
 
+std::string util::str(uid::id_type const& i)
+{
+    return str_from_something(i);
+}
+
 std::vector<std::string> util::split_str(std::string const& str,
                                          std::string const& delimiters,
                                          bool trimEmpty)
@@ -96,7 +101,7 @@ std::vector<std::string> util::split_str(std::string const& str,
            if (pos != lastPos || !trimEmpty) {
                r.push_back(std::string(str.data() + lastPos, pos - lastPos));
            }
-           return r;
+           return std::move(r);
        } else {
            if (pos != lastPos || !trimEmpty) {
                r.push_back(std::string(str.data() + lastPos, pos - lastPos));

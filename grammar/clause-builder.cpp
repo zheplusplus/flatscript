@@ -1,9 +1,6 @@
-#include <algorithm>
-
 #include <report/errors.h>
 
 #include "clause-builder.h"
-#include "stmt-nodes.h"
 #include "clauses.h"
 
 using namespace grammar;
@@ -17,9 +14,9 @@ namespace {
             : ClauseBase(-1)
         {}
 
-        Block* getGlobalBlockPtr()
+        util::sref<Block> getGlobalBlockPtr()
         {
-            return &_block;
+            return *_block;
         }
 
         void deliver() {}
@@ -28,6 +25,7 @@ namespace {
 }
 
 ClauseBuilder::ClauseBuilder()
+    : _global(nullptr)
 {
     util::sptr<GlobalClause> global(new GlobalClause);
     _global = global->getGlobalBlockPtr();
@@ -36,38 +34,19 @@ ClauseBuilder::ClauseBuilder()
 
 void ClauseBuilder::addArith(int indent_len
                            , misc::position const& pos
-                           , std::vector<util::sptr<Token>> const& sequence)
+                           , std::vector<util::sptr<Token>> sequence)
 {
     if (_shrinkTo(indent_len, pos)) {
         _clauses.back()->setMemberIndent(indent_len, pos);
         _clauses.back()->prepareArith();
     }
-    _pushSequence(pos, sequence);
-}
-
-void ClauseBuilder::addExtern(int indent_len
-                            , misc::position const& pos
-                            , std::vector<std::string> const& names)
-{
-    if (!_prepareLevel(indent_len, pos, "extern")) {
-        return;
+    for (auto& token: sequence) {
+        this->_clauses.back()->nextToken(token);
     }
-    _clauses.back()->acceptStmt(util::mkptr(new Extern(pos, names)));
+    this->_clauses.back()->tryFinish(pos, this->_clauses);
 }
 
-void ClauseBuilder::addExport(int indent_len
-                            , misc::position const& pos
-                            , std::vector<std::string> const& names
-                            , std::vector<util::sptr<Token>> const& sequence)
-{
-    if (!_prepareLevel(indent_len, pos, "export")) {
-        return;
-    }
-    _clauses.back()->prepareExport(names);
-    _pushSequence(pos, sequence);
-}
-
-semantic::Block ClauseBuilder::buildAndClear()
+util::sptr<semantic::Statement const> ClauseBuilder::buildAndClear()
 {
     if (!_shrinkTo(0, misc::position())) {
         error::unexpectedEof();
@@ -96,16 +75,4 @@ bool ClauseBuilder::_prepareLevel(int level, misc::position const& pos, std::str
     }
     error::unexpectedToken(pos, token);
     return false;
-}
-
-void ClauseBuilder::_pushSequence(misc::position const& pos
-                                , std::vector<util::sptr<Token>> const& sequence)
-{
-    std::for_each(sequence.begin()
-                , sequence.end()
-                , [&](util::sptr<Token> const& token)
-                  {
-                      _clauses.back()->nextToken(token);
-                  });
-    _clauses.back()->tryFinish(pos, _clauses);
 }

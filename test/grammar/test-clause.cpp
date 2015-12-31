@@ -27,7 +27,7 @@ TEST_F(ClauseTest, FuncClause)
                       pos, "SonOfKorhal", util::mkptr(new grammar::IntLiteral(pos, "20110116")))));
 
     func_acc0.deliver();
-    receiver.compile().compile(nulScope());
+    receiver.compile()->compile(nulScope());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -52,7 +52,7 @@ TEST_F(ClauseTest, FuncClause)
                                     , std::vector<std::string>({ "Mengsk" })
                                     , -1
                                     , util::mkref(test_receiver));
-    func_acc1.acceptElse(pos_else, grammar::Block());
+    func_acc1.acceptElse(pos_else, util::mkptr(new grammar::Block));
     ASSERT_TRUE(error::hasError());
 
     std::vector<PartialStmtNotMatchRec> recs(getPartialStmtNotMatchRecs());
@@ -89,7 +89,7 @@ TEST_F(ClauseTest, FuncAccNested)
 
     func_acc1.deliver();
     func_acc0.deliver();
-    receiver.compile().compile(nulScope());
+    receiver.compile()->compile(nulScope());
 
     DataTree::expectOne()
         (BLOCK_BEGIN)

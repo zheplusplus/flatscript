@@ -1,12 +1,7 @@
 #ifndef __STEKIN_SEMANTIC_STATEMENT_NODES_H__
 #define __STEKIN_SEMANTIC_STATEMENT_NODES_H__
 
-#include <string>
-
-#include <util/pointer.h>
-
 #include "node-base.h"
-#include "block.h"
 
 namespace semantic {
 
@@ -27,19 +22,22 @@ namespace semantic {
     struct Branch
         : Statement
     {
-        Branch(misc::position const& pos, util::sptr<Expression const> p, Block c, Block a)
-            : Statement(pos)
-            , predicate(std::move(p))
-            , consequence(std::move(c))
-            , alternative(std::move(a))
+        Branch(misc::position const& pos
+             , util::sptr<Expression const> p
+             , util::sptr<Statement const> c
+             , util::sptr<Statement const> a)
+                : Statement(pos)
+                , predicate(std::move(p))
+                , consequence(std::move(c))
+                , alternative(std::move(a))
         {}
 
         void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
         util::sptr<Expression const> const predicate;
-        Block const consequence;
-        Block const alternative;
+        util::sptr<Statement const> const consequence;
+        util::sptr<Statement const> const alternative;
     };
 
     struct Return
@@ -126,7 +124,9 @@ namespace semantic {
     struct ExceptionStall
         : Statement
     {
-        ExceptionStall(misc::position const& pos, Block fl, Block c)
+        ExceptionStall(misc::position const& pos
+                     , util::sptr<Statement const> fl
+                     , util::sptr<Statement const> c)
             : Statement(pos)
             , try_block(std::move(fl))
             , catch_block(std::move(c))
@@ -135,8 +135,8 @@ namespace semantic {
         void compile(util::sref<Scope> scope) const;
         bool isAsync() const;
 
-        Block const try_block;
-        Block const catch_block;
+        util::sptr<Statement const> const try_block;
+        util::sptr<Statement const> const catch_block;
     };
 
     struct Throw
@@ -152,6 +152,30 @@ namespace semantic {
         bool isAsync() const { return false; }
 
         util::sptr<Expression const> const exception;
+    };
+
+    struct Break
+        : Statement
+    {
+        explicit Break(misc::position const& pos)
+            : Statement(pos)
+        {}
+
+        void compile(util::sref<Scope> scope) const;
+
+        bool isAsync() const { return false; }
+    };
+
+    struct Continue
+        : Statement
+    {
+        explicit Continue(misc::position const& pos)
+            : Statement(pos)
+        {}
+
+        void compile(util::sref<Scope> scope) const;
+
+        bool isAsync() const { return false; }
     };
 
 }

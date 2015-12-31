@@ -203,6 +203,14 @@ std::cerr << "    another `" << successor << "' already matches the `" << match 
 , Param(STR_TYPE, 'match')),
 
 ReportFunc(
+'excessiveExprInForRange',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    more than 3 expressions in for range." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
 'superWithoutCall',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
@@ -334,7 +342,7 @@ ReportFunc(
 'forbidDefFunc',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    attempt define function `" << name << "' but forbidden here." << std::endl;
+std::cerr << "    function `" << name << "' definition not allowed in branches or try-catches." << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
 
@@ -342,7 +350,7 @@ ReportFunc(
 'forbidDefClass',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    attempt define class `" << name << "' but forbidden here." << std::endl;
+std::cerr << "    class `" << name << "' definition not allowed in branches or try-catches." << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
 
@@ -369,6 +377,14 @@ std::cerr << pos.str() << std::endl;
 std::cerr << "    reference to `this' is invalid in global scope" << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'invalidBreak',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    `" << keyword << "' not allowed outside a loop" << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'keyword')),
 
 ReportFunc(
 'nameAlreadyInLocal',
@@ -442,6 +458,22 @@ ReportFunc(
 lineno() + '''
 std::cerr << pos.str() << std::endl;
 std::cerr << "    pipeline reference not in list context." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'rangeIterStepNonLiteral',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    step not a deducible literal number in range iteration." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'invalidRangeIterStep',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    step not non-zero number in range iteration." << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 

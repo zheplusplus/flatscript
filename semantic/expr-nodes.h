@@ -1,9 +1,8 @@
 #ifndef __STEKIN_SEMANTIC_EXPRESSION_NODES_H__
 #define __STEKIN_SEMANTIC_EXPRESSION_NODES_H__
 
-#include <string>
-
 #include <util/arrays.h>
+#include <util/uid.h>
 
 #include "node-base.h"
 
@@ -403,7 +402,7 @@ namespace semantic {
 
         bool isAsync() const { return true; }
     private:
-        virtual util::id _compile(util::sref<Scope> scope, bool root) const;
+        virtual util::uid _compile(util::sref<Scope> scope, bool root) const;
     };
 
     struct AsyncCall
@@ -420,7 +419,7 @@ namespace semantic {
 
         std::vector<std::string> const async_params;
     private:
-        util::id _compile(util::sref<Scope> scope, bool root) const;
+        util::uid _compile(util::sref<Scope> scope, bool root) const;
     };
 
     struct This

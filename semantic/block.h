@@ -1,36 +1,23 @@
 #ifndef __STEKIN_SEMANTIC_BLOCK_H__
 #define __STEKIN_SEMANTIC_BLOCK_H__
 
-#include <string>
-
-#include <output/fwd-decl.h>
 #include <util/arrays.h>
-#include <misc/pos-type.h>
 
-#include "fwd-decl.h"
-#include "node-base.h"
+#include "function.h"
 
 namespace semantic {
 
-    struct Block {
-        Block() = default;
-
-        Block(Block const&) = delete;
-
-        Block(Block&& rhs)
-            : _stmts(std::move(rhs._stmts))
-            , _funcs(std::move(rhs._funcs))
+    struct Block
+        : Statement
+    {
+        explicit Block(misc::position const& pos)
+            : Statement(pos)
         {}
 
         bool isAsync() const;
         void checkNoAsync(misc::position const& check_pos) const;
         void append(Block following);
         void compile(util::sref<Scope> scope) const;
-
-        void compile(Scope& scope) const
-        {
-            this->compile(util::mkref(scope));
-        }
 
         void addStmt(util::sptr<Statement const> stmt)
         {

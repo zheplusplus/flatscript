@@ -1,13 +1,10 @@
 #ifndef __STEKIN_GRAMMAR_EXPRESSION_NODES_H__
 #define __STEKIN_GRAMMAR_EXPRESSION_NODES_H__
 
-#include <utility>
 #include <gmpxx.h>
-
 #include <util/arrays.h>
 
 #include "node-base.h"
-#include "block.h"
 
 namespace grammar {
 
@@ -261,16 +258,17 @@ namespace grammar {
     struct Lambda
         : Expression
     {
-        Lambda(misc::position const& pos, std::vector<std::string> const& p, Block b)
-            : Expression(pos)
-            , param_names(p)
-            , body(std::move(b))
+        Lambda(misc::position const& pos, std::vector<std::string> const& p
+             , util::sptr<Statement const> b)
+                : Expression(pos)
+                , param_names(p)
+                , body(std::move(b))
         {}
 
         util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         std::vector<std::string> const param_names;
-        Block const body;
+        util::sptr<Statement const> const body;
     };
 
     struct RegularAsyncLambda
@@ -279,7 +277,7 @@ namespace grammar {
         RegularAsyncLambda(misc::position const& pos
                          , std::vector<std::string> const& params
                          , int async_param_idx
-                         , Block body)
+                         , util::sptr<Statement const> body)
             : Lambda(pos, params, std::move(body))
             , async_param_index(async_param_idx)
         {}
@@ -342,7 +340,8 @@ namespace grammar {
     struct BlockPipeline
         : Expression
     {
-        BlockPipeline(misc::position const& pos, util::sptr<Expression const> ls, Block sec)
+        BlockPipeline(misc::position const& pos, util::sptr<Expression const> ls
+                    , util::sptr<Statement const> sec)
             : Expression(pos)
             , list(std::move(ls))
             , section(std::move(sec))
@@ -351,7 +350,7 @@ namespace grammar {
         util::sptr<semantic::Expression const> reduceAsExpr() const;
 
         util::sptr<Expression const> const list;
-        Block const section;
+        util::sptr<Statement const> const section;
     };
 
     struct Conditional

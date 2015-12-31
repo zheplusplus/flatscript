@@ -1,11 +1,8 @@
 #include <algorithm>
 
-#include <report/errors.h>
-
 #include "tokens.h"
 #include "automation-base.h"
 #include "clauses.h"
-#include "function.h"
 
 using namespace grammar;
 
@@ -75,13 +72,12 @@ void AutomationBase::nextToken(AutomationStack& stack, TypedToken const& token)
 
 void AutomationBase::discardToken(AutomationStack&, TypedToken const& token)
 {
-    error::unexpectedToken(token.pos, token.image);
+    token.unexpected();
 }
 
-void AutomationBase::pushFactor(
-                AutomationStack&, util::sptr<Expression const> factor, std::string const& image)
+void AutomationBase::pushFactor(AutomationStack&, FactorToken& factor)
 {
-    error::unexpectedToken(factor->pos, image);
+    factor.unexpected();
 }
 
 void AutomationBase::_setFollowings(std::set<TokenType> types)

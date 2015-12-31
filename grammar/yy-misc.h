@@ -1,11 +1,10 @@
 #ifndef __STEKIN_GRAMMAR_YY_MISC_H__
 #define __STEKIN_GRAMMAR_YY_MISC_H__
 
-#include <string>
-
 #include <misc/pos-type.h>
 
 #include "clause-builder.h"
+#include "tokens.h"
 
 void yyerror(std::string const& msg);
 int yylex();
@@ -21,6 +20,14 @@ namespace grammar {
 
     misc::position here();
     void parse();
+
+    struct TokenSequence {
+        explicit TokenSequence(Token* token);
+        TokenSequence* add(Token* token);
+        std::vector<util::sptr<Token>> deliver();
+    private:
+        std::vector<util::sptr<Token>> _list;
+    };
 
 }
 

@@ -14,7 +14,7 @@ typedef GrammarTest StmtNodesTest;
 TEST_F(StmtNodesTest, Arithmetics)
 {
     misc::position pos(1);
-    semantic::Block block;
+    semantic::Block block(pos);
     grammar::Arithmetics arith0(pos, util::mkptr(new grammar::IntLiteral(pos, "1840")));
     grammar::Arithmetics arith1(pos, util::mkptr(new grammar::BoolLiteral(pos, false)));
     block.addStmt(arith0.compile());
@@ -35,7 +35,7 @@ TEST_F(StmtNodesTest, Arithmetics)
 TEST_F(StmtNodesTest, NameDef)
 {
     misc::position pos(2);
-    semantic::Block block;
+    semantic::Block block(pos);
     grammar::NameDef def0(pos, "Shinji", util::mkptr(new grammar::FloatLiteral(pos, "18.47")));
     grammar::NameDef def1(pos, "Asuka", util::mkptr(new grammar::Identifier(pos, "tsundere")));
     block.addStmt(def0.compile());
@@ -58,7 +58,7 @@ TEST_F(StmtNodesTest, Returns)
     misc::position pos(3);
     misc::position pos_a(300);
     misc::position pos_b(301);
-    semantic::Block block;
+    semantic::Block block(pos);
     grammar::Return ret0(pos, util::mkptr(new grammar::Identifier(pos_a, "KaworuNagisa")));
     grammar::Return ret1(pos, util::mkptr(new grammar::EmptyExpr(pos_b)));
     block.addStmt(ret0.compile());
@@ -82,7 +82,7 @@ TEST_F(StmtNodesTest, Block)
     grammar::Block block;
     block.addStmt(util::mkptr(new grammar::NameDef(
                     pos, "Misato", util::mkptr(new grammar::Identifier(pos, "Katsuragi")))));
-    block.compile().compile(nulScope());
+    block.compile()->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -96,32 +96,32 @@ TEST_F(StmtNodesTest, Block)
 TEST_F(StmtNodesTest, Branch)
 {
     misc::position pos(6);
-    semantic::Block block;
+    semantic::Block block(pos);
     grammar::Branch branch0(pos
                           , util::mkptr(new grammar::BoolLiteral(pos, true))
-                          , std::move(grammar::Block()));
-    branch0.acceptElse(pos, grammar::Block());
+                          , util::mkptr(new grammar::Block));
+    branch0.acceptElse(pos, util::mkptr(new grammar::Block));
     block.addStmt(branch0.compile());
 
-    grammar::Block block0;
-    block0.addStmt(util::mkptr(new grammar::Arithmetics(
+    util::sptr<grammar::Block> block0(new grammar::Block);
+    block0->addStmt(util::mkptr(new grammar::Arithmetics(
                     pos, util::mkptr(new grammar::Identifier(pos, "Kaji")))));
     block.addStmt(grammar::Branch(
                 pos, util::mkptr(new grammar::BoolLiteral(pos, false)), std::move(block0))
             .compile());
 
-    grammar::Block block1;
-    block1.addStmt(util::mkptr(new grammar::Arithmetics(
+    util::sptr<grammar::Block> block1(new grammar::Block);
+    block1->addStmt(util::mkptr(new grammar::Arithmetics(
                             pos, util::mkptr(new grammar::Identifier(pos, "Ryoji")))));
     block.addStmt(grammar::BranchAlterOnly(
                 pos, util::mkptr(new grammar::BoolLiteral(pos, true)), std::move(block1))
             .compile());
 
-    grammar::Block block2;
-    block2.addStmt(util::mkptr(new grammar::Arithmetics(
+    util::sptr<grammar::Block> block2(new grammar::Block);
+    block2->addStmt(util::mkptr(new grammar::Arithmetics(
                             pos, util::mkptr(new grammar::IntLiteral(pos, "7")))));
-    grammar::Block block3;
-    block3.addStmt(util::mkptr(new grammar::Return(
+    util::sptr<grammar::Block> block3(new grammar::Block);
+    block3->addStmt(util::mkptr(new grammar::Return(
                             pos, util::mkptr(new grammar::Identifier(pos, "betsuni")))));
     grammar::Branch branch1(pos
                           , util::mkptr(new grammar::BoolLiteral(pos, false))
@@ -183,13 +183,13 @@ TEST_F(StmtNodesTest, Branch)
 TEST_F(StmtNodesTest, Functions)
 {
     misc::position pos(8);
-    semantic::Block block;
+    semantic::Block block(pos);
     grammar::Function func0(
-            pos, "func0", std::vector<std::string>(), -1, std::move(grammar::Block()));
+            pos, "func0", std::vector<std::string>(), -1, util::mkptr(new grammar::Block));
     block.addFunc(func0.compile());
 
-    grammar::Block body;
-    body.addStmt(util::mkptr(new grammar::Arithmetics(
+    util::sptr<grammar::Block> body(new grammar::Block);
+    body->addStmt(util::mkptr(new grammar::Arithmetics(
                         pos, util::mkptr(new grammar::Identifier(pos, "Kuroi")))));
     grammar::Function func1(pos
                           , "func1"
@@ -221,21 +221,21 @@ TEST_F(StmtNodesTest, Functions)
 TEST_F(StmtNodesTest, Mixed)
 {
     misc::position pos(9);
-    semantic::Block block;
+    semantic::Block block(pos);
 
-    grammar::Block block_nested;
-    block_nested.addStmt(util::mkptr(new grammar::Arithmetics(
+    util::sptr<grammar::Block> block_nested(new grammar::Block);
+    block_nested->addStmt(util::mkptr(new grammar::Arithmetics(
                             pos, util::mkptr(new grammar::IntLiteral(pos, "9")))));
     util::sptr<grammar::Function> func_nested0(new grammar::Function(
                 pos, "funcn", std::vector<std::string>({ "SOS" }), -1, std::move(block_nested)));
     util::sptr<grammar::Function> func_nested1(new grammar::Function(
-                pos, "funcn", std::vector<std::string>(), -1, std::move(grammar::Block())));
+                pos, "funcn", std::vector<std::string>(), -1, util::mkptr(new grammar::Block)));
 
-    grammar::Block body;
-    body.addStmt(util::mkptr(new grammar::Arithmetics(
+    util::sptr<grammar::Block> body(new grammar::Block);
+    body->addStmt(util::mkptr(new grammar::Arithmetics(
                     pos, util::mkptr(new grammar::Identifier(pos, "Kyon")))));
-    body.addFunc(std::move(func_nested0));
-    body.addFunc(std::move(func_nested1));
+    body->addFunc(std::move(func_nested0));
+    body->addFunc(std::move(func_nested1));
 
     grammar::Function func(pos
                          , "funco"

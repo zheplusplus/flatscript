@@ -10,9 +10,7 @@ namespace grammar {
     {
         explicit ExprStmtAutomation(util::sref<ClauseBase> clause);
 
-        void pushFactor(AutomationStack& stack
-                      , util::sptr<Expression const> factor
-                      , std::string const& image);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
         bool finishOnBreak(bool sub_empty) const;
         void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
@@ -46,7 +44,7 @@ namespace grammar {
     {
         void activated(AutomationStack& stack);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
-        bool finishOnBreak(bool sub_empty) const;
+        bool finishOnBreak(bool sub_empty) const { return !sub_empty; }
         void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
 
         IfAutomation()
@@ -72,6 +70,27 @@ namespace grammar {
         void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
     };
 
+    struct ForAutomation
+        : AutomationBase
+    {
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
+        void accepted(AutomationStack&, util::sptr<Expression const> expr);
+        bool finishOnBreak(bool sub_empty) const { return this->_finished || !sub_empty; }
+        void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
+
+        explicit ForAutomation(misc::position const& pos)
+            : _pos(pos)
+            , _before_ref(true)
+            , _finished(false)
+        {}
+    protected:
+        misc::position _pos;
+        std::string _ref;
+        std::vector<util::sptr<Expression const>> _range_args;
+        bool _before_ref;
+        bool _finished;
+    };
+
     struct FunctionAutomation
         : AutomationBase
     {
@@ -81,9 +100,7 @@ namespace grammar {
             , _async_param_index(-1)
         {}
 
-        void pushFactor(AutomationStack&
-                      , util::sptr<Expression const> factor
-                      , std::string const& image);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
         void accepted(AutomationStack&, util::sptr<Expression const>) {};
         void accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list);
         bool finishOnBreak(bool) const;
@@ -181,8 +198,7 @@ namespace grammar {
             , _base_class(nullptr)
         {}
 
-        void pushFactor(AutomationStack&, util::sptr<Expression const> factor,
-                        std::string const& image);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
         bool finishOnBreak(bool) const;
         void finish(ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&);
@@ -214,6 +230,59 @@ namespace grammar {
                                 , std::vector<util::sptr<Expression const>> list);
         static void _acceptSuperArgs(CtorAutomation* self
                                    , std::vector<util::sptr<Expression const>> list);
+    };
+
+    struct ExternAutomation
+        : AutomationBase
+    {
+        ExternAutomation(misc::position const& pos, util::sref<ClauseBase> clause)
+            : _pos(pos)
+            , _clause(clause)
+        {}
+
+        void activated(AutomationStack& stack);
+        void accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list);
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        bool finishOnBreak(bool) const { return true; }
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
+    private:
+        misc::position const _pos;
+        util::sref<ClauseBase> const _clause;
+        std::vector<std::string> _externs;
+    };
+
+    struct ExportAutomation
+        : AutomationBase
+    {
+        ExportAutomation(misc::position const& pos, util::sref<ClauseBase> clause)
+            : _pos(pos)
+            , _clause(clause)
+            , _value(nullptr)
+        {}
+
+        void activated(AutomationStack& stack);
+        void accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list);
+        void accepted(AutomationStack&, util::sptr<Expression const> e);
+        bool finishOnBreak(bool sub_empty) const { return !sub_empty; }
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
+    private:
+        misc::position const _pos;
+        util::sref<ClauseBase> const _clause;
+        std::vector<std::string> _export_point;
+        util::sptr<Expression const> _value;
+    };
+
+    struct IgnoreAny
+        : AutomationBase
+    {
+        explicit IgnoreAny(bool reported);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
+        bool finishOnBreak(bool) const { return true; }
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
+    private:
+        void _report(Token const& t);
+        bool _reported;
     };
 
 }

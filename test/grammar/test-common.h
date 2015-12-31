@@ -26,9 +26,9 @@ namespace test {
             : grammar::ClauseBase(-1)
         {}
 
-        semantic::Block compile() const
+        util::sptr<semantic::Statement const> compile() const
         {
-            return _block.compile();
+            return _block->compile();
         }
 
         void deliver() {}
@@ -98,6 +98,10 @@ namespace test {
     extern NodeType const PIPE_INDEX;
     extern NodeType const PIPE_KEY;
     extern NodeType const PIPE_RESULT;
+
+    extern NodeType const FOR_RANGE;
+    extern NodeType const BREAK;
+    extern NodeType const CONTINUE;
 
     extern NodeType const CALL_BEGIN;
     extern NodeType const CALL_END;
