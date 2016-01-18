@@ -1,8 +1,8 @@
-Line 3
+samples/errors/bad-indent.fls:3
     invalid indentation
-Line 5
+samples/errors/bad-indent.fls:5
     invalid indentation
-Line 6
+samples/errors/bad-indent.fls:6
     invalid indentation
-Line 8
+samples/errors/bad-indent.fls:8
     invalid indentation

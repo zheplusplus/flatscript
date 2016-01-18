@@ -9,8 +9,8 @@ func syncThrowFunc(t, i)
 func f()
     try
         asyncThrowFunc(true, 9, %%)
-    catch
-        console.log($e)
+    catch e
+        console.log(e)
 
 f()
 
@@ -19,8 +19,8 @@ func g()
         asyncThrowFunc(false, -1, %%)
         [0, 9] |: asyncThrowFunc(false, -1, %%)
         syncThrowFunc(true, 10)
-    catch
-        console.log($e)
+    catch e
+        console.log(e)
 
 g()
 
@@ -29,8 +29,8 @@ try
     x.push(false)
     x.push(true)
     x |: asyncThrowFunc($, $i, %%)
-catch
-    console.log($e)
+catch e
+    console.log(e)
 
 try
     x: []
@@ -38,31 +38,31 @@ try
     x.push(false)
     x.push(true)
     x |: syncThrowFunc($, $i)
-catch
-    console.log($e)
+catch e
+    console.log(e)
 
 try
     try
         x: []
         x.push(true)
         x |: syncThrowFunc($, 0)
-    catch
-        setTimeout(%, 1)
+    catch e
+        setTimeout(%, 0)
         throw 'throw in catch'
-catch
-    setTimeout(%, 1)
-    console.log($e)
+catch e
+    setTimeout(%, 0)
+    console.log(e)
 
 func throwAfterTryCatchSync(t, i)
     try
         console.log('try+')
-    catch
+    catch e
         console.log('catch+')
     syncThrowFunc(t, i)
 
 func throwAfterTryCatchAsync(t, i, %%)
     try
-        setTimeout(%, 1)
+        setTimeout(%, 0)
         console.log('try*')
     catch
         console.log('catch*')
@@ -70,12 +70,12 @@ func throwAfterTryCatchAsync(t, i, %%)
 
 try
     throwAfterTryCatchSync(true, 72)
-catch
-    console.log($e)
+catch e
+    console.log(e)
 
 try
     throwAfterTryCatchAsync(true, 77, %%)
-catch
-    console.log($e)
+catch e
+    console.log(e)
 
 console.log('end')

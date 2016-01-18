@@ -1,11 +1,8 @@
-#include <algorithm>
 #include <sstream>
 #include <map>
-#include <set>
-
 #include <util/string.h>
 #include <util/str-comprehension.h>
-#include <report/errors.h>
+#include <globals.h>
 
 #include "expr-nodes.h"
 #include "name-mangler.h"
@@ -18,16 +15,6 @@ using namespace output;
 std::string Undefined::str() const
 {
     return "undefined";
-}
-
-static bool isReserved(std::string const& name)
-{
-    static std::set<std::string> const RESERVED_WORDS({
-        "break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else",
-        "finally", "for", "function", "if", "in", "instanceof", "new", "return", "switch", "this",
-        "throw", "try", "typeof", "var", "void", "while", "with",
-    });
-    return RESERVED_WORDS.find(name) != RESERVED_WORDS.end();
 }
 
 template <typename T>
@@ -105,9 +92,6 @@ std::string TransientParamReference::str() const
 
 std::string ImportedName::str() const
 {
-    if (isReserved(name)) {
-        error::importReservedWord(pos, name);
-    }
     return name;
 }
 
@@ -118,7 +102,7 @@ std::string Call::str() const
 
 std::string MemberAccess::str() const
 {
-    if (isReserved(member)) {
+    if (flats::isReserved(member)) {
         return referee->str() + "[\"" + member + "\"]";
     }
     return referee->str() + "." + member;
@@ -241,9 +225,9 @@ std::string RegularAsyncCallbackArg::str() const
         util::replace_all(
         util::replace_all(
         util::replace_all(
-            "(function($cb_err, #CALLBACK_RESULT) {\n"
-            "    if ($cb_err) #RAISE_EXC\n"
-            "#BODY\n"
+            "(function($cb_err, #CALLBACK_RESULT) {"
+                "if ($cb_err) #RAISE_EXC"
+                "#BODY"
             "})"
                 , "#CALLBACK_RESULT", formAsyncRef(this->id))
                 , "#RAISE_EXC", thrower->scheme("$cb_err"))

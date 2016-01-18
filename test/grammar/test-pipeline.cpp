@@ -10,21 +10,21 @@ TEST_F(PipelineTest, MultiLinesPipeline)
     misc::position pos_a(100);
     misc::position pos_b(101);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "furude")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "furude")))
                                                    ->add(pipeSep(pos, "|:"))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "houjou")))
+    builder.addTokens(1, pos_a, (new TokenSequence(id(pos_a, "houjou")))
                                                      ->add(colon(pos_a))
                                                      ->add(pipeElement(pos_a))
                                                      ->add(op(pos_a, "*"))
                                                      ->add(pipeElement(pos_a))
                                                      ->deliver());
-    builder.addArith(1, pos_b, (new grammar::TokenSequence(
+    builder.addTokens(1, pos_b, (new TokenSequence(
                       new grammar::TypedToken(pos, "return", grammar::RETURN)))
                 ->add(id(pos_b, "houjou"))
                 ->deliver());
 
-    builder.buildAndClear()->compile(nulScope());
+    builder.buildAndClear(pos)->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -54,15 +54,15 @@ TEST_F(PipelineTest, MultiLinesPipelineSeparatedByFilterBreak)
     misc::position pos_a(200);
     misc::position pos_b(201);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "furude")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "furude")))
                                                    ->add(pipeSep(pos, "|?"))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(pipeElement(pos_a)))
+    builder.addTokens(1, pos_a, (new TokenSequence(pipeElement(pos_a)))
                                                      ->add(op(pos_a, "<"))
                                                      ->add(pipeElement(pos_a))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(nulScope());
+    builder.buildAndClear(pos)->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -87,19 +87,19 @@ TEST_F(PipelineTest, MultiLinesPipelineSeparatedByFilterBlock)
     misc::position pos_a(300);
     misc::position pos_b(301);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "furude")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "furude")))
                                                    ->add(pipeSep(pos, "|?"))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(pipeElement(pos_a)))
+    builder.addTokens(1, pos_a, (new TokenSequence(pipeElement(pos_a)))
                                                      ->add(op(pos_a, "*"))
                                                      ->add(pipeElement(pos_a))
                                                      ->deliver());
-    builder.addArith(1, pos_b, (new grammar::TokenSequence(
+    builder.addTokens(1, pos_b, (new TokenSequence(
                       new grammar::TypedToken(pos, "return", grammar::RETURN)))
                 ->add(id(pos_b, "houjou"))
                 ->deliver());
 
-    builder.buildAndClear();
+    builder.buildAndClear(pos);
     ASSERT_TRUE(error::hasError());
 
     std::vector<InvalidIndentRec> recs(getInvalidIndentRecs());
@@ -113,12 +113,12 @@ TEST_F(PipelineTest, FirstSectionEmpty)
     misc::position pos_a(400);
     misc::position pos_b(401);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "batora")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "batora")))
                                                    ->add(colon(pos))
                                                    ->add(pipeSep(pos_a, "|:"))
                                                    ->add(pipeElement(pos_b))
                                                    ->deliver());
-    builder.buildAndClear();
+    builder.buildAndClear(pos);
     ASSERT_TRUE(error::hasError());
 
     std::vector<InvalidEmptyExprRec> recs(getInvalidEmptyExprRecs());
@@ -132,14 +132,14 @@ TEST_F(PipelineTest, SectionSectionEmpty)
     misc::position pos_a(500);
     misc::position pos_b(501);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "kanon")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "kanon")))
                                                    ->add(colon(pos))
                                                    ->add(id(pos, "jesika"))
                                                    ->add(pipeSep(pos_a, "|:"))
                                                    ->add(pipeSep(pos_b, "|:"))
                                                    ->add(pipeElement(pos))
                                                    ->deliver());
-    builder.buildAndClear();
+    builder.buildAndClear(pos);
     ASSERT_TRUE(error::hasError());
 
     std::vector<InvalidEmptyExprRec> recs(getInvalidEmptyExprRecs());
@@ -153,15 +153,15 @@ TEST_F(PipelineTest, FirstSectionEmptyOnBlockPipeline)
     misc::position pos_a(600);
     misc::position pos_b(601);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "ronoue")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "ronoue")))
                                                    ->add(colon(pos_a))
                                                    ->add(pipeSep(pos_b, "|:"))
                                                    ->deliver());
-    builder.addArith(1, pos, (new grammar::TokenSequence(id(pos, "kinzou")))
+    builder.addTokens(1, pos, (new TokenSequence(id(pos, "kinzou")))
                                                    ->add(colon(pos))
                                                    ->add(pipeElement(pos))
                                                    ->deliver());
-    builder.buildAndClear();
+    builder.buildAndClear(pos);
     ASSERT_TRUE(error::hasError());
 
     std::vector<InvalidEmptyExprRec> recs(getInvalidEmptyExprRecs());

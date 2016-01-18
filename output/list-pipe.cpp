@@ -7,20 +7,39 @@
 using namespace output;
 
 static std::string const ASYNC_PIPE(
-"(function ($list) {"
-    "if (!Array.isArray($list) && $list.constructor !== String) #RAISE_EXC"
-    "var $pke#PIPE_ID = null;"
-    "function $brk#PIPE_ID() { $np#PIPE_ID($list.length) }"
-    "function $np#PIPE_ID($pix#PIPE_ID, $prs#PIPE_ID) {"
-        "function $nx#PIPE_ID() { $np#PIPE_ID($pix#PIPE_ID + 1, $prs#PIPE_ID) }"
-        "if ($pix#PIPE_ID === $list.length) {"
-            "#SUCCESSIVE_STATEMENTS"
-        "} else {"
-            "var $pel#PIPE_ID = $list[$pix#PIPE_ID];"
-            "#NEXT"
+"(function ($o) {"
+    "function $arrayiter($arr) {"
+        "function $brk#PIPE_ID() { $np#PIPE_ID($arr.length) }"
+        "function $np#PIPE_ID($pix#PIPE_ID, $prs#PIPE_ID) {"
+            "var $pke#PIPE_ID = $pix#PIPE_ID.toString();"
+            "function $nx#PIPE_ID() { $np#PIPE_ID($pix#PIPE_ID + 1, $prs#PIPE_ID) }"
+            "if ($pix#PIPE_ID === $arr.length) {"
+                "#SUCCESSIVE_STATEMENTS"
+            "} else {"
+                "var $pel#PIPE_ID = $arr[$pix#PIPE_ID];"
+                "#NEXT"
+            "}"
         "}"
+        "$np#PIPE_ID(0, []);"
     "}"
-    "$np#PIPE_ID(0, []);"
+    "function $objiter($obj) {"
+        "var $keys = Object.keys($obj);"
+        "function $brk#PIPE_ID() { $np#PIPE_ID($keys.length) }"
+        "function $np#PIPE_ID($pix#PIPE_ID, $prs#PIPE_ID) {"
+            "var $pke#PIPE_ID = $keys[$pix#PIPE_ID];"
+            "function $nx#PIPE_ID() { $np#PIPE_ID($pix#PIPE_ID + 1, $prs#PIPE_ID) }"
+            "if ($pix#PIPE_ID === $keys.length) {"
+                "#SUCCESSIVE_STATEMENTS"
+            "} else {"
+                "var $pel#PIPE_ID = $obj[$pke#PIPE_ID];"
+                "#NEXT"
+            "}"
+        "}"
+        "$np#PIPE_ID(0, []);"
+    "}"
+    "if ($o === null || $o === undefined) #RAISE_EXC"
+    "if (Array.isArray($o) || $o.constructor === String) { return $arrayiter($o) }"
+    "return $objiter($o)"
 "})(#LIST)"
 );
 
@@ -37,7 +56,7 @@ std::string AsyncPipeline::str() const
         util::replace_all(
         util::replace_all(
             ASYNC_PIPE
-                , "#RAISE_EXC", thrower->scheme("'Require array for async iteration'"))
+                , "#RAISE_EXC", thrower->scheme("new TypeError('Pipeline on non-object')"))
                 , "#SUCCESSIVE_STATEMENTS", suc_os.str())
                 , "#NEXT", rec_os.str())
                 , "#LIST", list->str())
@@ -46,9 +65,9 @@ std::string AsyncPipeline::str() const
 }
 
 static std::string const SYNC_PIPE(
-    "($listpipe(#LIST, function($pix#PIPE_ID, $pke#PIPE_ID,"
-                               "$pel#PIPE_ID, $prs#PIPE_ID)"
-                      "{#SECTION}))");
+    "($listpipesync(#LIST, function($pix#PIPE_ID, $pke#PIPE_ID,"
+                                    "$pel#PIPE_ID, $prs#PIPE_ID)"
+                    "{#SECTION}))");
 
 std::string SyncPipeline::str() const
 {

@@ -31,9 +31,10 @@ namespace output {
     struct AsyncCallResultDef
         : Statement
     {
-        AsyncCallResultDef(util::sptr<Expression const> ar, bool nd)
+        AsyncCallResultDef(util::sptr<Expression const> ar, bool nd, util::uid aid)
             : async_result(std::move(ar))
             , need_decl(nd)
+            , async_id(aid)
         {}
 
         void write(std::ostream& os) const;
@@ -41,6 +42,7 @@ namespace output {
 
         util::sptr<Expression const> const async_result;
         bool const need_decl;
+        util::uid const async_id;
     };
 
     struct Export
@@ -66,7 +68,28 @@ namespace output {
     struct ExceptionStall
         : Statement
     {
-        ExceptionStall(util::sptr<Statement const> t, util::sptr<Statement const> c)
+        ExceptionStall(util::sptr<Statement const> t, std::string excn, util::uid cid,
+                       util::sptr<Statement const> c)
+            : try_block(std::move(t))
+            , except_name(std::move(excn))
+            , catch_id(cid)
+            , catch_block(std::move(c))
+        {}
+
+        void write(std::ostream& os) const;
+        int count() const { return std::max(this->try_block->count(), 1); }
+        bool mayThrow() const { return this->catch_block->mayThrow(); }
+
+        util::sptr<Statement const> const try_block;
+        std::string const except_name;
+        util::uid catch_id;
+        util::sptr<Statement const> const catch_block;
+    };
+
+    struct ExceptionStallDeprecated
+        : Statement
+    {
+        ExceptionStallDeprecated(util::sptr<Statement const> t, util::sptr<Statement const> c)
             : try_block(std::move(t))
             , catch_block(std::move(c))
         {}

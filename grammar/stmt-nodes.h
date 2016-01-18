@@ -138,11 +138,13 @@ namespace grammar {
         {}
 
         util::sptr<semantic::Statement const> compile() const;
-        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
+        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block,
+                         std::string except_name);
 
         util::sptr<Statement const> const flow;
     private:
         util::sptr<Statement const> _catch;
+        std::string _except_name;
         misc::position _catch_pos;
     };
 
@@ -203,6 +205,21 @@ namespace grammar {
         util::sptr<Expression const> const end;
         util::sptr<Expression const> const step;
         util::sptr<Statement const> loop;
+    };
+
+    struct IncludeFile
+        : Statement
+    {
+        explicit IncludeFile(misc::position const& pos, std::string f, std::string m)
+            : Statement(pos)
+            , file(std::move(f))
+            , module_alias(std::move(m))
+        {}
+
+        util::sptr<semantic::Statement const> compile() const;
+
+        std::string const file;
+        std::string const module_alias;
     };
 
 }

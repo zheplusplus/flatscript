@@ -6,11 +6,10 @@ using namespace semantic;
 
 void Block::compile(util::sref<Scope> scope) const
 {
-    util::sref<SymbolTable> root_sym(scope->sym());
     util::sref<output::Block> root_block(scope->block());
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
-                    root_sym->defFunc(func->pos, func->name);
+                    scope->sym()->defFunc(func->pos, func->name);
                 });
     _stmts.iter([&](util::sptr<Statement const> const& stmt, int)
                 {
@@ -18,7 +17,7 @@ void Block::compile(util::sref<Scope> scope) const
                 });
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
-                    root_block->addFunc(func->compile(root_sym));
+                    root_block->addFunc(func->compile(scope));
                 });
 }
 

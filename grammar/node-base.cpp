@@ -10,7 +10,8 @@ void Statement::acceptElse(misc::position const& else_pos, util::sptr<Statement 
     error::partialStmtNotMatch(else_pos, "else", "if");
 }
 
-void Statement::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const>)
+void Statement::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const>,
+                            std::string)
 {
     error::partialStmtNotMatch(catch_pos, "catch", "try");
 }

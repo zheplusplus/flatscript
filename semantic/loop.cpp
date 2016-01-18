@@ -28,7 +28,7 @@ static void compileRangeSync(
         has_ret = true;
     }
     scope->addStmt(pos, util::mkptr(new output::SyncRangeIteration(
-            util::mkptr(new output::Reference(pos, ref))
+            util::mkptr(new output::Reference(ref))
           , std::move(begin), std::move(end), step, loop_scope->deliver()
           , std::move(ext_return), loop_id, has_ret, loop_scope->hasBreak())));
 }
@@ -46,7 +46,7 @@ static void compileRangeAsync(
     loop_scope->sym()->defName(pos, ref);
     loop->compile(*loop_scope);
     current_flow->addStmt(util::mkptr(new output::AsyncRangeIteration(
-            util::mkptr(new output::Reference(pos, ref)), std::move(begin), std::move(end), step
+            util::mkptr(new output::Reference(ref)), std::move(begin), std::move(end), step
           , loop_scope->deliver(), std::move(succession_flow), loop_id)));
 }
 

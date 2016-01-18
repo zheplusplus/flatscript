@@ -1,3 +1,4 @@
+#include <iostream>
 #include <map>
 #include <globals.h>
 #include <semantic/expr-nodes.h>
@@ -146,7 +147,8 @@ util::sptr<semantic::Expression const> PipeResult::reduceAsExpr() const
 
 util::sptr<semantic::Expression const> ExceptionObj::reduceAsExpr() const
 {
-    return util::mkptr(new semantic::ExceptionObj(pos));
+    std::cerr << this->pos.str() << ": Deprecated exception object syntax" << std::endl;
+    return util::mkptr(new semantic::ExceptionObjDeprecated(pos));
 }
 
 util::sptr<semantic::Expression const> Call::reduceAsExpr() const
@@ -320,13 +322,12 @@ namespace {
 
 util::sptr<Expression const> grammar::makeRegEx(misc::position const& pos, std::string v)
 {
-    if (v.back() == '/') {
-        std::string pat(v.substr(1, v.size() - 2));
-        return util::mkptr(new RegEx(pos, std::move(pat), ""));
-    }
     auto last_slash = v.rfind('/');
     std::string pat(v.substr(1, last_slash - 1));
     std::string mod(v.substr(last_slash + 1));
+    if (pat.empty()) {
+        error::invalidRegExp(pos, "no pattern");
+    }
     ::checkValidReMod(pos, mod);
     return util::mkptr(new RegEx(pos, std::move(pat), std::move(mod)));
 }

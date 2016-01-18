@@ -1,17 +1,10 @@
-#include <gtest/gtest.h>
-
-#include <grammar/yy-misc.h>
-#include <test/phony-errors.h>
-
-#include "test-common.h"
+#include "samples-test.h"
 
 using namespace test;
 
-TEST(Syntax, LookupAndSlice)
+TEST_F(SyntaxSampleTest, LookupAndSlice)
 {
-    grammar::parse();
-    grammar::builder.buildAndClear()->compile(nulScope());
-    ASSERT_FALSE(error::hasError());
+    parseSampleOk("test/grammar/slice.fls");
 
     DataTree::expectOne()
         (BLOCK_BEGIN)
@@ -85,4 +78,12 @@ TEST(Syntax, LookupAndSlice)
         (BLOCK_END)
     ;
     DataTree::verify();
+}
+
+TEST_F(SyntaxSampleTest, LookupAndSliceErr)
+{
+    parseSampleErr("samples/errors/slice.fls");
+    std::vector<SliceStepOmittedRec> recs(getSliceStepOmittedRecs());
+    ASSERT_EQ(1, recs.size());
+    EXPECT_EQ(misc::position(5), recs[0].pos);
 }

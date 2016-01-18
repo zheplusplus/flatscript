@@ -2,13 +2,14 @@
 #include <iostream>
 #include <sstream>
 
-#include <grammar/yy-misc.h>
 #include <semantic/scope.h>
 #include <semantic/node-base.h>
 #include <output/global.h>
 #include <report/errors.h>
 
 #include "env.h"
+#include "globals.h"
+#include "including.h"
 
 static util::sptr<output::Statement const> compileGlobal(util::sptr<semantic::Statement const> flow)
 {
@@ -17,24 +18,16 @@ static util::sptr<output::Statement const> compileGlobal(util::sptr<semantic::St
     return global_scope->deliver();
 }
 
-static int compile()
+static void compile()
 {
-    grammar::parse();
+    util::sptr<output::Statement const> global_scope(
+            compileGlobal(flats::compileFile(flats::Globals::g.input_file, misc::position())));
     if (error::hasError()) {
-        return 1;
-    }
-    util::sptr<semantic::Statement const> global_flow(grammar::builder.buildAndClear());
-    if (error::hasError()) {
-        return 1;
-    }
-    util::sptr<output::Statement const> global_scope(compileGlobal(std::move(global_flow)));
-    if (error::hasError()) {
-        return 1;
+        throw flats::CompileError();
     }
     std::stringstream os;
     output::wrapGlobal(os, *global_scope);
     std::cout << os.str();
-    return 0;
 }
 
 int main(int argc, char* argv[])
@@ -43,7 +36,10 @@ int main(int argc, char* argv[])
         return 1;
     }
     try {
-        return compile();
+        compile();
+        return 0;
+    } catch (flats::CompileError&) {
+        return 1;
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         return 1;

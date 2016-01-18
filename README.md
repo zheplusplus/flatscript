@@ -178,8 +178,6 @@ Output
     function $c_readFiles($c_fileList, $racb) {
         var $c_fileContent;
         var $ar_0 = (function ($list) {
-            if (!Array.isArray($list) && $list.constructor !== String)
-                return $racb('Require array for async iteration');
             function $next($index, $result) {
                 var $key = null;
                 if ($index === $list.length) {
@@ -204,8 +202,6 @@ Use the Compiler
 ### Build
 
 * C++ compiler with C++11 features including lambda, move semantic, `nullptr`, decltype support. Suggested: g++ 4.8 or later clang++ 3.4 or later
-* flex (the lexical parser) 2.5+
-* bison 2.4+
 * GMP lib 5+
 * Python 2.7.x (to generate some code)
 * make

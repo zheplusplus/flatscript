@@ -1,2 +1,2 @@
-Line 13
+samples/errors/init-super-with-super.fls:13
     `super' not in member function or constructor

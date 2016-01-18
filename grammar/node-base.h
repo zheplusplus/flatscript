@@ -14,7 +14,8 @@ namespace grammar {
 
         virtual util::sptr<semantic::Statement const> compile() const = 0;
         virtual void acceptElse(misc::position const& else_pos, util::sptr<Statement const> block);
-        virtual void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
+        virtual void acceptCatch(misc::position const& catch_pos,
+                                 util::sptr<Statement const> block, std::string except_name);
 
         virtual ~Statement() {}
 

@@ -46,9 +46,10 @@ void Block::acceptElse(misc::position const& else_pos, util::sptr<Statement cons
     _stmts.back()->acceptElse(else_pos, std::move(block));
 }
 
-void Block::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block)
+void Block::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block,
+                        std::string except_name)
 {
-    _stmts.back()->acceptCatch(catch_pos, std::move(block));
+    this->_stmts.back()->acceptCatch(catch_pos, std::move(block), std::move(except_name));
 }
 
 util::sptr<semantic::Block const> Block::compileToBlock() const

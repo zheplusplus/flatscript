@@ -1,0 +1,11 @@
+enum x, y, z
+console.log(x)
+console.log(y)
+console.log(z)
+
+func m()
+    return 10
+
+console.log(x + m())
+console.log(y + m())
+console.log(z + m())

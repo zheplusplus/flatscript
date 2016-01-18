@@ -249,7 +249,7 @@ def build_compile_literals():
         )$
     '''.format(literal_types=''.join([lineno() + '''
         if (e->literalType(st) == "{tp}") $(
-            return util::mkptr(new output::{tp_cap}Literal(e->pos, e->{tp}Value(st)));
+            return util::mkptr(new output::{tp_cap}Literal(e->{tp}Value(st)));
         )$
     '''.format(tp=tp, tp_cap=tp.title()) for tp in TYPES ]))
 

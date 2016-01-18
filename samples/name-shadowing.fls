@@ -1,5 +1,5 @@
 func nested(a, b, cb)
-    setTimeout(%, 1)
+    setTimeout(%, 0)
     cb(a + b, a * b)
 
 a: [0, 1, 2, 3]
@@ -22,9 +22,9 @@ try
     y: 20
     console.log(x, y)
     throw x + y
-catch
-    x: $e * $e
-    y: x - $e
+catch e
+    x: e * e
+    y: x - e
     console.log(x, y)
 
 console.log(x, y)

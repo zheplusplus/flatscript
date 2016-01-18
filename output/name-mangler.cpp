@@ -1,5 +1,3 @@
-#include <algorithm>
-
 #include "name-mangler.h"
 
 using namespace output;
@@ -8,12 +6,9 @@ template <typename M>
 static std::vector<std::string> mapStrings(std::vector<std::string> const& in, M mapper)
 {
     std::vector<std::string> result;
-    std::for_each(in.begin()
-                , in.end()
-                , [&](std::string const& s)
-                  {
-                      result.push_back(mapper(s));
-                  });
+    for (auto const& s: in) {
+        result.push_back(mapper(s));
+    }
     return std::move(result);
 }
 
@@ -35,6 +30,16 @@ std::string output::formClassName(std::string const& name)
 std::string output::formSubName(std::string const& name, util::uid space_id)
 {
     return "$s_" + name + '$' + space_id.str();
+}
+
+std::string output::formModuleFuncName(util::uid module_id)
+{
+    return "$mf_" + module_id.str();
+}
+
+std::string output::formModuleExportName(util::uid module_id)
+{
+    return "$me_" + module_id.str();
 }
 
 std::string output::formTransientParam(std::string const& param)
@@ -60,3 +65,4 @@ std::string output::formAnonymousFunc(util::uid const& id)
 std::string const output::TERM_REGULAR_ASYNC_CALLBACK("$racb");
 std::string const output::TERM_EXCEPTION("$exception");
 std::string const output::TERM_CONDITIONAL_CALLBACK_PARAMETER("$ccp");
+std::string const output::TERM_EXPORT("$export");

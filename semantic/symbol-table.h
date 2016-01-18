@@ -25,22 +25,22 @@ namespace semantic {
         virtual void defFunc(misc::position const& pos, std::string const& name) = 0;
         virtual void defParam(misc::position const& pos, std::string const& name) = 0;
         virtual std::set<std::string> localNames() const = 0;
-
-        virtual void defName(misc::position const& pos, std::string const& name);
-        virtual void defAsyncParam(misc::position const& pos, std::string const& name);
-        virtual void defConst(misc::position const& pos
-                            , std::string const& name
-                            , util::sref<Expression const> value);
         virtual void addExternNames(misc::position const& pos, std::vector<std::string> const&);
-        virtual void refNames(misc::position const& pos, std::vector<std::string> const& names);
-        virtual util::sref<Expression const> literalOrNul(std::string const& name) const;
-        virtual util::sptr<output::Expression const> compileRef(
+
+        void defName(misc::position const& pos, std::string const& name);
+        void defAsyncParam(misc::position const& pos, std::string const& name);
+        void defConst(misc::position const& pos
+                    , std::string const& name
+                    , util::sref<Expression const> value);
+        void refNames(misc::position const& pos, std::vector<std::string> const& names);
+        util::sptr<output::Expression const> compileRef(
                 misc::position const& pos, std::string const& name);
+        util::sref<Expression const> literalOrNul(std::string const& name) const;
+        void defModule(misc::position const& pos, std::string const& name, util::uid module_id);
     protected:
         util::sref<SymbolTable> const _ext_symbols;
 
-        virtual util::sptr<output::Expression const> _makeReference(
-            misc::position const& pos, std::string const& name) = 0;
+        virtual util::sptr<output::Expression const> _makeReference(std::string const& name) = 0;
 
         util::sref<misc::position const> _localDefPosOrNul(std::string const& name) const;
         void _checkNoRef(misc::position const& pos, std::string const& name);
@@ -48,6 +48,7 @@ namespace semantic {
     protected:
         std::map<std::string, std::vector<misc::position>> _references;
         std::map<std::string, misc::position> _name_defs;
+        std::map<std::string, std::pair<misc::position, util::uid>> _module_defs;
         std::map<std::string, misc::position> _async_param_defs;
         std::map<std::string, misc::position> _external;
         std::map<std::string, std::pair<misc::position, util::sref<Expression const>>> _const_defs;
@@ -71,8 +72,7 @@ namespace semantic {
     protected:
         RegularSymbolTable() = default;
     private:
-        util::sptr<output::Expression const> _makeReference(
-            misc::position const& pos, std::string const& name);
+        util::sptr<output::Expression const> _makeReference(std::string const& name);
 
         std::set<std::string> _exclude_decls;
     };
@@ -100,8 +100,7 @@ namespace semantic {
 
         util::uid const id;
     private:
-        util::sptr<output::Expression const> _makeReference(
-            misc::position const& pos, std::string const& name);
+        util::sptr<output::Expression const> _makeReference(std::string const& name);
     };
 
 }

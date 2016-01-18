@@ -1,6 +1,7 @@
 #include <report/errors.h>
 #include <output/name-mangler.h>
 #include <output/expr-nodes.h>
+#include <output/function-impl.h>
 
 #include "symbol-table.h"
 #include "const-fold.h"
@@ -12,6 +13,13 @@ void SymbolTable::defName(misc::position const& pos, std::string const& name)
     this->_checkNoRef(pos, name);
     this->_checkNoDef(pos, name);
     this->_name_defs.insert(std::make_pair(name, pos));
+}
+
+void SymbolTable::defModule(misc::position const& pos, std::string const& name, util::uid module_id)
+{
+    this->_checkNoRef(pos, name);
+    this->_checkNoDef(pos, name);
+    this->_module_defs.insert(std::make_pair(name, std::make_pair(pos, module_id)));
 }
 
 void SymbolTable::defAsyncParam(misc::position const& pos, std::string const& name)
@@ -66,19 +74,24 @@ util::sptr<output::Expression const> SymbolTable::compileRef(
         return compileLiteral(const_find_result->second.second, util::mkref(*this));
     }
     if (this->_external.end() != this->_external.find(name)) {
-        return util::mkptr(new output::ImportedName(pos, name));
+        return util::mkptr(new output::ImportedName(name));
     }
     if (this->_async_param_defs.find(name) != this->_async_param_defs.end()) {
-        return util::mkptr(new output::TransientParamReference(pos, name));
+        return util::mkptr(new output::TransientParamReference(name));
     }
     if (this->_name_defs.end() != this->_name_defs.find(name)) {
-        return _makeReference(pos, name);
+        return _makeReference(name);
+    }
+    auto module_find_result(this->_module_defs.find(name));
+    if (module_find_result != this->_module_defs.end()) {
+        return util::mkptr(new output::ModuleInitFunc::InitTarget(
+                    module_find_result->second.second));
     }
     if (this->_ext_symbols.not_nul()) {
         return this->_ext_symbols->compileRef(pos, name);
     }
     error::nameNotDef(pos, name);
-    return this->_makeReference(pos, name);
+    return this->_makeReference(name);
 }
 
 util::sref<misc::position const> SymbolTable::_localDefPosOrNul(std::string const& name) const
@@ -149,10 +162,9 @@ std::set<std::string> RegularSymbolTable::localNames() const
     return names;
 }
 
-util::sptr<output::Expression const> RegularSymbolTable::_makeReference(
-    misc::position const& pos, std::string const& name)
+util::sptr<output::Expression const> RegularSymbolTable::_makeReference(std::string const& name)
 {
-    return util::mkptr(new output::Reference(pos, name));
+    return util::mkptr(new output::Reference(name));
 }
 
 void GlobalSymbolTable::addExternNames(misc::position const& pos
@@ -179,8 +191,7 @@ std::set<std::string> SubSymbolTable::localNames() const
     return names;
 }
 
-util::sptr<output::Expression const> SubSymbolTable::_makeReference(
-    misc::position const& pos, std::string const& name)
+util::sptr<output::Expression const> SubSymbolTable::_makeReference(std::string const& name)
 {
-    return util::mkptr(new output::SubReference(pos, name, this->id));
+    return util::mkptr(new output::SubReference(name, this->id));
 }

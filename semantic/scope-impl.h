@@ -60,10 +60,11 @@ namespace semantic {
         : DomainScope
     {
         BasicFunctionScope(misc::position const& pos
-                         , util::sref<SymbolTable> ext_st
+                         , util::sref<Scope> parent
                          , std::vector<std::string> const& params
                          , bool allow_super)
-            : _sym(pos, ext_st, params)
+            : _sym(pos, parent->sym(), params)
+            , _parent(parent)
             , _first_return_or_nul_if_not_returned(nullptr)
             , _allow_super(allow_super)
             , _this_referenced(false)
@@ -93,9 +94,15 @@ namespace semantic {
             return *this->_first_return_or_nul_if_not_returned;
         }
 
+        util::uid includeFile(misc::position const& p, std::string const& file)
+        {
+            return this->_parent->includeFile(p, file);
+        }
+
         util::sptr<output::Block> deliver();
     protected:
         RegularSymbolTable _sym;
+        util::sref<Scope> const _parent;
         util::sptr<misc::position const> _first_return_or_nul_if_not_returned;
         bool _allow_super;
         bool _this_referenced;
@@ -105,10 +112,10 @@ namespace semantic {
         : BasicFunctionScope
     {
         SyncFunctionScope(misc::position const& pos
-                        , util::sref<SymbolTable> ext_st
+                        , util::sref<Scope> parent
                         , std::vector<std::string> const& params
                         , bool allow_super)
-            : BasicFunctionScope(pos, ext_st, params, allow_super)
+            : BasicFunctionScope(pos, parent, params, allow_super)
         {}
 
         output::Method retMethod(misc::position const& p);
@@ -119,15 +126,14 @@ namespace semantic {
         : BasicFunctionScope
     {
         RegularAsyncFuncScope(misc::position const& pos
-                            , util::sref<SymbolTable> ext_st
+                            , util::sref<Scope> parent
                             , std::vector<std::string> const& params
                             , bool allow_super);
 
         output::Method retMethod(misc::position const& p);
         output::Method throwMethod() const;
         util::sptr<output::Block> deliver();
-        util::sref<output::Block> replaceSpace(
-                misc::position const& pos, util::sref<output::Block> block);
+        util::sref<output::Block> replaceSpace(util::sref<output::Block> block);
 
         misc::position const ret_pos;
     };
@@ -181,10 +187,9 @@ namespace semantic {
 
         bool hasBreak() const { return false; }
 
-        util::sref<output::Block> replaceSpace(
-                misc::position const& pos, util::sref<output::Block> block)
+        util::sref<output::Block> replaceSpace(util::sref<output::Block> block)
         {
-            return this->_parent_scope->replaceSpace(pos, block);
+            return this->_parent_scope->replaceSpace(block);
         }
 
         void referenceThis(misc::position const& pos)
@@ -202,6 +207,11 @@ namespace semantic {
         {
             return this->_parent_scope->scopeId();
         }
+
+        util::uid includeFile(misc::position const& p, std::string const& file)
+        {
+            return this->_parent_scope->includeFile(p, file);
+        }
     protected:
         util::sref<Scope> const _parent_scope;
     };
@@ -218,14 +228,21 @@ namespace semantic {
         {
             return util::mkref(this->_sym);
         }
-    private:
+    protected:
         SubSymbolTable _sym;
     };
 
     struct CatchScope
         : BranchingSubScope
     {
-        explicit CatchScope(util::sref<Scope> parent_scope)
+        util::uid scopeId() const { return this->_sym.id; }
+        CatchScope(util::sref<Scope> parent_scope, misc::position const& pos, std::string excn);
+    };
+
+    struct CatchScopeDeprecated
+        : BranchingSubScope
+    {
+        explicit CatchScopeDeprecated(util::sref<Scope> parent_scope)
             : BranchingSubScope(parent_scope)
         {}
 
@@ -241,8 +258,7 @@ namespace semantic {
         {}
 
         output::Method throwMethod() const;
-        util::sref<output::Block> replaceSpace(
-                misc::position const& pos, util::sref<output::Block> block);
+        util::sref<output::Block> replaceSpace(util::sref<output::Block> block);
 
         util::sref<output::Function const> const catch_func;
     };

@@ -28,7 +28,7 @@ Constructor::Constructor(misc::position const& ps, std::vector<std::string> para
 {}
 
 util::sptr<output::Constructor const> Constructor::compile(
-                    util::sref<SymbolTable> st, bool has_base_class) const
+                    util::sref<Scope> scope, bool has_base_class) const
 {
     if (has_base_class && !this->superInit()) {
         error::contructorNotCallSuper(this->pos);
@@ -36,7 +36,7 @@ util::sptr<output::Constructor const> Constructor::compile(
         error::noSuperClass(this->pos);
     }
 
-    SyncFunctionScope ctor_scope(pos, st, this->param_names, false);
+    SyncFunctionScope ctor_scope(pos, scope, this->param_names, false);
     if (has_base_class) {
         ctor_scope.referenceThis(this->pos);
     }
@@ -52,7 +52,7 @@ void Class::compile(util::sref<Scope> scope) const
 {
     util::sptr<output::Constructor const> ct(nullptr);
     if (this->ctor_or_nul.not_nul()) {
-        ct = this->ctor_or_nul->compile(scope->sym(), this->hasBaseClass());
+        ct = this->ctor_or_nul->compile(scope, this->hasBaseClass());
     } else if (this->hasBaseClass()) {
         error::contructorNotCallSuper(this->pos);
     }

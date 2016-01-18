@@ -47,14 +47,14 @@ func checkOutput(js, expected, %%, nodeOpt)
     fs.writeFile(TMP_OUTPUT, n.stdout, %%)
     return runDiff(expected, TMP_OUTPUT, %%)
 
-func checkFile(case, %%)
-    fls: path.join('samples', case + '.fls')
-    js: path.join('samples', case + '.js')
+func checkFile(case_, %%)
+    fls: path.join('samples', case_ + '.fls')
+    js: path.join('samples', case_ + '.js')
     fs.writeFile(js, flatsCompile(fls, %%), %%)
-    diff: checkOutput([js], path.join('samples', case + '.expected'), %%)
+    diff: checkOutput([js], path.join('samples', case_ + '.expected'), %%)
     if diff.code != 0
-        throw 'Failed to check file ' + case + ':\n' + diff.stdout
-    console.log(case, 'file passed.')
+        throw 'Failed to check file ' + case_ + ':\n' + diff.stdout
+    console.log(case_, 'file passed.')
 
 func checkDir(d, %%)
     dir: path.join('samples', 'modules', d)
@@ -69,14 +69,14 @@ func checkDir(d, %%)
         throw 'Failed to check module ' + dir + ':\n' + diff.stdout
     console.log(dir, 'module passed.')
 
-func checkError(case, %%)
-    fls: path.join('samples', 'errors', case + '.fls')
+func checkError(case_, %%)
+    fls: path.join('samples', 'errors', case_ + '.fls')
     fs.writeFile(TMP_OUTPUT, flatsCompileForError(fls, %%), %%)
-    diff: runDiff(path.join('samples', 'errors', case + '.expected'),
+    diff: runDiff(path.join('samples', 'errors', case_ + '.expected'),
                   TMP_OUTPUT, %%)
     if diff.code != 0
-        throw 'Failed to check error ' + case + ':\n' + diff.stdout
-    console.log(case, 'report passed.')
+        throw 'Failed to check error ' + case_ + ':\n' + diff.stdout
+    console.log(case_, 'report passed.')
 
 try
     [
@@ -89,6 +89,7 @@ try
         'deliver-space-with-this-decl', 'async-try-catch', 'throw-in-pipeline',
         'return-in-pipeline', 'name-shadowing', 'class', 'conditional', 'regex',
         'same-name-in-sub-scopes', 'class-xref', 'loop-controls', 'for-range',
+        'enums', 'include',
     ] |: checkFile($, %%)
     [
         'export', 'class',
@@ -97,6 +98,7 @@ try
         'inv-chars', 'bad-indent', 'tab-as-ind', 'statments-after-return',
         'slice', 'super-ctor-without-base-class', 'init-super-with-super',
         'constructor-not-in-class', 'throw-nothing', 'invalid-for-range-head',
+        'include',
     ] |: checkError($, %%)
-catch
-    console.error($e)
+catch e
+    console.error(e)

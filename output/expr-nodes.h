@@ -5,6 +5,7 @@
 #include <gmpxx.h>
 
 #include <util/arrays.h>
+#include <util/uid.h>
 
 #include "node-base.h"
 #include "methods.h"
@@ -14,29 +15,20 @@ namespace output {
     struct PrimeFactor
         : Expression
     {
-        explicit PrimeFactor(misc::position const& pos)
-            : Expression(pos)
-        {}
-
         bool mayThrow() const { return false; }
     };
 
     struct Undefined
         : PrimeFactor
     {
-        explicit Undefined(misc::position const& pos)
-            : PrimeFactor(pos)
-        {}
-
         std::string str() const;
     };
 
     struct BoolLiteral
         : PrimeFactor
     {
-        BoolLiteral(misc::position const& pos, bool v)
-            : PrimeFactor(pos)
-            , value(v)
+        explicit BoolLiteral(bool v)
+            : value(v)
         {}
 
         std::string str() const;
@@ -47,9 +39,8 @@ namespace output {
     struct IntLiteral
         : PrimeFactor
     {
-        IntLiteral(misc::position const& pos, mpz_class const& v)
-            : PrimeFactor(pos)
-            , value(v)
+        explicit IntLiteral(mpz_class const& v)
+            : value(v)
         {}
 
         std::string str() const;
@@ -60,9 +51,8 @@ namespace output {
     struct FloatLiteral
         : PrimeFactor
     {
-        FloatLiteral(misc::position const& pos, mpf_class const& v)
-            : PrimeFactor(pos)
-            , value(v)
+        explicit FloatLiteral(mpf_class const& v)
+            : value(v)
         {}
 
         std::string str() const;
@@ -73,9 +63,8 @@ namespace output {
     struct StringLiteral
         : PrimeFactor
     {
-        StringLiteral(misc::position const& pos, std::string const& v)
-            : PrimeFactor(pos)
-            , value(v)
+        explicit StringLiteral(std::string const& v)
+            : value(v)
         {}
 
         std::string str() const;
@@ -86,9 +75,8 @@ namespace output {
     struct RegEx
         : PrimeFactor
     {
-        RegEx(misc::position const& pos, std::string v)
-            : PrimeFactor(pos)
-            , value(std::move(v))
+        explicit RegEx(std::string v)
+            : value(std::move(v))
         {}
 
         std::string str() const;
@@ -99,9 +87,8 @@ namespace output {
     struct ListLiteral
         : Expression
     {
-        ListLiteral(misc::position const& pos, util::ptrarr<Expression const> v)
-            : Expression(pos)
-            , value(std::move(v))
+        ListLiteral(util::ptrarr<Expression const> v)
+            : value(std::move(v))
         {}
 
         std::string str() const;
@@ -113,9 +100,8 @@ namespace output {
     struct Reference
         : PrimeFactor
     {
-        Reference(misc::position const& pos, std::string const& n)
-            : PrimeFactor(pos)
-            , name(n)
+        explicit Reference(std::string const& n)
+            : name(n)
         {}
 
         std::string str() const;
@@ -126,8 +112,8 @@ namespace output {
     struct SubReference
         : Reference
     {
-        SubReference(misc::position const& pos, std::string const& name, util::uid sid)
-            : Reference(pos, name)
+        SubReference(std::string const& name, util::uid sid)
+            : Reference(name)
             , space_id(sid)
         {}
 
@@ -139,8 +125,8 @@ namespace output {
     struct TransientParamReference
         : Reference
     {
-        TransientParamReference(misc::position const& pos, std::string const& name)
-            : Reference(pos, name)
+        explicit TransientParamReference(std::string const& name)
+            : Reference(name)
         {}
 
         std::string str() const;
@@ -149,9 +135,8 @@ namespace output {
     struct ImportedName
         : Expression
     {
-        ImportedName(misc::position const& pos, std::string const& n)
-            : Expression(pos)
-            , name(n)
+        explicit ImportedName(std::string n)
+            : name(std::move(n))
         {}
 
         std::string str() const;
@@ -163,12 +148,9 @@ namespace output {
     struct Call
         : Expression
     {
-        Call(misc::position const& pos
-           , util::sptr<Expression const> c
-           , util::ptrarr<Expression const> a)
-                : Expression(pos)
-                , callee(std::move(c))
-                , args(std::move(a))
+        Call(util::sptr<Expression const> c, util::ptrarr<Expression const> a)
+            : callee(std::move(c))
+            , args(std::move(a))
         {}
 
         std::string str() const;
@@ -181,11 +163,8 @@ namespace output {
     struct MemberAccess
         : Expression
     {
-        MemberAccess(misc::position const& pos
-                   , util::sptr<Expression const> ref
-                   , std::string const& mem)
-            : Expression(pos)
-            , referee(std::move(ref))
+        MemberAccess(util::sptr<Expression const> ref, std::string const& mem)
+            : referee(std::move(ref))
             , member(mem)
         {}
 
@@ -199,12 +178,9 @@ namespace output {
     struct Lookup
         : Expression
     {
-        Lookup(misc::position const& pos
-             , util::sptr<Expression const> c
-             , util::sptr<Expression const> k)
-                : Expression(pos)
-                , collection(std::move(c))
-                , key(std::move(k))
+        Lookup(util::sptr<Expression const> c, util::sptr<Expression const> k)
+            : collection(std::move(c))
+            , key(std::move(k))
         {}
 
         std::string str() const;
@@ -217,13 +193,11 @@ namespace output {
     struct ListSlice
         : Expression
     {
-        ListSlice(misc::position const& pos
-                , util::sptr<Expression const> ls
+        ListSlice(util::sptr<Expression const> ls
                 , util::sptr<Expression const> b
                 , util::sptr<Expression const> e
                 , util::sptr<Expression const> s)
-            : Expression(pos)
-            , list(std::move(ls))
+            : list(std::move(ls))
             , begin(std::move(b))
             , end(std::move(e))
             , step(std::move(s))
@@ -241,9 +215,12 @@ namespace output {
     struct Dictionary
         : Expression
     {
-        Dictionary(misc::position const& pos, util::ptrkvarr<Expression const> i)
-            : Expression(pos)
-            , items(std::move(i))
+        Dictionary()
+            : items(util::ptrkvarr<Expression const>())
+        {}
+
+        explicit Dictionary(util::ptrkvarr<Expression const> i)
+            : items(std::move(i))
         {}
 
         std::string str() const;
@@ -255,11 +232,8 @@ namespace output {
     struct ListAppend
         : Expression
     {
-        ListAppend(misc::position const& pos
-                 , util::sptr<Expression const> l
-                 , util::sptr<Expression const> r)
-            : Expression(pos)
-            , lhs(std::move(l))
+        ListAppend(util::sptr<Expression const> l, util::sptr<Expression const> r)
+            : lhs(std::move(l))
             , rhs(std::move(r))
         {}
 
@@ -273,11 +247,8 @@ namespace output {
     struct Assignment
         : Expression
     {
-        Assignment(misc::position const& pos
-                 , util::sptr<Expression const> l
-                 , util::sptr<Expression const> r)
-            : Expression(pos)
-            , lhs(std::move(l))
+        Assignment(util::sptr<Expression const> l, util::sptr<Expression const> r)
+            : lhs(std::move(l))
             , rhs(std::move(r))
         {}
 
@@ -291,12 +262,10 @@ namespace output {
     struct BinaryOp
         : Expression
     {
-        BinaryOp(misc::position const& pos
-               , util::sptr<Expression const> l
+        BinaryOp(util::sptr<Expression const> l
                , std::string const& o
                , util::sptr<Expression const> r)
-            : Expression(pos)
-            , lhs(std::move(l))
+            : lhs(std::move(l))
             , op(o)
             , rhs(std::move(r))
         {}
@@ -312,9 +281,8 @@ namespace output {
     struct PreUnaryOp
         : Expression
     {
-        PreUnaryOp(misc::position const& pos, std::string const& o, util::sptr<Expression const> r)
-            : Expression(pos)
-            , op(o)
+        PreUnaryOp(std::string const& o, util::sptr<Expression const> r)
+            : op(o)
             , rhs(std::move(r))
         {}
 
@@ -328,14 +296,10 @@ namespace output {
     struct Lambda
         : Expression
     {
-        Lambda(misc::position const& pos
-             , std::vector<std::string> const& p
-             , util::sptr<Statement const> b
-             , bool mp)
-                : Expression(pos)
-                , param_names(p)
-                , body(std::move(b))
-                , mangle_as_param(mp)
+        Lambda(std::vector<std::string> p, util::sptr<Statement const> b, bool mp)
+            : param_names(std::move(p))
+            , body(std::move(b))
+            , mangle_as_param(mp)
         {}
 
         std::string str() const;
@@ -349,12 +313,10 @@ namespace output {
     struct RegularAsyncLambda
         : Expression
     {
-        RegularAsyncLambda(misc::position const& pos
-                         , std::vector<std::string> const& p
+        RegularAsyncLambda(std::vector<std::string> const& p
                          , int async_param_idx
                          , util::sptr<Statement const> b)
-            : Expression(pos)
-            , param_names(p)
+            : param_names(p)
             , async_param_index(async_param_idx)
             , body(std::move(b))
         {}
@@ -370,9 +332,8 @@ namespace output {
     struct AsyncReference
         : PrimeFactor
     {
-        AsyncReference(misc::position const& pos, util::uid const& id)
-            : PrimeFactor(pos)
-            , ref_id(id)
+        explicit AsyncReference(util::uid const& id)
+            : ref_id(id)
         {}
 
         std::string str() const;
@@ -383,12 +344,10 @@ namespace output {
     struct RegularAsyncCallbackArg
         : Expression
     {
-        RegularAsyncCallbackArg(misc::position const& pos
-                              , util::sptr<Statement const> b
-                              , Method t)
-            : Expression(pos)
-            , body(std::move(b))
+        RegularAsyncCallbackArg(util::sptr<Statement const> b, Method t)
+            : body(std::move(b))
             , thrower(std::move(t))
+            , id(util::uid::next_id())
         {}
 
         std::string str() const;
@@ -396,24 +355,20 @@ namespace output {
 
         util::sptr<Statement const> const body;
         Method const thrower;
+        util::uid const id;
     };
 
     struct This
         : PrimeFactor
     {
-        explicit This(misc::position const& pos)
-            : PrimeFactor(pos)
-        {}
-
         std::string str() const;
     };
 
     struct SuperFunc
         : Expression
     {
-        SuperFunc(misc::position const& pos, std::string prop)
-            : Expression(pos)
-            , property(prop)
+        explicit SuperFunc(std::string prop)
+            : property(std::move(prop))
         {}
 
         std::string str() const;
@@ -425,12 +380,10 @@ namespace output {
     struct Conditional
         : Expression
     {
-        Conditional(misc::position const& pos
-                  , util::sptr<Expression const> p
+        Conditional(util::sptr<Expression const> p
                   , util::sptr<Expression const> c
                   , util::sptr<Expression const> a)
-            : Expression(pos)
-            , predicate(std::move(p))
+            : predicate(std::move(p))
             , consequence(std::move(c))
             , alternative(std::move(a))
         {}
@@ -446,30 +399,20 @@ namespace output {
     struct ExceptionObj
         : PrimeFactor
     {
-        explicit ExceptionObj(misc::position const& pos)
-            : PrimeFactor(pos)
-        {}
-
         std::string str() const;
     };
 
     struct ConditionalCallbackParameter
         : PrimeFactor
     {
-        explicit ConditionalCallbackParameter(misc::position const& pos)
-            : PrimeFactor(pos)
-        {}
-
         std::string str() const;
     };
 
     struct SuperConstructorCall
         : Expression
     {
-        SuperConstructorCall(misc::position const& pos, std::string cn
-                           , util::ptrarr<Expression const> a)
-            : Expression(pos)
-            , class_name(std::move(cn))
+        SuperConstructorCall(std::string cn, util::ptrarr<Expression const> a)
+            : class_name(std::move(cn))
             , args(std::move(a))
         {}
 

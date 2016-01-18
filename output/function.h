@@ -10,33 +10,26 @@ namespace output {
     struct Function {
         virtual ~Function() {}
         Function(Function const&) = delete;
-
-        Function()
-            : id(util::uid::next_id())
-        {}
+        Function() = default;
 
         void write(std::ostream& os) const;
-        util::sptr<Expression const> callMe(
-                misc::position const& pos, util::ptrarr<Expression const> args) const;
+        util::sptr<Expression const> callMe(util::ptrarr<Expression const> args) const;
 
-        util::sptr<Expression const> callMe(
-                misc::position const& pos, util::sptr<Expression const> arg) const
+        util::sptr<Expression const> callMe(util::sptr<Expression const> arg) const
         {
             util::ptrarr<Expression const> args;
             args.append(std::move(arg));
-            return this->callMe(pos, std::move(args));
+            return this->callMe(std::move(args));
         }
 
-        util::sptr<Expression const> callMe(misc::position const& pos) const
+        util::sptr<Expression const> callMe() const
         {
-            return this->callMe(pos, util::ptrarr<Expression const>());
+            return this->callMe(util::ptrarr<Expression const>());
         }
 
         virtual util::sref<Statement const> body() const = 0;
         virtual std::string mangledName() const = 0;
         virtual std::vector<std::string> parameters() const = 0;
-
-        util::uid const id;
     };
 
 }

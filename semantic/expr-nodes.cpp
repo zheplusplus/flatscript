@@ -33,7 +33,7 @@ util::sptr<output::Expression const> PreUnaryOp::compile(util::sref<Scope> scope
     if (isLiteral(scope->sym())) {
         return compileLiteral(util::mkref(*this), scope->sym());
     }
-    return util::mkptr(new output::PreUnaryOp(pos, op_img, rhs->compile(scope)));
+    return util::mkptr(new output::PreUnaryOp(op_img, rhs->compile(scope)));
 }
 
 bool PreUnaryOp::isAsync() const
@@ -77,7 +77,7 @@ util::sptr<output::Expression const> BinaryOp::compile(util::sref<Scope> scope) 
         return compileLiteral(util::mkref(*this), scope->sym());
     }
     util::sptr<output::Expression const> clhs(lhs->compile(scope));
-    return util::mkptr(new output::BinaryOp(pos, std::move(clhs), op_img, rhs->compile(scope)));
+    return util::mkptr(new output::BinaryOp(std::move(clhs), op_img, rhs->compile(scope)));
 }
 
 bool BinaryOp::isAsync() const
@@ -118,9 +118,9 @@ std::string BinaryOp::stringValue(util::sref<SymbolTable const> st) const
 util::sptr<output::Expression const> TypeOf::compile(util::sref<Scope> scope) const
 {
     if (isLiteral(scope->sym())) {
-        return util::mkptr(new output::StringLiteral(pos, stringValue(scope->sym())));
+        return util::mkptr(new output::StringLiteral(stringValue(scope->sym())));
     }
-    return util::mkptr(new output::PreUnaryOp(pos, "typeof ", expr->compile(scope)));
+    return util::mkptr(new output::PreUnaryOp("typeof ", expr->compile(scope)));
 }
 
 bool TypeOf::isLiteral(util::sref<SymbolTable const> st) const
@@ -176,7 +176,7 @@ std::string Reference::stringValue(util::sref<SymbolTable const> st) const
 
 util::sptr<output::Expression const> BoolLiteral::compile(util::sref<Scope>) const
 {
-    return util::mkptr(new output::BoolLiteral(pos, value));
+    return util::mkptr(new output::BoolLiteral(value));
 }
 
 bool BoolLiteral::boolValue(util::sref<SymbolTable const>) const
@@ -186,7 +186,7 @@ bool BoolLiteral::boolValue(util::sref<SymbolTable const>) const
 
 util::sptr<output::Expression const> IntLiteral::compile(util::sref<Scope>) const
 {
-    return util::mkptr(new output::IntLiteral(pos, value));
+    return util::mkptr(new output::IntLiteral(value));
 }
 
 mpz_class IntLiteral::intValue(util::sref<SymbolTable const>) const
@@ -196,7 +196,7 @@ mpz_class IntLiteral::intValue(util::sref<SymbolTable const>) const
 
 util::sptr<output::Expression const> FloatLiteral::compile(util::sref<Scope>) const
 {
-    return util::mkptr(new output::FloatLiteral(pos, value));
+    return util::mkptr(new output::FloatLiteral(value));
 }
 
 mpf_class FloatLiteral::floatValue(util::sref<SymbolTable const>) const
@@ -206,7 +206,7 @@ mpf_class FloatLiteral::floatValue(util::sref<SymbolTable const>) const
 
 util::sptr<output::Expression const> StringLiteral::compile(util::sref<Scope>) const
 {
-    return util::mkptr(new output::StringLiteral(pos, value));
+    return util::mkptr(new output::StringLiteral(value));
 }
 
 bool StringLiteral::boolValue(util::sref<SymbolTable const>) const
@@ -221,12 +221,12 @@ std::string StringLiteral::stringValue(util::sref<SymbolTable const>) const
 
 util::sptr<output::Expression const> RegEx::compile(util::sref<Scope>) const
 {
-    return util::mkptr(new output::RegEx(this->pos, this->value));
+    return util::mkptr(new output::RegEx(this->value));
 }
 
 util::sptr<output::Expression const> ListLiteral::compile(util::sref<Scope> scope) const
 {
-    return util::mkptr(new output::ListLiteral(pos, compileList(value, scope)));
+    return util::mkptr(new output::ListLiteral(compileList(value, scope)));
 }
 
 bool ListLiteral::isAsync() const
@@ -237,7 +237,7 @@ bool ListLiteral::isAsync() const
 util::sptr<output::Expression const> ListAppend::compile(util::sref<Scope> scope) const
 {
     util::sptr<output::Expression const> clhs(lhs->compile(scope));
-    return util::mkptr(new output::ListAppend(pos, std::move(clhs), rhs->compile(scope)));
+    return util::mkptr(new output::ListAppend(std::move(clhs), rhs->compile(scope)));
 }
 
 bool ListAppend::isAsync() const
@@ -248,7 +248,7 @@ bool ListAppend::isAsync() const
 util::sptr<output::Expression const> Call::compile(util::sref<Scope> scope) const
 {
     util::sptr<output::Expression const> ccallee(callee->compile(scope));
-    return util::mkptr(new output::Call(pos, std::move(ccallee), compileList(args, scope)));
+    return util::mkptr(new output::Call(std::move(ccallee), compileList(args, scope)));
 }
 
 bool Call::isAsync() const
@@ -259,7 +259,7 @@ bool Call::isAsync() const
 util::sptr<output::Expression const> SuperConstructorCall::compile(util::sref<Scope> scope) const
 {
     return util::mkptr(new output::SuperConstructorCall(
-                this->pos, this->class_name, ::compileList(this->args, scope)));
+                this->class_name, ::compileList(this->args, scope)));
 }
 
 bool SuperConstructorCall::isAsync() const
@@ -269,7 +269,7 @@ bool SuperConstructorCall::isAsync() const
 
 util::sptr<output::Expression const> MemberAccess::compile(util::sref<Scope> scope) const
 {
-    return util::mkptr(new output::MemberAccess(pos, referee->compile(scope), member));
+    return util::mkptr(new output::MemberAccess(referee->compile(scope), member));
 }
 
 bool MemberAccess::isAsync() const
@@ -280,7 +280,7 @@ bool MemberAccess::isAsync() const
 util::sptr<output::Expression const> Lookup::compile(util::sref<Scope> scope) const
 {
     util::sptr<output::Expression const> ccollection(collection->compile(scope));
-    return util::mkptr(new output::Lookup(pos, std::move(ccollection), key->compile(scope)));
+    return util::mkptr(new output::Lookup(std::move(ccollection), key->compile(scope)));
 }
 
 bool Lookup::isAsync() const
@@ -294,7 +294,7 @@ util::sptr<output::Expression const> ListSlice::compile(util::sref<Scope> scope)
     util::sptr<output::Expression const> cbegin(begin->compile(scope));
     util::sptr<output::Expression const> cend(end->compile(scope));
     return util::mkptr(new output::ListSlice(
-                pos, std::move(clist), std::move(cbegin), std::move(cend), step->compile(scope)));
+                std::move(clist), std::move(cbegin), std::move(cend), step->compile(scope)));
 }
 
 bool ListSlice::isAsync() const
@@ -304,12 +304,12 @@ bool ListSlice::isAsync() const
 
 util::sptr<output::Expression const> Undefined::compile(util::sref<Scope>) const
 {
-    return util::mkptr(new output::Undefined(pos));
+    return util::mkptr(new output::Undefined);
 }
 
 util::sptr<output::Expression const> Dictionary::compile(util::sref<Scope> scope) const
 {
-    return util::mkptr(new output::Dictionary(pos, items.map(
+    return util::mkptr(new output::Dictionary(items.map(
                     [&](util::ptrkv<Expression const> const& kv, int)
                     {
                         util::sptr<output::Expression const> ckey(kv.key->compile(scope));
@@ -327,7 +327,7 @@ bool Dictionary::isAsync() const
 
 util::sptr<output::Expression const> RegularAsyncCall::compile(util::sref<Scope> scope) const
 {
-    return util::mkptr(new output::AsyncReference(pos, this->_compile(scope, false)));
+    return util::mkptr(new output::AsyncReference(this->_compile(scope, false)));
 }
 
 util::sptr<output::Expression const> RegularAsyncCall::compileAsRoot(util::sref<Scope> scope) const
@@ -346,13 +346,13 @@ util::uid RegularAsyncCall::_compile(util::sref<Scope> scope, bool) const
     util::sptr<output::Block> async_flow(new output::Block);
     scope->setAsyncSpace(pos, std::vector<std::string>(), *async_flow);
 
-    util::sptr<output::Expression const> callback(new output::RegularAsyncCallbackArg(
-                                            pos, std::move(async_flow), scope->throwMethod()));
+    util::sptr<output::RegularAsyncCallbackArg const> callback(
+            new output::RegularAsyncCallbackArg(std::move(async_flow), scope->throwMethod()));
     util::uid compl_call_id(callback->id);
     compl_fargs.append(std::move(callback)).append(std::move(compl_largs));
 
     current_flow->addStmt(makeArith(util::mkptr(
-                        new output::Call(pos, std::move(compl_callee), std::move(compl_fargs)))));
+                        new output::Call(std::move(compl_callee), std::move(compl_fargs)))));
     return compl_call_id;
 }
 
@@ -367,19 +367,20 @@ util::uid AsyncCall::_compile(util::sref<Scope> scope, bool root) const
     scope->setAsyncSpace(pos, async_params, *async_flow);
 
     compl_fargs.append(util::mkptr(new output::Lambda(
-                  pos, async_params, std::move(async_flow), true))).append(std::move(compl_largs));
+                  async_params, std::move(async_flow), true))).append(std::move(compl_largs));
 
-    util::sptr<output::Expression const> compl_call(util::mkptr(
-                        new output::Call(pos, std::move(compl_callee), std::move(compl_fargs))));
-    util::uid compl_call_id(compl_call->id);
-    current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(std::move(compl_call), !root)));
+    util::sptr<output::Call const> compl_call(util::mkptr(
+                        new output::Call(std::move(compl_callee), std::move(compl_fargs))));
+    util::uid compl_call_id(util::uid::next_id());
+    current_flow->addStmt(util::mkptr(new output::AsyncCallResultDef(
+                        std::move(compl_call), !root, compl_call_id)));
     return compl_call_id;
 }
 
 util::sptr<output::Expression const> This::compile(util::sref<Scope> scope) const
 {
     scope->referenceThis(this->pos);
-    return util::mkptr(new output::This(pos));
+    return util::mkptr(new output::This);
 }
 
 util::sptr<output::Expression const> SuperFunc::compile(util::sref<Scope> scope) const
@@ -387,7 +388,7 @@ util::sptr<output::Expression const> SuperFunc::compile(util::sref<Scope> scope)
     if (!scope->allowSuper()) {
         error::superNotInMember(pos);
     }
-    return util::mkptr(new output::SuperFunc(pos, property));
+    return util::mkptr(new output::SuperFunc(property));
 }
 
 util::sptr<output::Expression const> Conditional::compile(util::sref<Scope> scope) const
@@ -448,7 +449,7 @@ util::sptr<output::Expression const> Conditional::_compileSync(util::sref<Scope>
 {
     util::sptr<output::Expression const> compl_pred(predicate->compile(scope));
     return util::mkptr(new output::Conditional(
-          pos, std::move(compl_pred), consequence->compile(scope), alternative->compile(scope)));
+          std::move(compl_pred), consequence->compile(scope), alternative->compile(scope)));
 }
 
 static util::sptr<output::Block const> compileConditionalBranch(
@@ -459,7 +460,7 @@ static util::sptr<output::Block const> compileConditionalBranch(
     util::ptrarr<output::Expression const> args;
     BranchingSubScope sub_scope(scope);
     args.append(expr->compile(util::mkref(sub_scope)));
-    sub_scope.addStmt(expr->pos, makeArith(cb->callMe(expr->pos, std::move(args))));
+    sub_scope.addStmt(expr->pos, makeArith(cb->callMe(std::move(args))));
     return sub_scope.deliver();
 }
 
@@ -476,13 +477,13 @@ util::sptr<output::Expression const> Conditional::_compileAsync(util::sref<Scope
     scope->addStmt(pos, util::mkptr(new output::Branch(
                         std::move(compl_pred), std::move(consq_flow), std::move(alter_flow))));
     scope->setAsyncSpace(pos, std::vector<std::string>(), cb_body_flow);
-    return util::mkptr(new output::ConditionalCallbackParameter(pos));
+    return util::mkptr(new output::ConditionalCallbackParameter);
 }
 
-util::sptr<output::Expression const> ExceptionObj::compile(util::sref<Scope> scope) const
+util::sptr<output::Expression const> ExceptionObjDeprecated::compile(util::sref<Scope> scope) const
 {
     if (!scope->inCatch()) {
         error::exceptionNotInCatchContext(pos);
     }
-    return util::mkptr(new output::ExceptionObj(pos));
+    return util::mkptr(new output::ExceptionObj);
 }

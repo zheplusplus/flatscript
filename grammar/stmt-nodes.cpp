@@ -1,3 +1,4 @@
+#include <iostream>
 #include <globals.h>
 #include <semantic/stmt-nodes.h>
 #include <semantic/loop.h>
@@ -67,6 +68,11 @@ util::sptr<semantic::Statement const> NameDef::compile() const
 
 util::sptr<semantic::Statement const> Extern::compile() const
 {
+    for (auto const& name: this->names) {
+        if (flats::isReserved(name)) {
+            error::importReservedWord(pos, name);
+        }
+    }
     return util::mkptr(new semantic::Extern(pos, names));
 }
 
@@ -88,16 +94,25 @@ util::sptr<semantic::Statement const> ExceptionStall::compile() const
         error::tryWithoutCatch(pos);
         return util::mkptr(new FakeStatement(pos));
     }
-    return util::mkptr(new semantic::ExceptionStall(pos, flow->compile(), _catch->compile()));
+    if (this->_except_name.empty()) {
+        std::cerr << this->pos.str()
+                  << ": Deprecated catch syntax; use `catch exception_name` instead" << std::endl;
+        return util::mkptr(new semantic::ExceptionStallDeprecated(
+                    pos, flow->compile(), _catch->compile()));
+    }
+    return util::mkptr(new semantic::ExceptionStall(
+                pos, this->flow->compile(), this->_except_name, this->_catch->compile()));
 }
 
-void ExceptionStall::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block)
+void ExceptionStall::acceptCatch(misc::position const& catch_pos,
+                                 util::sptr<Statement const> block, std::string except_name)
 {
-    if (_catch.not_nul()) {
-        return error::partialStmtDupMatch(_catch_pos, catch_pos, "catch", "try");
+    if (this->_catch.not_nul()) {
+        return error::partialStmtDupMatch(this->_catch_pos, catch_pos, "catch", "try");
     }
-    _catch_pos = catch_pos;
-    _catch = std::move(block);
+    this->_catch_pos = catch_pos;
+    this->_catch = std::move(block);
+    this->_except_name = std::move(except_name);
 }
 
 util::sptr<semantic::Statement const> Throw::compile() const
@@ -120,4 +135,9 @@ util::sptr<semantic::Statement const> RangeIteration::compile() const
     return util::mkptr(new semantic::RangeIteration(
             this->pos, this->reference, this->begin->reduceAsExpr(), this->end->reduceAsExpr()
           , this->step->reduceAsExpr(), this->loop->compile()));
+}
+
+util::sptr<semantic::Statement const> IncludeFile::compile() const
+{
+    return util::mkptr(new semantic::IncludeFile(this->pos, this->file, this->module_alias));
 }

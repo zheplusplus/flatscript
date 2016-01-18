@@ -2,12 +2,9 @@
 #define __STEKIN_GRAMMAR_CLAUSE_H__
 
 #include <util/pointer.h>
-#include <misc/pos-type.h>
 
-#include "node-base.h"
 #include "automation-base.h"
 #include "class.h"
-#include "tokens.h"
 
 namespace grammar {
 
@@ -31,16 +28,15 @@ namespace grammar {
                               , std::vector<util::sptr<Expression const>> super_ctor_args);
         virtual void acceptStmt(util::sptr<Statement> stmt);
         void acceptElse(misc::position const& else_pos, util::sptr<Statement const> block);
-        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
+        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block,
+                         std::string except_name);
 
-        virtual void acceptExpr(util::sptr<Expression const>) {}
         virtual void deliver() = 0;
         virtual bool shrinkOn(int level) const;
 
         void nextToken(util::sptr<Token> const& token);
         bool tryFinish(misc::position const& pos, std::vector<util::sptr<ClauseBase>>& clauses);
         void prepareArith();
-        void prepareExport(std::vector<std::string> const& names);
 
         void setMemberIndent(int level, misc::position const& pos);
     protected:
@@ -214,10 +210,12 @@ namespace grammar {
     struct CatchClause
         : ClauseBase
     {
-        CatchClause(int indent_len, misc::position const& pos, util::sref<ClauseBase> parent)
+        CatchClause(int indent_len, misc::position const& pos, util::sref<ClauseBase> parent,
+                    std::string excn)
             : ClauseBase(indent_len)
             , catch_pos(pos)
             , _parent(parent)
+            , _except_name(std::move(excn))
         {}
 
         void deliver();
@@ -225,6 +223,7 @@ namespace grammar {
         misc::position const catch_pos;
     private:
         util::sref<ClauseBase> const _parent;
+        std::string _except_name;
     };
 
     struct BlockReceiverClause
@@ -235,7 +234,7 @@ namespace grammar {
                           , misc::position const& pos
                           , AutomationBase* blockRecr)
             : ClauseBase(level)
-            , _stack(stack)
+            , _parent_stack(stack)
             , _pos(pos)
             , _blockRecr(blockRecr)
         {}
@@ -243,7 +242,7 @@ namespace grammar {
         void deliver();
         bool shrinkOn(int level) const;
     private:
-        AutomationStack& _stack;
+        AutomationStack& _parent_stack;
         misc::position const _pos;
         AutomationBase* const _blockRecr;
     };

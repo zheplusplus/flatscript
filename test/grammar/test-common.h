@@ -15,8 +15,6 @@
 namespace test {
 
     extern std::map<std::string, grammar::TokenType> const IMAGE_TYPE_MAP;
-
-    util::sref<semantic::SymbolTable> nulSymbols();
     util::sref<semantic::Scope> nulScope();
 
     struct TestClause
@@ -102,6 +100,8 @@ namespace test {
     extern NodeType const FOR_RANGE;
     extern NodeType const BREAK;
     extern NodeType const CONTINUE;
+
+    extern NodeType const INCLUDE;
 
     extern NodeType const CALL_BEGIN;
     extern NodeType const CALL_END;

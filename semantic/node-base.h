@@ -6,10 +6,12 @@
 
 #include <util/pointer.h>
 #include <output/node-base.h>
-
-#include "fwd-decl.h"
+#include <misc/pos-type.h>
 
 namespace semantic {
+
+    struct Scope;
+    struct SymbolTable;
 
     struct Statement {
         misc::position const pos;

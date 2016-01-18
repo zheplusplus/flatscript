@@ -1,0 +1,5 @@
+func foo()
+    include "samples/include/left.fls" as left
+    return left.ep.bar() + 1
+
+export foo: foo

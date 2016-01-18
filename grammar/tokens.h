@@ -5,15 +5,16 @@
 #include <misc/pos-type.h>
 
 #include "node-base.h"
-#include "fwd-decl.h"
 
 namespace grammar {
+
+    struct AutomationStack;
 
     enum TokenType {
         COMMA, OPERATOR, OPEN_PAREN, CLOSE_PAREN, OPEN_BRACKET, CLOSE_BRACKET,
         OPEN_BRACE, CLOSE_BRACE, PIPE_SEP, COLON, IF, ELSE, IFNOT, FOR, BREAK,
         CONTINUE, TRY, CATCH, THROW, FUNC, RETURN, CLASS, SUPER, CONSTRUCTOR,
-        EXTERN, EXPORT, TOKEN_TYPE_COUNT
+        EXTERN, EXPORT, ENUM, INCLUDE, TOKEN_TYPE_COUNT
     };
 
     struct Token {

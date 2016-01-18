@@ -13,6 +13,8 @@ namespace output {
 
     std::string formClassName(std::string const& name);
     std::string formSubName(std::string const& name, util::uid space_id);
+    std::string formModuleFuncName(util::uid module_id);
+    std::string formModuleExportName(util::uid module_id);
 
     std::string formTransientParam(std::string const& param);
     std::vector<std::string> formTransientParams(std::vector<std::string> const& params);
@@ -23,6 +25,7 @@ namespace output {
     extern std::string const TERM_REGULAR_ASYNC_CALLBACK;
     extern std::string const TERM_EXCEPTION;
     extern std::string const TERM_CONDITIONAL_CALLBACK_PARAMETER;
+    extern std::string const TERM_EXPORT;
 
 }
 

@@ -35,7 +35,7 @@ TEST_F(FunctionTest, RegularAsyncFunction)
     semantic::RegularAsyncFunction af(
                 pos, "li", std::vector<std::string>({ "light", "dark" }), 1, std::move(body));
 
-    af.compile(scope->sym(), false)->write(dummyos());
+    af.compile(*scope, false)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -47,25 +47,25 @@ TEST_F(FunctionTest, RegularAsyncFunction)
                 (TRY)
                     (SCOPE_BEGIN)
                         (ASYNC_RESULT_DEF)
-                            (pos, CALL, 2)
-                                (pos, REFERENCE, "setTimeout")
-                                (pos, FUNCTION, 0)
+                            (CALL, 2)
+                                (REFERENCE, "setTimeout")
+                                (FUNCTION, 0)
                                     (MANGLE_AS_PARAM)
                                     (SCOPE_BEGIN)
                                         (TRY)
                                             (SCOPE_BEGIN)
                                                 (REGULAR_ASYNC_RETURN)
-                                                    (pos, REFERENCE, "light")
+                                                    (REFERENCE, "light")
                                             (SCOPE_END)
                                         (CATCH)
                                             (EXC_CALLBACK)
-                                                (pos, EXCEPTION_OBJ)
+                                                (EXCEPTION_OBJ)
                                     (SCOPE_END)
-                                (pos, INTEGER, "1600")
+                                (INTEGER, "1600")
                     (SCOPE_END)
                 (CATCH)
                     (EXC_CALLBACK)
-                        (pos, EXCEPTION_OBJ)
+                        (EXCEPTION_OBJ)
             (SCOPE_END)
     ;
 }
@@ -89,7 +89,7 @@ TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
     semantic::RegularAsyncFunction af(
                 pos, "yukito", std::vector<std::string>({ "touya" }), 1, std::move(body));
 
-    af.compile(scope->sym(), false)->write(dummyos());
+    af.compile(*scope, false)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -100,26 +100,26 @@ TEST_F(FunctionTest, RegularAsyncCallInRegularAsyncFunction)
                 (TRY)
                     (SCOPE_BEGIN)
                         (ARITHMETICS)
-                            (pos, CALL, 2)
-                                (pos, REFERENCE, "x20130308")
-                                (pos, FUNCTION)
+                            (CALL, 2)
+                                (REFERENCE, "x20130308")
+                                (FUNCTION)
                                     (PARAMETER, "# RegularAsyncCallbackParameters")
                                     (EXC_CALLBACK)
                                     (SCOPE_BEGIN)
                                         (TRY)
                                             (SCOPE_BEGIN)
                                                 (REGULAR_ASYNC_RETURN)
-                                                    (pos, ASYNC_REFERENCE)
+                                                    (ASYNC_REFERENCE)
                                             (SCOPE_END)
                                         (CATCH)
                                             (EXC_CALLBACK)
-                                                (pos, EXCEPTION_OBJ)
+                                                (EXCEPTION_OBJ)
                                     (SCOPE_END)
-                                (pos, STRING, "200d0308")
+                                (STRING, "200d0308")
                     (SCOPE_END)
                 (CATCH)
                     (EXC_CALLBACK)
-                        (pos, EXCEPTION_OBJ)
+                        (EXCEPTION_OBJ)
             (SCOPE_END)
     ;
 }
@@ -143,21 +143,21 @@ TEST_F(FunctionTest, RegularAsyncFunctionAutoReturn)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, FUNCTION, 1)
+        (FUNCTION, 1)
             (PARAMETER, "# RegularAsyncParam")
             (SCOPE_BEGIN)
                 (TRY)
                     (SCOPE_BEGIN)
                         (ARITHMETICS)
-                            (pos, CALL, 1)
-                                (pos, REFERENCE, "setTimeout")
-                                (pos, INTEGER, "1357")
+                            (CALL, 1)
+                                (REFERENCE, "setTimeout")
+                                (INTEGER, "1357")
                         (REGULAR_ASYNC_RETURN)
-                            (pos, UNDEFINED)
+                            (UNDEFINED)
                     (SCOPE_END)
                 (CATCH)
                     (EXC_CALLBACK)
-                        (pos, EXCEPTION_OBJ)
+                        (EXCEPTION_OBJ)
             (SCOPE_END)
     ;
 }

@@ -92,6 +92,11 @@ namespace grammar {
             , value(v)
         {}
 
+        IntLiteral(misc::position const& pos, int v)
+            : Expression(pos)
+            , value(v)
+        {}
+
         std::string reduceAsProperty() const;
         util::sptr<semantic::Expression const> reduceAsExpr() const;
 

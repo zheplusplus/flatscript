@@ -10,26 +10,26 @@ TEST_F(AnonymousFunctionTest, AsNameDef)
     misc::position pos_a(100);
     misc::position pos_b(101);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "nami")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "nami")))
                                                    ->add(colon(pos))
                                                    ->add(open(pos, "("))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "mayo")))
+    builder.addTokens(1, pos_a, (new TokenSequence(id(pos_a, "mayo")))
                                                      ->add(colon(pos_a))
                                                      ->add(open(pos_a, "("))
                                                      ->add(id(pos_a, "kanako"))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
-    builder.addArith(0, pos_b, (new grammar::TokenSequence(id(pos_b, "tarou")))
+    builder.addTokens(0, pos_b, (new TokenSequence(id(pos_b, "tarou")))
                                                      ->add(colon(pos_b))
                                                      ->add(open(pos_b, "("))
                                                      ->add(id(pos_b, "kaere"))
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(nulScope());
+    builder.buildAndClear(pos)->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -52,25 +52,25 @@ TEST_F(AnonymousFunctionTest, TerminateByEnd)
     misc::position pos_a(200);
     misc::position pos_b(201);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "itosiki")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "itosiki")))
                                                    ->add(colon(pos))
                                                    ->add(open(pos, "("))
                                                    ->add(id(pos_a, "fuura"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "sekiuti")))
+    builder.addTokens(1, pos_a, (new TokenSequence(id(pos_a, "sekiuti")))
                                                      ->add(open(pos_a, "("))
                                                      ->add(id(pos_a, "mitama"))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
-    builder.addArith(1, pos_b, (new grammar::TokenSequence(id(pos_b, "fujiyosi")))
+    builder.addTokens(1, pos_b, (new TokenSequence(id(pos_b, "fujiyosi")))
                                                      ->add(open(pos_b, "("))
                                                      ->add(id(pos_b, "hitou"))
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(nulScope());
+    builder.buildAndClear(pos)->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -102,26 +102,26 @@ TEST_F(AnonymousFunctionTest, FuncAsArg)
     misc::position pos_a(300);
     misc::position pos_b(301);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "ookusa")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "ookusa")))
                                                    ->add(open(pos, "("))
                                                    ->add(open(pos, "("))
                                                    ->add(id(pos_a, "otonasi"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "kaga")))
+    builder.addTokens(1, pos_a, (new TokenSequence(id(pos_a, "kaga")))
                                                      ->add(open(pos_a, "("))
                                                      ->add(id(pos_a, "kitu"))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
-    builder.addArith(0, pos_b, (new grammar::TokenSequence(comma(pos_b)))
+    builder.addTokens(0, pos_b, (new TokenSequence(comma(pos_b)))
                                                      ->add(open(pos_b, "("))
                                                      ->add(id(pos_b, "kimura"))
                                                      ->add(close(pos_b, ")"))
                                                      ->add(close(pos_b, ")"))
                                                      ->deliver());
 
-    builder.buildAndClear()->compile(nulScope());
+    builder.buildAndClear(pos)->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -152,23 +152,23 @@ TEST_F(AnonymousFunctionTest, TerminateByReturn)
     misc::position pos_a(400);
     misc::position pos_b(401);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "kanji")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "kanji")))
                                                    ->add(colon(pos))
                                                    ->add(open(pos, "("))
                                                    ->add(id(pos_a, "makoto"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "harunobu")))
+    builder.addTokens(1, pos_a, (new TokenSequence(id(pos_a, "harunobu")))
                                                      ->add(open(pos_a, "("))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
-    builder.addArith(0, pos_b, (new grammar::TokenSequence(
+    builder.addTokens(0, pos_b, (new TokenSequence(
                       new grammar::TypedToken(pos, "return", grammar::RETURN)))
                 ->add(id(pos_b, "souitirou"))
                 ->deliver());
 
-    builder.buildAndClear()->compile(nulScope());
+    builder.buildAndClear(pos)->compile(nulScope());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -195,22 +195,22 @@ TEST_F(AnonymousFunctionTest, TerminateByReturnIncompleted)
     misc::position pos_a(500);
     misc::position pos_b(501);
     grammar::ClauseBuilder builder;
-    builder.addArith(0, pos, (new grammar::TokenSequence(id(pos, "saki")))
+    builder.addTokens(0, pos, (new TokenSequence(id(pos, "saki")))
                                                    ->add(open(pos, "("))
                                                    ->add(open(pos, "("))
                                                    ->add(id(pos_a, "tika"))
                                                    ->add(close(pos, ")"))
                                                    ->add(colon(pos))
                                                    ->deliver());
-    builder.addArith(1, pos_a, (new grammar::TokenSequence(id(pos_a, "kanako")))
+    builder.addTokens(1, pos_a, (new TokenSequence(id(pos_a, "kanako")))
                                                      ->add(open(pos_a, "("))
                                                      ->add(close(pos_a, ")"))
                                                      ->deliver());
-    builder.addArith(0, pos_b, (new grammar::TokenSequence(
+    builder.addTokens(0, pos_b, (new TokenSequence(
                     new grammar::TypedToken(pos_b, "return", grammar::RETURN)))
               ->deliver());
 
-    builder.buildAndClear();
+    builder.buildAndClear(pos);
     ASSERT_TRUE(error::hasError());
     ASSERT_EQ(1, getUnexpectedTokenRecs().size());
     ASSERT_EQ(pos_b, getUnexpectedTokenRecs()[0].pos);

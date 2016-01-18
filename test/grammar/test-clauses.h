@@ -6,12 +6,33 @@
 #include <grammar/clause-builder.h>
 #include <grammar/expr-nodes.h>
 #include <grammar/tokens.h>
-#include <grammar/yy-misc.h>
 #include <test/phony-errors.h>
 
 #include "test-common.h"
 
 namespace test {
+
+    struct TokenSequence {
+        explicit TokenSequence(grammar::Token* token)
+        {
+            this->add(token);
+        }
+
+        TokenSequence* add(grammar::Token* token)
+        {
+            this->_list.push_back(util::mkptr(token));
+            return this;
+        }
+
+        std::vector<util::sptr<grammar::Token>> deliver()
+        {
+            std::vector<util::sptr<grammar::Token>> list(std::move(this->_list));
+            delete this;
+            return std::move(list);
+        }
+    private:
+        std::vector<util::sptr<grammar::Token>> _list;
+    };
 
     struct ClausesTest
         : GrammarTest

@@ -10,6 +10,7 @@
 
 namespace grammar {
 
+    struct ClauseBase;
     struct ClauseStackWrapper;
     struct AutomationBase;
 

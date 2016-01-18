@@ -10,6 +10,7 @@ include $(WORKDIR)/Makefile
 
 $(TESTDIR)/test-utilities.out:util \
                               test-string.dt \
+                              test-io.dt \
                               test-pointer.dt \
                               test-arrays.dt
 	$(LINK) $(TESTDIR)/test-*.o \

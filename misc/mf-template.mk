@@ -16,9 +16,10 @@ endif
 
 CODEGEN=codegen
 
-CC=$(COMPILER) -c -std=c++0x
+CXX=$(COMPILER) -std=c++0x
+CC=$(CXX) -c
 INCLUDE=-I.
-RESOLVE_DEP=$(COMPILER) -MM $(INCLUDE)
+RESOLVE_DEP=$(CXX) -MM $(INCLUDE)
 LINK=$(COMPILER) $(DYN_LINK)
 AR=ar rcs
 

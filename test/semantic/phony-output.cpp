@@ -1,6 +1,3 @@
-#include <algorithm>
-#include <map>
-
 #include <output/stmt-nodes.h>
 #include <output/expr-nodes.h>
 #include <output/list-pipe.h>
@@ -9,6 +6,7 @@
 #include <output/methods.h>
 #include <output/name-mangler.h>
 #include <util/string.h>
+#include <including.h>
 
 #include "test-common.h"
 
@@ -26,12 +24,9 @@ static void writeList(util::ptrarr<Expression const> const& list)
 void Block::write(std::ostream&) const
 {
     DataTree::actualOne()(SCOPE_BEGIN);
-    std::for_each(_local_decls.begin()
-                , _local_decls.end()
-                , [&](std::string const& s)
-                  {
-                      DataTree::actualOne()(FWD_DECL, s);
-                  });
+    for (auto const& s: this->_local_decls) {
+        DataTree::actualOne()(FWD_DECL, s);
+    }
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
                     func->write(dummyos());
@@ -47,12 +42,9 @@ void Function::write(std::ostream&) const
 {
     std::vector<std::string> params(parameters());
     DataTree::actualOne()(FUNCTION, mangledName(), params.size());
-    std::for_each(params.begin()
-                , params.end()
-                , [&](std::string const& pn)
-                  {
-                      DataTree::actualOne()(PARAMETER, pn);
-                  });
+    for (auto const& pn: params) {
+        DataTree::actualOne()(PARAMETER, pn);
+    }
     body()->write(dummyos());
 }
 
@@ -74,12 +66,10 @@ void ClassInitCall::write(std::ostream&) const
     }
 }
 
-util::sptr<Expression const> Function::callMe(
-        misc::position const& pos, util::ptrarr<Expression const> args) const
+util::sptr<Expression const> Function::callMe(util::ptrarr<Expression const> args) const
 {
     return util::mkptr(new output::Call(
-                pos, util::mkptr(new Reference(pos, mangledName())),
-                std::move(args)));
+                util::mkptr(new Reference(mangledName())), std::move(args)));
 }
 
 util::sref<Statement const> RegularFunction::body() const
@@ -129,16 +119,48 @@ std::vector<std::string> NoParamCallback::parameters() const
     return std::vector<std::string>();
 }
 
-std::vector<std::string> AsyncCatcher::parameters() const
+std::vector<std::string> AsyncCatchFunc::parameters() const
+{
+    return std::vector<std::string>({ "AsyncCatchFunc # Parameter" });
+}
+
+std::vector<std::string> AsyncCatcherDeprecated::parameters() const
 {
     return std::vector<std::string>({ "AsyncCatcher # Parameter" });
 }
 
+std::string ModuleInitFunc::mangledName() const
+{
+    return "# ModuleInitFunc";
+}
+
+std::vector<std::string> ModuleInitFunc::parameters() const
+{
+    return std::vector<std::string>({ "ModuleInitFunc # Parameter" });
+}
+
+util::sptr<Expression const> ModuleInitFunc::exportArg() const
+{
+    return util::mkptr(new ModuleInitFunc::InitTarget(this->module_id));
+}
+
+std::string ModuleInitFunc::InitTarget::str() const
+{
+    return "# ModuleInitFunc::InitTarget";
+}
+
+util::sptr<semantic::Statement const> flats::compileFile(
+                std::string const& file, misc::position const& p)
+{
+    DataTree::actualOne()(INCLUDE, file);
+    return util::mkptr(new semantic::Block(p));
+}
+
 std::string MemberAccess::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "[.]");
+    DataTree::actualOne()(BINARY_OP, "[.]");
     referee->str();
-    DataTree::actualOne()(pos, REFERENCE, member);
+    DataTree::actualOne()(REFERENCE, member);
     return "";
 }
 
@@ -183,6 +205,14 @@ void ExceptionStall::write(std::ostream&) const
 {
     DataTree::actualOne()(TRY);
     try_block->write(dummyos());
+    DataTree::actualOne()(CATCH, except_name);
+    catch_block->write(dummyos());
+}
+
+void ExceptionStallDeprecated::write(std::ostream&) const
+{
+    DataTree::actualOne()(TRY);
+    try_block->write(dummyos());
     DataTree::actualOne()(CATCH);
     catch_block->write(dummyos());
 }
@@ -216,86 +246,86 @@ void ExprScheme::write(std::ostream&) const
 
 std::string Undefined::str() const
 {
-    DataTree::actualOne()(pos, UNDEFINED);
+    DataTree::actualOne()(UNDEFINED);
     return "";
 }
 
 std::string BoolLiteral::str() const
 {
-    DataTree::actualOne()(pos, BOOLEAN, util::str(value));
+    DataTree::actualOne()(BOOLEAN, util::str(value));
     return "";
 }
 
 std::string IntLiteral::str() const
 {
-    DataTree::actualOne()(pos, INTEGER, util::str(value));
+    DataTree::actualOne()(INTEGER, util::str(value));
     return "";
 }
 
 std::string FloatLiteral::str() const
 {
-    DataTree::actualOne()(pos, FLOATING, util::str(value));
+    DataTree::actualOne()(FLOATING, util::str(value));
     return "";
 }
 
 std::string StringLiteral::str() const
 {
-    DataTree::actualOne()(pos, STRING, value);
+    DataTree::actualOne()(STRING, value);
     return "";
 }
 
 std::string RegEx::str() const
 {
-    DataTree::actualOne()(pos, REGEXP, value);
+    DataTree::actualOne()(REGEXP, value);
     return "";
 }
 
 std::string ListLiteral::str() const
 {
-    DataTree::actualOne()(pos, LIST, value.size());
+    DataTree::actualOne()(LIST, value.size());
     writeList(value);
     return "";
 }
 
 std::string PipeElement::str() const
 {
-    DataTree::actualOne()(pos, PIPE_ELEMENT);
+    DataTree::actualOne()(PIPE_ELEMENT);
     return "";
 }
 
 std::string PipeIndex::str() const
 {
-    DataTree::actualOne()(pos, PIPE_INDEX);
+    DataTree::actualOne()(PIPE_INDEX);
     return "";
 }
 
 std::string PipeKey::str() const
 {
-    DataTree::actualOne()(pos, PIPE_KEY);
+    DataTree::actualOne()(PIPE_KEY);
     return "";
 }
 
 std::string PipeResult::str() const
 {
-    DataTree::actualOne()(pos, PIPE_RESULT);
+    DataTree::actualOne()(PIPE_RESULT);
     return "";
 }
 
 std::string PipeBreak::str() const
 {
-    DataTree::actualOne()(pos, BREAK);
+    DataTree::actualOne()(BREAK);
     return "";
 }
 
 std::string PipeContinue::str() const
 {
-    DataTree::actualOne()(pos, CONTINUE);
+    DataTree::actualOne()(CONTINUE);
     return "";
 }
 
 std::string ListAppend::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "++");
+    DataTree::actualOne()(BINARY_OP, "++");
     lhs->str();
     rhs->str();
     return "";
@@ -303,31 +333,31 @@ std::string ListAppend::str() const
 
 std::string Reference::str() const
 {
-    DataTree::actualOne()(pos, REFERENCE, name);
+    DataTree::actualOne()(REFERENCE, name);
     return "";
 }
 
 std::string SubReference::str() const
 {
-    DataTree::actualOne()(pos, SUB_REFERENCE, name);
+    DataTree::actualOne()(SUB_REFERENCE, name);
     return "";
 }
 
 std::string TransientParamReference::str() const
 {
-    DataTree::actualOne()(pos, TRANSIENT_PARAMETER, name);
+    DataTree::actualOne()(TRANSIENT_PARAMETER, name);
     return "";
 }
 
 std::string ImportedName::str() const
 {
-    DataTree::actualOne()(pos, IMPORTED_NAME, name);
+    DataTree::actualOne()(IMPORTED_NAME, name);
     return "";
 }
 
 std::string Call::str() const
 {
-    DataTree::actualOne()(pos, CALL, args.size());
+    DataTree::actualOne()(CALL, args.size());
     callee->str();
     writeList(args);
     return "";
@@ -335,14 +365,14 @@ std::string Call::str() const
 
 std::string SuperConstructorCall::str() const
 {
-    DataTree::actualOne()(pos, SUPER_CONSTRUCTOR_CALL, args.size());
+    DataTree::actualOne()(SUPER_CONSTRUCTOR_CALL, args.size());
     writeList(args);
     return "";
 }
 
 std::string Lookup::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "[]");
+    DataTree::actualOne()(BINARY_OP, "[]");
     collection->str();
     key->str();
     return "";
@@ -350,7 +380,7 @@ std::string Lookup::str() const
 
 std::string ListSlice::str() const
 {
-    DataTree::actualOne()(pos, LIST_SLICE);
+    DataTree::actualOne()(LIST_SLICE);
     list->str();
     begin->str();
     end->str();
@@ -360,20 +390,20 @@ std::string ListSlice::str() const
 
 std::string Dictionary::str() const
 {
-    DataTree::actualOne()(pos, DICT_BEGIN);
+    DataTree::actualOne()(DICT_BEGIN);
     items.iter([&](util::ptrkv<Expression const> const& kv, int)
                {
-                   DataTree::actualOne()(pos, DICT_ITEM);
+                   DataTree::actualOne()(DICT_ITEM);
                    kv.key->str();
                    kv.value->str();
                });
-    DataTree::actualOne()(pos, DICT_END);
+    DataTree::actualOne()(DICT_END);
     return "";
 }
 
 std::string Assignment::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, "[=]");
+    DataTree::actualOne()(BINARY_OP, "[=]");
     lhs->str();
     rhs->str();
     return "";
@@ -381,7 +411,7 @@ std::string Assignment::str() const
 
 std::string BinaryOp::str() const
 {
-    DataTree::actualOne()(pos, BINARY_OP, op);
+    DataTree::actualOne()(BINARY_OP, op);
     lhs->str();
     rhs->str();
     return "";
@@ -389,14 +419,14 @@ std::string BinaryOp::str() const
 
 std::string PreUnaryOp::str() const
 {
-    DataTree::actualOne()(pos, PRE_UNARY_OP, op);
+    DataTree::actualOne()(PRE_UNARY_OP, op);
     rhs->str();
     return "";
 }
 
 std::string Lambda::str() const
 {
-    DataTree::actualOne()(pos, FUNCTION, param_names.size());
+    DataTree::actualOne()(FUNCTION, param_names.size());
     std::for_each(param_names.begin()
                 , param_names.end()
                 , [&](std::string const& pn)
@@ -414,7 +444,7 @@ std::string RegularAsyncLambda::str() const
 {
     std::vector<std::string> p(param_names);
     p.insert(p.begin() + async_param_index, "# RegularAsyncParam");
-    DataTree::actualOne()(pos, FUNCTION, p.size());
+    DataTree::actualOne()(FUNCTION, p.size());
     std::for_each(p.begin()
                 , p.end()
                 , [&](std::string const& pn)
@@ -427,19 +457,19 @@ std::string RegularAsyncLambda::str() const
 
 std::string This::str() const
 {
-    DataTree::actualOne()(pos, THIS);
+    DataTree::actualOne()(THIS);
     return "";
 }
 
 std::string SuperFunc::str() const
 {
-    DataTree::actualOne()(pos, SUPER_FUNC, property);
+    DataTree::actualOne()(SUPER_FUNC, property);
     return "";
 }
 
 std::string Conditional::str() const
 {
-    DataTree::actualOne()(pos, CONDITIONAL);
+    DataTree::actualOne()(CONDITIONAL);
     predicate->str();
     consequence->str();
     alternative->str();
@@ -448,25 +478,25 @@ std::string Conditional::str() const
 
 std::string ExceptionObj::str() const
 {
-    DataTree::actualOne()(pos, EXCEPTION_OBJ);
+    DataTree::actualOne()(EXCEPTION_OBJ);
     return "";
 }
 
 std::string ConditionalCallbackParameter::str() const
 {
-    DataTree::actualOne()(pos, COND_CALLBACK_PARAM);
+    DataTree::actualOne()(COND_CALLBACK_PARAM);
     return "";
 }
 
 std::string AsyncReference::str() const
 {
-    DataTree::actualOne()(pos, ASYNC_REFERENCE);
+    DataTree::actualOne()(ASYNC_REFERENCE);
     return "";
 }
 
 std::string RegularAsyncCallbackArg::str() const
 {
-    DataTree::actualOne()(pos, FUNCTION);
+    DataTree::actualOne()(FUNCTION);
     DataTree::actualOne()(PARAMETER, "# RegularAsyncCallbackParameters");
     thrower->scheme("");
     body->write(dummyos());
@@ -475,7 +505,7 @@ std::string RegularAsyncCallbackArg::str() const
 
 std::string AsyncPipeline::str() const
 {
-    DataTree::actualOne()(pos, ASYNC_PIPELINE);
+    DataTree::actualOne()(ASYNC_PIPELINE);
     list->str();
     recursion->write(dummyos());
     succession->write(dummyos());
@@ -485,7 +515,7 @@ std::string AsyncPipeline::str() const
 
 std::string SyncPipeline::str() const
 {
-    DataTree::actualOne()(pos, SYNC_PIPELINE);
+    DataTree::actualOne()(SYNC_PIPELINE);
     list->str();
     section->write(dummyos());
     return "";
@@ -493,7 +523,7 @@ std::string SyncPipeline::str() const
 
 std::string RootSyncPipeline::str() const
 {
-    DataTree::actualOne()(pos, ROOT_SYNC_PIPELINE);
+    DataTree::actualOne()(ROOT_SYNC_PIPELINE);
     list->str();
     section->write(dummyos());
     return "";
@@ -569,8 +599,9 @@ Method method::callNext()
 
 int Block::count() const { return 0; }
 int Export::count() const { return 0; }
-int ExceptionStall::count() const { return 0; }
+int ExceptionStallDeprecated::count() const { return 0; }
 std::string output::formName(std::string const& name) { return name; }
 std::string output::formSubName(std::string const& name, util::uid) { return name + '$'; }
+std::string output::formModuleExportName(util::uid) { return "ME$"; }
 bool ListLiteral::mayThrow() const { return false; }
 bool Block::mayThrow() const { return false; }

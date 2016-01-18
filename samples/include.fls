@@ -1,0 +1,2 @@
+include "samples/include/left.fls" as left
+console.log(left.foo())

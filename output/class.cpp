@@ -7,10 +7,27 @@
 
 using namespace output;
 
+static std::string const CTOR_TEMPL(
+    "function #NAME(#PARAMS) {"
+        "if (!(this instanceof #NAME)) {"
+            "return new #NAME(#PARAMS)"
+        "}"
+        "#BODY"
+    "}"
+);
+
 static std::string constructor(std::string const& name, util::sptr<Constructor const> const& ctor)
 {
     if (ctor.nul()) {
-        return "function " + name + "() {}";
+        return
+            util::replace_all(
+            util::replace_all(
+            util::replace_all(
+                CTOR_TEMPL
+                    , "#NAME", name)
+                    , "#PARAMS", "")
+                    , "#BODY", "")
+            ;
     }
     std::ostringstream ctor_os;
     ctor->body->write(ctor_os);
@@ -18,16 +35,21 @@ static std::string constructor(std::string const& name, util::sptr<Constructor c
         util::replace_all(
         util::replace_all(
         util::replace_all(
-            "function #NAME(#PARAMS) {#BODY}"
+            CTOR_TEMPL
                 , "#NAME", name)
                 , "#PARAMS", util::join(",", ::formNames(ctor->param_names)))
                 , "#BODY", ctor_os.str())
         ;
 }
 
-static std::string inherit(std::string const& name, bool inherit)
+static std::string inherit(std::string const& name)
 {
-    return inherit ? "$extend(" + name + ",$b);" : "";
+    return
+        util::replace_all(
+            "$extend(#NAME ,$b);"
+            "var $super = #NAME.$super;"
+                , "#NAME", name)
+    ;
 }
 
 static std::string memfuncs(std::string const& name
@@ -40,22 +62,6 @@ static std::string memfuncs(std::string const& name
     return util::join("", fno);
 }
 
-static std::string creator(std::string const& name, util::sptr<Constructor const> const& ctor)
-{
-    return
-        util::replace_all(
-        util::replace_all(
-            "var $super=#NAME.$super;"
-            "function create(#PARAMS) {"
-                "return new #NAME(#PARAMS);"
-            "}"
-            "create.$class = #NAME;"
-            "return create;"
-                , "#NAME", name)
-                , "#PARAMS", ctor.nul() ? "" : util::join(",", ::formNames(ctor->param_names)))
-        ;
-}
-
 void ClassInitFunc::write(std::ostream& os) const
 {
     os <<
@@ -66,12 +72,12 @@ void ClassInitFunc::write(std::ostream& os) const
         util::replace_all(
             this->inherit
                 ?  "function #NAME($b){#CONSTRUCTOR #INHERIT #MEMFUNCS #CREATORFN}"
-                :  "function #NAME(){#CONSTRUCTOR #INHERIT #MEMFUNCS #CREATORFN}"
+                :  "function #NAME(){#CONSTRUCTOR #MEMFUNCS #CREATORFN}"
                     , "#NAME", output::formClassName(this->name))
                     , "#CONSTRUCTOR", ::constructor(this->name, this->ctor_or_nul))
-                    , "#INHERIT", ::inherit(this->name, this->inherit))
+                    , "#INHERIT", ::inherit(this->name))
                     , "#MEMFUNCS", ::memfuncs(this->name, this->member_funcs))
-                    , "#CREATORFN", ::creator(this->name, this->ctor_or_nul))
+                    , "#CREATORFN", "return " + this->name)
         ;
 }
 

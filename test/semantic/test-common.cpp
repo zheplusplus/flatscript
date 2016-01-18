@@ -15,40 +15,11 @@ std::ostream& test::dummyos()
     return os;
 }
 
-util::sptr<output::Statement const> test::compile(
-                                        semantic::Block& b, util::sref<semantic::SymbolTable> sym)
+util::sptr<output::Statement const> test::compile(semantic::Block& b, util::sref<semantic::Scope> s)
 {
-    semantic::SyncFunctionScope scope(misc::position(), sym, std::vector<std::string>(), false);
+    semantic::SyncFunctionScope scope(misc::position(), s, std::vector<std::string>(), false);
     b.compile(util::mkref(scope));
     return scope.deliver();
-}
-
-DataTree& DataTree::operator()(misc::position const& pos
-                             , NodeType const& type
-                             , std::string const& str)
-{
-    BaseType::operator()(type, SemanticData(pos), str);
-    return *this;
-}
-
-DataTree& DataTree::operator()(misc::position const& pos, NodeType const& type)
-{
-    BaseType::operator()(type, SemanticData(pos));
-    return *this;
-}
-
-DataTree& DataTree::operator()(misc::position const& pos, NodeType const& type, int size)
-{
-    BaseType::operator()(type, SemanticData(pos, size));
-    return *this;
-}
-
-DataTree& DataTree::operator()(NodeType const& type
-                             , std::string const& str
-                             , int size)
-{
-    BaseType::operator()(type, SemanticData(size), str);
-    return *this;
 }
 
 DataTree& DataTree::operator()(NodeType const& type)
@@ -65,14 +36,20 @@ DataTree& DataTree::operator()(NodeType const& type, std::string const& str)
 
 DataTree& DataTree::operator()(NodeType const& type, int value)
 {
-    BaseType::operator()(type, SemanticData(misc::position(), value));
+    BaseType::operator()(type, SemanticData(value));
+    return *this;
+}
+
+DataTree& DataTree::operator()(NodeType const& type, std::string const& str, int value)
+{
+    BaseType::operator()(type, SemanticData(value), str);
     return *this;
 }
 
 std::string SemanticData::str() const
 {
     std::ostringstream os;
-    -1 == int_val ? (os << pos) : (os << pos << " int value=" << int_val);
+    -1 == int_val ? os : (os << " int value=" << int_val);
     return os.str();
 }
 
@@ -149,6 +126,8 @@ NodeType const test::ASYNC_CATCH_FUNC("asynchronous catch function");
 
 NodeType const test::SCOPE_BEGIN("scope begin");
 NodeType const test::SCOPE_END("scope end");
+
+NodeType const test::INCLUDE("include");
 
 void SemanticTest::SetUp()
 {

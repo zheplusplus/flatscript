@@ -1,12 +1,14 @@
-#include <gtest/gtest.h>
+#include "samples-test.h"
 
-#include <grammar/yy-misc.h>
-#include <test/phony-errors.h>
+using namespace test;
 
-#include "test-common.h"
-
-TEST(Syntax, Empty)
+TEST_F(SyntaxSampleTest, Empty)
 {
-    grammar::parse();
-    ASSERT_FALSE(error::hasError());
+    parseSampleOk("test/grammar/empty.fls");
+
+    DataTree::expectOne()
+        (BLOCK_BEGIN)
+        (BLOCK_END)
+    ;
+    DataTree::verify();
 }

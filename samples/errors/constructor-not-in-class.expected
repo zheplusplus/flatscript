@@ -1,2 +1,2 @@
-Line 2
+samples/errors/constructor-not-in-class.fls:2
     constructors not allowed outside class definition

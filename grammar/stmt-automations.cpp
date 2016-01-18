@@ -93,6 +93,14 @@ ExprStmtAutomation::ExprStmtAutomation(util::sref<ClauseBase> clause)
                            stack.replace(util::mkptr(
                                new ExportAutomation(token.pos, this->_clause)));
                        };
+    _actions[ENUM] = [this](AutomationStack& stack, TypedToken const&)
+                     {
+                         stack.replace(util::mkptr(new EnumAutomation(this->_clause)));
+                     };
+    _actions[INCLUDE] = [this](AutomationStack& stack, TypedToken const& t)
+                        {
+                            stack.replace(util::mkptr(new IncludeAutomation(t.pos, this->_clause)));
+                        };
 }
 
 void ExprStmtAutomation::pushFactor(AutomationStack& stack, FactorToken& factor)
@@ -299,15 +307,6 @@ void ExprReceiver::accepted(AutomationStack&, util::sptr<Expression const> expr)
     _expr = std::move(expr);
 }
 
-void ExprReceiver::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
-{
-    if (_expr->empty()) {
-        error::invalidEmptyExpr(_expr->pos);
-    }
-    _clause->acceptExpr(std::move(_expr));
-    stack.pop();
-}
-
 void ReturnAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
 {
     this->_clause->acceptStmt(util::mkptr(new Return(this->pos, std::move(this->_expr))));
@@ -338,9 +337,16 @@ util::sptr<ClauseBase> TryAutomation::createClause(ClauseStackWrapper& wrapper)
     return util::mkptr(new TryClause(wrapper.last_indent, pos, wrapper.lastClause()));
 }
 
+void CatchAutomation::pushFactor(AutomationStack& stack, FactorToken& factor)
+{
+    stack.push(util::mkptr(new IgnoreAny(false)));
+    this->_except_name = factor.expr->reduceAsName();
+}
+
 util::sptr<ClauseBase> CatchAutomation::createClause(ClauseStackWrapper& wrapper)
 {
-    return util::mkptr(new CatchClause(wrapper.last_indent, pos, wrapper.lastClause()));
+    return util::mkptr(new CatchClause(wrapper.last_indent, pos, wrapper.lastClause(),
+                                       std::move(this->_except_name)));
 }
 
 void ClassAutomation::pushFactor(AutomationStack&, FactorToken& factor)
@@ -552,6 +558,81 @@ void ExportAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc:
     this->_clause->acceptStmt(util::mkptr(
             new Export(this->_pos, std::move(this->_export_point), std::move(this->_value))));
     stack.pop();
+}
+
+EnumAutomation::EnumAutomation(util::sref<ClauseBase> clause)
+    : _current_value(0)
+    , _clause(clause)
+    , _after_name(false)
+{
+    this->_actions[COMMA] = [this](AutomationStack&, TypedToken const& t)
+    {
+        if (!this->_after_name) {
+            return t.unexpected();
+        }
+        this->_after_name = false;
+    };
+}
+
+void EnumAutomation::pushFactor(AutomationStack&, FactorToken& factor)
+{
+    if (this->_after_name) {
+        return factor.unexpected();
+    }
+    this->_defs.push_back(util::mkptr(new NameDef(
+            factor.pos, factor.expr->reduceAsName(), util::mkptr(
+                    new IntLiteral(factor.pos, this->_current_value)))));
+    ++this->_current_value;
+    this->_after_name = true;
+}
+
+void EnumAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
+{
+    for (auto& s: this->_defs) {
+        this->_clause->acceptStmt(std::move(s));
+    }
+    stack.pop();
+}
+
+IncludeAutomation::IncludeAutomation(misc::position const& pos, util::sref<ClauseBase> clause)
+    : _pos(pos)
+    , _next_factor([this](FactorToken& f) { this->_fill_path(f); })
+    , _clause(clause)
+{}
+
+void IncludeAutomation::pushFactor(AutomationStack&, FactorToken& factor)
+{
+    if (bool(this->_next_factor)) {
+        return this->_next_factor(factor);
+    }
+    factor.unexpected();
+}
+
+void IncludeAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
+{
+    this->_clause->acceptStmt(util::mkptr(new IncludeFile(
+            std::move(this->_pos), std::move(this->_file_path), std::move(this->_alias))));
+    stack.pop();
+}
+
+void IncludeAutomation::_fill_path(FactorToken& factor)
+{
+    this->_file_path = factor.expr->reduceAsProperty();
+    this->_next_factor = [this](FactorToken& f) { this->_as(f); };
+}
+
+void IncludeAutomation::_as(FactorToken& factor)
+{
+    if (factor.expr->reduceAsName() != "as") {
+        factor.unexpected();
+    }
+    this->_next_factor = [this](FactorToken& f) { this->_fill_alias(f); };
+}
+
+void IncludeAutomation::_fill_alias(FactorToken& factor)
+{
+    this->_alias = factor.expr->reduceAsName();
+    this->_next_factor = nullptr;
 }
 
 IgnoreAny::IgnoreAny(bool reported)

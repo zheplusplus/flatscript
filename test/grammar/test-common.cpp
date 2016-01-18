@@ -16,11 +16,6 @@ std::map<std::string, grammar::TokenType> const test::IMAGE_TYPE_MAP({
     { "}", grammar::CLOSE_BRACE },
 });
 
-util::sref<semantic::SymbolTable> test::nulSymbols()
-{
-    return util::sref<semantic::SymbolTable>(nullptr);
-}
-
 util::sref<semantic::Scope> test::nulScope()
 {
     return util::sref<semantic::Scope>(nullptr);
@@ -92,6 +87,8 @@ NodeType const test::PIPE_RESULT("pipe result");
 NodeType const test::FOR_RANGE("for range");
 NodeType const test::BREAK("break");
 NodeType const test::CONTINUE("continue");
+
+NodeType const test::INCLUDE("include");
 
 NodeType const test::CALL_BEGIN("call begin");
 NodeType const test::CALL_END("call end");

@@ -39,35 +39,35 @@ TEST_F(PipelinesTest, AsyncPipeTopExpression)
                                   , util::mkptr(new semantic::Reference(pos, "g"))
                                   , util::ptrarr<semantic::Expression const>())))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (ASYNC_RESULT_DEF)
-                (pos, ASYNC_PIPELINE)
-                    (pos, REFERENCE, "list")
+                (ASYNC_PIPELINE)
+                    (REFERENCE, "list")
                     (SCOPE_BEGIN)
                         (ASYNC_RESULT_DEF)
-                        (pos, CALL, 1)
-                            (pos, REFERENCE, "f")
-                            (pos, FUNCTION, 0)
+                        (CALL, 1)
+                            (REFERENCE, "f")
+                            (FUNCTION, 0)
                                 (MANGLE_AS_PARAM)
                                 (SCOPE_BEGIN)
                                     (ARITHMETICS)
-                                        (pos, CALL, 1)
-                                            (pos, BINARY_OP, "[.]")
-                                                (pos, PIPE_RESULT)
-                                                (pos, REFERENCE, "push")
-                                            (pos, ASYNC_REFERENCE)
+                                        (CALL, 1)
+                                            (BINARY_OP, "[.]")
+                                                (PIPE_RESULT)
+                                                (REFERENCE, "push")
+                                            (ASYNC_REFERENCE)
                                     (CALL_NEXT)
                                         (CONTINUE)
                                 (SCOPE_END)
                     (SCOPE_END)
                     (SCOPE_BEGIN)
                         (ARITHMETICS)
-                            (pos, CALL, 0)
-                                (pos, REFERENCE, "g")
+                            (CALL, 0)
+                                (REFERENCE, "g")
                     (SCOPE_END)
                     (EXC_THROW)
         (SCOPE_END)
@@ -112,32 +112,32 @@ TEST_F(PipelinesTest, AsyncPipeNestedExpression)
             (FWD_DECL, "f")
             (FWD_DECL, "list")
             (ASYNC_RESULT_DEF)
-                (pos, ASYNC_PIPELINE)
-                    (pos, REFERENCE, "list")
+                (ASYNC_PIPELINE)
+                    (REFERENCE, "list")
                     (SCOPE_BEGIN)
                         (ASYNC_RESULT_DEF)
-                        (pos, CALL, 1)
-                            (pos, IMPORTED_NAME, "g")
-                            (pos, FUNCTION, 1)
+                        (CALL, 1)
+                            (IMPORTED_NAME, "g")
+                            (FUNCTION, 1)
                                 (PARAMETER, "k")
                                 (MANGLE_AS_PARAM)
                                 (SCOPE_BEGIN)
                                     (ARITHMETICS)
-                                        (pos, CALL, 1)
-                                            (pos, BINARY_OP, "[.]")
-                                                (pos, PIPE_RESULT)
-                                                (pos, REFERENCE, "push")
-                                            (pos, CALL, 1)
-                                                (pos, REFERENCE, "f")
-                                                (pos, ASYNC_REFERENCE)
+                                        (CALL, 1)
+                                            (BINARY_OP, "[.]")
+                                                (PIPE_RESULT)
+                                                (REFERENCE, "push")
+                                            (CALL, 1)
+                                                (REFERENCE, "f")
+                                                (ASYNC_REFERENCE)
                                     (CALL_NEXT)
                                         (CONTINUE)
                                 (SCOPE_END)
                     (SCOPE_END)
                     (SCOPE_BEGIN)
                         (ARITHMETICS)
-                            (pos, CALL, 0)
-                                (pos, IMPORTED_NAME, "h")
+                            (CALL, 0)
+                                (IMPORTED_NAME, "h")
                     (SCOPE_END)
                     (EXC_THROW)
         (SCOPE_END)
@@ -173,7 +173,7 @@ TEST_F(PipelinesTest, RefNameDefInAsyncWithinPipeSection)
                                   , util::mkptr(new semantic::Reference(pos_err, "h"))
                                   , util::ptrarr<semantic::Expression const>())))));
 
-    compile(block, scope->sym());
+    compile(block, *scope);
     ASSERT_TRUE(error::hasError());
 
     std::vector<NameNotDefRec> nodefs(getNameNotDefRecs());
@@ -207,24 +207,24 @@ TEST_F(PipelinesTest, PipeBlock)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                     new semantic::Reference(pos, "merin")))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (ARITHMETICS)
-                (pos, ROOT_SYNC_PIPELINE)
-                    (pos, REFERENCE, "merin")
+                (ROOT_SYNC_PIPELINE)
+                    (REFERENCE, "merin")
                     (SCOPE_BEGIN)
                         (FWD_DECL, "scarlet")
                         (ARITHMETICS)
-                            (pos, BINARY_OP, "[=]")
-                                (pos, REFERENCE, "scarlet")
-                                (pos, REFERENCE, "sakuya")
+                            (BINARY_OP, "[=]")
+                                (REFERENCE, "scarlet")
+                                (REFERENCE, "sakuya")
                         (ARITHMETICS)
-                            (pos, CALL, 1)
-                                (pos, REFERENCE, "scarlet")
-                                (pos, INTEGER, "20130204")
+                            (CALL, 1)
+                                (REFERENCE, "scarlet")
+                                (INTEGER, "20130204")
                     (SCOPE_END)
         (SCOPE_END)
     ;
@@ -257,19 +257,19 @@ TEST_F(PipelinesTest, PipeAsyncBlock)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                                 new semantic::Reference(pos, "merin")))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (ASYNC_RESULT_DEF)
-                (pos, ASYNC_PIPELINE)
-                    (pos, REFERENCE, "merin")
+                (ASYNC_PIPELINE)
+                    (REFERENCE, "merin")
                     (SCOPE_BEGIN)
                         (ASYNC_RESULT_DEF)
-                            (pos, CALL, 1)
-                                (pos, REFERENCE, "sakuya")
-                                (pos, FUNCTION, 1)
+                            (CALL, 1)
+                                (REFERENCE, "sakuya")
+                                (FUNCTION, 1)
                                     (PARAMETER, "scarlet")
                                     (MANGLE_AS_PARAM)
                                     (SCOPE_BEGIN)
@@ -306,17 +306,17 @@ TEST_F(PipelinesTest, ReturnInRootPipelineContext)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(new semantic::Pipeline(
                   pos, util::mkptr(new semantic::Reference(pos, "reimu")), std::move(pipe_sec))))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (ARITHMETICS)
-                (pos, ROOT_SYNC_PIPELINE)
-                    (pos, REFERENCE, "reimu")
+                (ROOT_SYNC_PIPELINE)
+                    (REFERENCE, "reimu")
                     (SCOPE_BEGIN)
                         (SYNC_PIPELINE_RETURN)
-                            (pos, CALL, 0)
-                                (pos, REFERENCE, "marisa")
+                            (CALL, 0)
+                                (REFERENCE, "marisa")
                     (SCOPE_END)
         (SCOPE_END)
     ;
@@ -348,7 +348,7 @@ TEST_F(PipelinesTest, ReturnInPipelineContext)
                                      , util::mkptr(new semantic::Reference(pos, "reimu"))
                                      , std::move(pipe_sec))))));
 
-    compile(block, scope->sym());
+    compile(block, *scope);
     ASSERT_TRUE(error::hasError());
 
     std::vector<ReturnNotAllowedInExprPipeRec> recs(getReturnNotAllowedInExprPipeRecs());

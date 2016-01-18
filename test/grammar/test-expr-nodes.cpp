@@ -47,3 +47,14 @@ TEST_F(ExprNodesTest, RegularAsyncParamAsExpr)
     ASSERT_EQ(1, recs.size());
     ASSERT_EQ(pos_a, recs[0].pos);
 }
+
+TEST_F(ExprNodesTest, EmptyRegExp)
+{
+    misc::position pos(3);
+    grammar::makeRegEx(pos, "//");
+    ASSERT_TRUE(error::hasError());
+    std::vector<InvalidRegExpRec> recs(getInvalidRegExpRecs());
+    ASSERT_EQ(1, recs.size());
+    ASSERT_EQ(pos, recs[0].pos);
+    ASSERT_EQ("no pattern", recs[0].message);
+}

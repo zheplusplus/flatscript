@@ -26,4 +26,8 @@ Index: 3
 + ba
 + bb
 . b 1
+---- async on object ----
+[ 'brown quick', 'lazy' ]
+[ 0, 1 ]
+[ 'dog', 'fox' ]
 End

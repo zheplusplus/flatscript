@@ -6,9 +6,10 @@
 #include <output/methods.h>
 #include <misc/pos-type.h>
 
-#include "fwd-decl.h"
-
 namespace semantic {
+
+    struct Function;
+    struct SymbolTable;
 
     struct Scope {
         virtual ~Scope() {}
@@ -38,11 +39,10 @@ namespace semantic {
         virtual bool inCatch() const = 0;
         virtual bool allowSuper() const = 0;
 
-        void setAsyncSpace(misc::position const& pos
-                         , std::vector<std::string> const& params
-                         , util::sref<output::Block> block);
-        virtual util::sref<output::Block> replaceSpace(
-                misc::position const& pos, util::sref<output::Block> block);
+        virtual void setAsyncSpace(misc::position const& pos
+                                 , std::vector<std::string> const& params
+                                 , util::sref<output::Block> block);
+        virtual util::sref<output::Block> replaceSpace(util::sref<output::Block> block);
         virtual void referenceThis(misc::position const& pos) = 0;
 
         virtual output::Method retMethod(misc::position const& p) = 0;
@@ -54,6 +54,7 @@ namespace semantic {
 
         virtual util::sref<SymbolTable> sym() = 0;
         virtual util::uid scopeId() const = 0;
+        virtual util::uid includeFile(misc::position const& p, std::string const& file) = 0;
 
         virtual util::sptr<output::Block> deliver();
     public:

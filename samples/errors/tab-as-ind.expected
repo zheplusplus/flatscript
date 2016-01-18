@@ -1,8 +1,8 @@
-Line 2
+samples/errors/tab-as-ind.fls:2
     use tab as indent is forbidden.
-Line 4
+samples/errors/tab-as-ind.fls:4
     use tab as indent is forbidden.
-Line 3
+samples/errors/tab-as-ind.fls:3
     `else' does not match an `if'.
-Line 7
+samples/errors/tab-as-ind.fls:7
     use tab as indent is forbidden.

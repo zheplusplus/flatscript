@@ -1,0 +1,2 @@
+samples/include/error.fls:1
+    asynchronous expression not allowed in global flow of an included file.

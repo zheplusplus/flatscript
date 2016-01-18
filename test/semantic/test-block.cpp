@@ -29,6 +29,11 @@ struct BlockTest
         return this->_scope->sym();
     }
 
+    util::sref<semantic::Scope> scope()
+    {
+        return *this->_scope;
+    }
+
     util::sptr<semantic::Scope> _scope;
 };
 
@@ -73,24 +78,24 @@ TEST_F(BlockTest, Block)
     block0.addStmt(util::mkptr(new semantic::Return(
                     pos, util::mkptr(new semantic::Undefined(pos)))));
 
-    compile(block0, refSym())->write(dummyos());
+    compile(block0, scope())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (FWD_DECL, "iwasaki")
             (ARITHMETICS)
-                (pos, BINARY_OP, "[=]")
-                    (pos, REFERENCE, "iwasaki")
-                    (pos, REFERENCE, "minami")
+                (BINARY_OP, "[=]")
+                    (REFERENCE, "iwasaki")
+                    (REFERENCE, "minami")
             (BRANCH)
-                (pos, REFERENCE, "tamura")
+                (REFERENCE, "tamura")
             (SCOPE_BEGIN)
             (SCOPE_END)
             (SCOPE_BEGIN)
             (SCOPE_END)
             (RETURN)
-                (pos, UNDEFINED)
+                (UNDEFINED)
         (SCOPE_END)
     ;
 }
@@ -122,7 +127,7 @@ TEST_F(BlockTest, TwoPathBranchFoldedOnFalse)
     block0.addStmt(util::mkptr(new semantic::Return(
                     pos, util::mkptr(new semantic::Undefined(pos)))));
 
-    compile(block0, refSym())->write(dummyos());
+    compile(block0, scope())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -130,7 +135,7 @@ TEST_F(BlockTest, TwoPathBranchFoldedOnFalse)
             (SCOPE_BEGIN)
             (SCOPE_END)
             (RETURN)
-                (pos, UNDEFINED)
+                (UNDEFINED)
         (SCOPE_END)
     ;
 }
@@ -162,7 +167,7 @@ TEST_F(BlockTest, TwoPathBranchFoldedOnTrue)
     block0.addStmt(util::mkptr(new semantic::Return(
                     pos, util::mkptr(new semantic::Undefined(pos)))));
 
-    compile(block0, refSym())->write(dummyos());
+    compile(block0, scope())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -170,7 +175,7 @@ TEST_F(BlockTest, TwoPathBranchFoldedOnTrue)
             (SCOPE_BEGIN)
             (SCOPE_END)
             (RETURN)
-                (pos, UNDEFINED)
+                (UNDEFINED)
         (SCOPE_END)
     ;
 }
@@ -197,7 +202,7 @@ TEST_F(BlockTest, IfNotFoldedOnFalse)
     block0.addStmt(util::mkptr(new semantic::Return(
                     pos, util::mkptr(new semantic::Undefined(pos)))));
 
-    compile(block0, refSym())->write(dummyos());
+    compile(block0, scope())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -205,7 +210,7 @@ TEST_F(BlockTest, IfNotFoldedOnFalse)
             (SCOPE_BEGIN)
             (SCOPE_END)
             (RETURN)
-                (pos, UNDEFINED)
+                (UNDEFINED)
         (SCOPE_END)
     ;
 }
@@ -232,7 +237,7 @@ TEST_F(BlockTest, IfNotFoldedOnTrue)
     block0.addStmt(util::mkptr(new semantic::Return(
                     pos, util::mkptr(new semantic::Undefined(pos)))));
 
-    compile(block0, refSym())->write(dummyos());
+    compile(block0, scope())->write(dummyos());
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
@@ -240,7 +245,7 @@ TEST_F(BlockTest, IfNotFoldedOnTrue)
             (SCOPE_BEGIN)
             (SCOPE_END)
             (RETURN)
-                (pos, UNDEFINED)
+                (UNDEFINED)
         (SCOPE_END)
     ;
 }

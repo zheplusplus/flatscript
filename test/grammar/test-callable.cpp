@@ -1,17 +1,10 @@
-#include <gtest/gtest.h>
-
-#include <grammar/yy-misc.h>
-#include <test/phony-errors.h>
-
-#include "test-common.h"
+#include "samples-test.h"
 
 using namespace test;
 
-TEST(Syntax, Callable)
+TEST_F(SyntaxSampleTest, Callable)
 {
-    grammar::parse();
-    grammar::builder.buildAndClear()->compile(nulScope());
-    ASSERT_FALSE(error::hasError());
+    parseSampleOk("test/grammar/callable.fls");
 
     DataTree::expectOne()
         (BLOCK_BEGIN)

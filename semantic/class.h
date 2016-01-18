@@ -16,7 +16,7 @@ namespace semantic {
                   , util::ptrarr<Expression const> super_ctor_args);
 
         util::sptr<output::Constructor const> compile(
-                util::sref<SymbolTable> st, bool has_base_class) const;
+                util::sref<Scope> scope, bool has_base_class) const;
 
         bool superInit() const
         {

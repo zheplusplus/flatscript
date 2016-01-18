@@ -6,9 +6,10 @@
 
 #include "node-base.h"
 #include "function.h"
-#include "fwd-decl.h"
 
 namespace grammar {
+
+    struct Constructor;
 
     struct Block
         : Statement
@@ -41,7 +42,8 @@ namespace grammar {
                    , util::sptr<Block const> body, bool super_init
                    , std::vector<util::sptr<Expression const>> super_ctor_args);
         void acceptElse(misc::position const& else_pos, util::sptr<Statement const> block);
-        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block);
+        void acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block,
+                         std::string except_name);
     private:
         util::ptrarr<Statement> _stmts;
         util::ptrarr<Function const> _funcs;

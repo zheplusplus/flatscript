@@ -32,9 +32,8 @@ ClauseBuilder::ClauseBuilder()
     _clauses.push_back(std::move(global));
 }
 
-void ClauseBuilder::addArith(int indent_len
-                           , misc::position const& pos
-                           , std::vector<util::sptr<Token>> sequence)
+void ClauseBuilder::addTokens(
+        int indent_len, misc::position const& pos, std::vector<util::sptr<Token>> sequence)
 {
     if (_shrinkTo(indent_len, pos)) {
         _clauses.back()->setMemberIndent(indent_len, pos);
@@ -46,10 +45,10 @@ void ClauseBuilder::addArith(int indent_len
     this->_clauses.back()->tryFinish(pos, this->_clauses);
 }
 
-util::sptr<semantic::Statement const> ClauseBuilder::buildAndClear()
+util::sptr<semantic::Statement const> ClauseBuilder::buildAndClear(misc::position const& pos)
 {
-    if (!_shrinkTo(0, misc::position())) {
-        error::unexpectedEof();
+    if (!_shrinkTo(0, pos)) {
+        error::unexpectedEof(pos);
     }
     _clauses[0]->tryFinish(misc::position(), _clauses);
     return _global->compile();

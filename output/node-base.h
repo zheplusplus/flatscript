@@ -3,9 +3,6 @@
 
 #include <ostream>
 
-#include <util/uid.h>
-#include <misc/pos-type.h>
-
 namespace output {
 
     struct Expression {
@@ -14,14 +11,7 @@ namespace output {
         virtual std::string str() const = 0;
         virtual bool mayThrow() const = 0;
 
-        misc::position const pos;
-        util::uid const id;
-
-        explicit Expression(misc::position const ps)
-            : pos(ps)
-            , id(util::uid::next_id())
-        {}
-
+        Expression() = default;
         Expression(Expression const&) = delete;
     };
 

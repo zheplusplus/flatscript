@@ -126,7 +126,28 @@ namespace semantic {
     {
         ExceptionStall(misc::position const& pos
                      , util::sptr<Statement const> fl
+                     , std::string excn
                      , util::sptr<Statement const> c)
+            : Statement(pos)
+            , try_block(std::move(fl))
+            , except_name(std::move(excn))
+            , catch_block(std::move(c))
+        {}
+
+        void compile(util::sref<Scope> scope) const;
+        bool isAsync() const;
+
+        util::sptr<Statement const> const try_block;
+        std::string const except_name;
+        util::sptr<Statement const> const catch_block;
+    };
+
+    struct ExceptionStallDeprecated
+        : Statement
+    {
+        ExceptionStallDeprecated(misc::position const& pos
+                               , util::sptr<Statement const> fl
+                               , util::sptr<Statement const> c)
             : Statement(pos)
             , try_block(std::move(fl))
             , catch_block(std::move(c))
@@ -176,6 +197,23 @@ namespace semantic {
         void compile(util::sref<Scope> scope) const;
 
         bool isAsync() const { return false; }
+    };
+
+    struct IncludeFile
+        : Statement
+    {
+        explicit IncludeFile(misc::position const& pos, std::string f, std::string m)
+            : Statement(pos)
+            , file(std::move(f))
+            , module_alias(std::move(m))
+        {}
+
+        void compile(util::sref<Scope> scope) const;
+
+        bool isAsync() const { return false; }
+
+        std::string const file;
+        std::string const module_alias;
     };
 
 }

@@ -485,10 +485,10 @@ namespace semantic {
         util::sptr<output::Expression const> _compileAsync(util::sref<Scope> scope) const;
     };
 
-    struct ExceptionObj
+    struct ExceptionObjDeprecated
         : Expression
     {
-        explicit ExceptionObj(misc::position const& pos)
+        explicit ExceptionObjDeprecated(misc::position const& pos)
             : Expression(pos)
         {}
 

@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <sstream>
 
 #include "string.h"
@@ -25,13 +24,9 @@ std::string util::join(std::string const& sep, std::vector<std::string> const& v
         return "";
     }
     std::string result(values[0]);
-    std::for_each(++values.begin()
-                , values.end()
-                , [&](std::string const& v)
-                  {
-                      result += sep;
-                      result += v;
-                  });
+    for (auto i = ++values.begin(); i < values.end(); ++i) {
+        result += (sep + *i);
+    }
     return std::move(result);
 }
 

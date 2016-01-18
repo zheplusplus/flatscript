@@ -50,21 +50,21 @@ TEST_F(StmtNodesTest, AsyncScopeInBranchWithConstantPredicate)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                                             new semantic::FloatLiteral(pos, "11.04")))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (SCOPE_BEGIN)
                 (ASYNC_RESULT_DEF)
-                    (pos, CALL, 2)
-                        (pos, REFERENCE, "read")
-                        (pos, FUNCTION, 1)
+                    (CALL, 2)
+                        (REFERENCE, "read")
+                        (FUNCTION, 1)
                             (PARAMETER, "content")
                             (MANGLE_AS_PARAM)
                             (SCOPE_BEGIN)
                             (SCOPE_END)
-                        (pos, STRING, "f20130123")
+                        (STRING, "f20130123")
             (SCOPE_END)
         (SCOPE_END)
     ;
@@ -96,24 +96,24 @@ TEST_F(StmtNodesTest, ReferenceThisInBranch)
                    , std::move(consq_block)
                    , std::move(alter_block))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (DEC_THIS)
             (BRANCH)
-            (pos, REFERENCE, "houjou")
+            (REFERENCE, "houjou")
             (SCOPE_BEGIN)
                 (ARITHMETICS)
-                    (pos, BINARY_OP, "[]")
-                        (pos, THIS)
-                        (pos, STRING, "maebara")
+                    (BINARY_OP, "[]")
+                        (THIS)
+                        (STRING, "maebara")
             (SCOPE_END)
             (SCOPE_BEGIN)
                 (ARITHMETICS)
-                    (pos, CALL, 0)
-                        (pos, REFERENCE, "ryuuguu")
+                    (CALL, 0)
+                        (REFERENCE, "ryuuguu")
             (SCOPE_END)
         (SCOPE_END)
     ;
@@ -144,15 +144,15 @@ TEST_F(StmtNodesTest, ReferenceThisInBranchWithConstantPredicate)
                    , std::move(consq_block)
                    , std::move(alter_block))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (SCOPE_BEGIN)
             (ARITHMETICS)
-                (pos, CALL, 0)
-                    (pos, REFERENCE, "rena")
+                (CALL, 0)
+                    (REFERENCE, "rena")
             (SCOPE_END)
         (SCOPE_END)
     ;
@@ -176,19 +176,19 @@ TEST_F(StmtNodesTest, ReferenceThisInLambda)
     block.addStmt(util::mkptr(new semantic::Arithmetics(pos, util::mkptr(
                 new semantic::Lambda(pos, std::vector<std::string>(), std::move(lambda_block))))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (ARITHMETICS)
-                (pos, FUNCTION, 0)
+                (FUNCTION, 0)
                 (SCOPE_BEGIN)
                     (DEC_THIS)
                     (ARITHMETICS)
-                        (pos, BINARY_OP, "[]")
-                            (pos, REFERENCE, "satoko")
-                            (pos, THIS)
+                        (BINARY_OP, "[]")
+                            (REFERENCE, "satoko")
+                            (THIS)
                 (SCOPE_END)
         (SCOPE_END)
     ;
@@ -216,24 +216,24 @@ TEST_F(StmtNodesTest, ReferenceThisInHostFunction)
                                    , util::mkptr(new semantic::This(pos))
                                    , util::mkptr(new semantic::Reference(pos, "okasaki")))))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (DEC_THIS)
             (ARITHMETICS)
-                (pos, FUNCTION, 0)
+                (FUNCTION, 0)
                 (SCOPE_BEGIN)
                     (ARITHMETICS)
-                        (pos, BINARY_OP, "[]")
-                            (pos, REFERENCE, "furukawa")
-                            (pos, STRING, "okasaki")
+                        (BINARY_OP, "[]")
+                            (REFERENCE, "furukawa")
+                            (STRING, "okasaki")
                 (SCOPE_END)
             (ARITHMETICS)
-                (pos, BINARY_OP, "[]")
-                    (pos, THIS)
-                    (pos, REFERENCE, "okasaki")
+                (BINARY_OP, "[]")
+                    (THIS)
+                    (REFERENCE, "okasaki")
         (SCOPE_END)
     ;
 }
@@ -258,22 +258,22 @@ TEST_F(StmtNodesTest, ReferenceThisInAsyncScope)
                                    , util::mkptr(new semantic::This(pos))
                                    , util::mkptr(new semantic::Reference(pos, "tomoya")))))));
 
-    compile(block, scope->sym())->write(dummyos());
+    compile(block, *scope)->write(dummyos());
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
         (SCOPE_BEGIN)
             (DEC_THIS)
             (ASYNC_RESULT_DEF)
-                (pos, CALL, 1)
-                    (pos, REFERENCE, "nagisa")
-                    (pos, FUNCTION, 0)
+                (CALL, 1)
+                    (REFERENCE, "nagisa")
+                    (FUNCTION, 0)
                         (MANGLE_AS_PARAM)
                         (SCOPE_BEGIN)
                             (ARITHMETICS)
-                                (pos, BINARY_OP, "[]")
-                                    (pos, THIS)
-                                    (pos, REFERENCE, "tomoya")
+                                (BINARY_OP, "[]")
+                                    (THIS)
+                                    (REFERENCE, "tomoya")
                         (SCOPE_END)
         (SCOPE_END)
     ;
@@ -338,9 +338,8 @@ TEST_F(StmtNodesTest, StatementsAfterBothBranchesReturned)
 TEST_F(StmtNodesTest, StatementsAfterFoldedBranchReturned)
 {
     misc::position pos(9);
-    semantic::GlobalSymbolTable sym;
-    util::sptr<semantic::Scope> scope(
-            new semantic::SyncFunctionScope(pos, util::mkref(sym), {}, false));
+    auto gl(semantic::Scope::global());
+    util::sptr<semantic::Scope> scope(new semantic::SyncFunctionScope(pos, *gl, {}, false));
     scope->sym()->defName(pos, "sonozaki");
     semantic::Block block(pos);
     util::sptr<semantic::Block> consq_block(new semantic::Block(pos));

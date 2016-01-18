@@ -9,29 +9,16 @@
 #include <output/node-base.h>
 #include <output/block.h>
 #include <output/function.h>
-#include <misc/pos-type.h>
 #include <test/data-node.h>
 #include <test/data-trees.h>
 
 namespace test {
 
     std::ostream& dummyos();
-    util::sptr<output::Statement const> compile(
-                                    semantic::Block& b, util::sref<semantic::SymbolTable> sym);
+    util::sptr<output::Statement const> compile(semantic::Block& b, util::sref<semantic::Scope> s);
 
     struct SemanticData {
-        misc::position const pos;
         int const int_val;
-
-        SemanticData(misc::position const& ps, int iv)
-            : pos(ps)
-            , int_val(iv)
-        {}
-
-        explicit SemanticData(misc::position const ps)
-            : pos(ps)
-            , int_val(-1)
-        {}
 
         explicit SemanticData(int iv)
             : int_val(iv)
@@ -43,7 +30,7 @@ namespace test {
 
         bool operator==(SemanticData const& rhs) const
         {
-            return pos == rhs.pos && int_val == rhs.int_val;
+            return int_val == rhs.int_val;
         }
 
         std::string str() const;
@@ -54,17 +41,10 @@ namespace test {
     {
         typedef DataTreeTempl<SemanticData, DataTree> BaseType;
 
-        DataTree& operator()(misc::position const& pos
-                           , NodeType const& type
-                           , std::string const& str);
-        DataTree& operator()(NodeType const& type
-                           , std::string const& str
-                           , int size);
         DataTree& operator()(NodeType const& type);
         DataTree& operator()(NodeType const& type, std::string const& str);
         DataTree& operator()(NodeType const& type, int value);
-        DataTree& operator()(misc::position const& pos, NodeType const& type);
-        DataTree& operator()(misc::position const& pos, NodeType const& type, int size);
+        DataTree& operator()(NodeType const& type, std::string const& str, int value);
     };
 
     extern NodeType const UNDEFINED;
@@ -140,6 +120,8 @@ namespace test {
 
     extern NodeType const SCOPE_BEGIN;
     extern NodeType const SCOPE_END;
+
+    extern NodeType const INCLUDE;
 
     struct SemanticTest
         : testing::Test

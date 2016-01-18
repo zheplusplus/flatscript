@@ -26,6 +26,8 @@ namespace flats {
         bool use_export;
     };
 
+    bool isReserved(std::string const& name);
+
 }
 
 #endif /* __STEKIN_GLOBALS_H__ */

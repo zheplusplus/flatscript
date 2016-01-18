@@ -1,8 +1,11 @@
 #include <output/expr-nodes.h>
 #include <output/stmt-nodes.h>
 #include <output/list-pipe.h>
+#include <output/name-mangler.h>
+#include <output/function-impl.h>
 #include <report/errors.h>
 #include <globals.h>
+#include <including.h>
 
 #include "scope-impl.h"
 #include "common.h"
@@ -43,11 +46,10 @@ void Scope::setAsyncSpace(misc::position const& pos
     for (std::string const& p: params) {
         this->sym()->defAsyncParam(pos, p);
     }
-    this->_current_block = this->replaceSpace(pos, block);
+    this->_current_block = this->replaceSpace(block);
 }
 
-util::sref<output::Block> Scope::replaceSpace(
-                misc::position const&, util::sref<output::Block> block)
+util::sref<output::Block> Scope::replaceSpace(util::sref<output::Block> block)
 {
     return block;
 }
@@ -99,7 +101,7 @@ util::sptr<output::Block> DomainScope::deliver()
         std::map<std::string, util::sptr<output::Expression const>> memfuncs;
         for (auto name_fn: i.memfns) {
             memfuncs.insert(std::make_pair(
-                name_fn.first, name_fn.second->compileToLambda(this->sym(), true)));
+                name_fn.first, name_fn.second->compileToLambda(util::mkref(*this), true)));
         }
         block->addStmt(util::mkptr(new output::ClassInitFunc(
                 i.class_name, i.inherit, std::move(memfuncs), std::move(i.ctor))));
@@ -131,13 +133,13 @@ output::Method SyncFunctionScope::throwMethod() const
 }
 
 RegularAsyncFuncScope::RegularAsyncFuncScope(misc::position const& pos
-                                           , util::sref<SymbolTable> ext_st
+                                           , util::sref<Scope> parent
                                            , std::vector<std::string> const& params
                                            , bool allow_super)
-    : BasicFunctionScope(pos, ext_st, params, allow_super)
+    : BasicFunctionScope(pos, parent, params, allow_super)
     , ret_pos(pos)
 {
-    this->_current_block = this->replaceSpace(pos, this->_current_block);
+    this->_current_block = this->replaceSpace(this->_current_block);
 }
 
 output::Method RegularAsyncFuncScope::retMethod(misc::position const& p)
@@ -155,7 +157,7 @@ util::sptr<output::Block> RegularAsyncFuncScope::deliver()
 {
     if (!this->terminated()) {
         this->block()->addStmt(util::mkptr(new output::ExprScheme(
-            output::method::asyncRet(), util::mkptr(new output::Undefined(this->ret_pos)))));
+            output::method::asyncRet(), util::mkptr(new output::Undefined))));
     }
     return BasicFunctionScope::deliver();
 }
@@ -164,27 +166,25 @@ typedef std::function<util::sptr<output::Statement const>(
             util::sptr<output::Expression const>)> MakeCatcher;
 
 static util::sref<output::Block> _replaceSpaceInAsyncTry(
-                misc::position const& pos, util::sref<output::Block> block,
-                MakeCatcher make_catcher)
+                util::sref<output::Block> block, MakeCatcher make_catcher)
 {
     util::sptr<output::Block> try_block(new output::Block);
     util::sref<output::Block> try_flow(*try_block);
 
-    block->addStmt(util::mkptr(new output::ExceptionStall(
+    block->addStmt(util::mkptr(new output::ExceptionStallDeprecated(
                 std::move(try_block)
-              , make_catcher(util::mkptr(new output::ExceptionObj(pos))))));
+              , make_catcher(util::mkptr(new output::ExceptionObj)))));
     return try_flow;
 }
 
-util::sref<output::Block> RegularAsyncFuncScope::replaceSpace(
-                misc::position const& pos, util::sref<output::Block> block)
+util::sref<output::Block> RegularAsyncFuncScope::replaceSpace(util::sref<output::Block> block)
 {
     return ::_replaceSpaceInAsyncTry(
-        pos, block, [this](util::sptr<output::Expression const> exception)
-                    {
-                        return util::mkptr(new output::ExprScheme(
+        block, [this](util::sptr<output::Expression const> exception)
+               {
+                   return util::mkptr(new output::ExprScheme(
                             this->throwMethod(), std::move(exception)));
-                    });
+               });
 }
 
 void SubScope::addClass(misc::position const& pos
@@ -196,28 +196,38 @@ void SubScope::addClass(misc::position const& pos
     error::forbidDefClass(pos, class_name);
 }
 
+CatchScope::CatchScope(util::sref<Scope> parent_scope, misc::position const& pos,
+                       std::string except_name)
+    : BranchingSubScope(parent_scope)
+{
+    this->sym()->defName(pos, except_name);
+}
+
 output::Method AsyncTryScope::throwMethod() const
 {
     return output::method::asyncCatcher(catch_func->mangledName());
 }
 
-util::sref<output::Block> AsyncTryScope::replaceSpace(
-                misc::position const& pos, util::sref<output::Block> block)
+util::sref<output::Block> AsyncTryScope::replaceSpace(util::sref<output::Block> block)
 {
     return ::_replaceSpaceInAsyncTry(
-        pos, block, [&](util::sptr<output::Expression const> exception)
-                    {
-                        util::ptrarr<output::Expression const> args;
-                        args.append(std::move(exception));
-                        return makeArith(this->catch_func->callMe(pos, std::move(args)));
-                    });
+        block, [&](util::sptr<output::Expression const> exception)
+               {
+                   return makeArith(this->catch_func->callMe(std::move(exception)));
+               });
 }
 
 namespace {
 
-    struct GlobalScope
+    struct FileScope
         : DomainScope
     {
+        FileScope()
+        {
+            this->sym()->addExternNames(misc::position(), std::vector<std::string>(
+                flats::Globals::g.external_syms.begin(), flats::Globals::g.external_syms.end()));
+        }
+
         bool inPipe() const { return false; }
         bool inCatch() const { return false; }
         bool allowSuper() const { return false; }
@@ -250,6 +260,109 @@ namespace {
         }
     private:
         GlobalSymbolTable _sym;
+    };
+
+    struct IncludeFileScope
+        : FileScope
+    {
+        IncludeFileScope(util::sref<Scope> parent, util::uid fid)
+            : file_id(fid)
+            , _parent(parent)
+        {}
+
+        util::uid scopeId() const
+        {
+            return this->file_id;
+        }
+
+        util::uid includeFile(misc::position const& p, std::string const& file)
+        {
+            return this->_parent->includeFile(p, file);
+        }
+
+        void setAsyncSpace(misc::position const& pos
+                         , std::vector<std::string> const&
+                         , util::sref<output::Block>)
+        {
+            error::asyncNotAllowedInIncludedFile(pos);
+        }
+
+        util::uid const file_id;
+    private:
+        util::sref<Scope> const _parent;
+    };
+
+    struct GlobalScope
+        : FileScope
+    {
+        struct IncludedFile {
+            util::uid const include_id;
+            util::sptr<semantic::Statement const> file;
+
+            IncludedFile(util::uid i, util::sptr<semantic::Statement const> f)
+                : include_id(i)
+                , file(std::move(f))
+            {}
+
+            IncludedFile(IncludedFile&& rhs)
+                : include_id(rhs.include_id)
+                , file(std::move(rhs.file))
+            {}
+        };
+
+        util::uid includeFile(misc::position const& p, std::string const& file)
+        {
+            auto f(this->_includings.find(file));
+            if (f != this->_includings.end()) {
+                return f->second.include_id;
+            }
+            util::uid include_id(util::uid::next_id());
+            this->_includings.insert(std::make_pair(
+                        file, IncludedFile(include_id, flats::compileFile(file, p))));
+            return include_id;
+        }
+
+        util::sptr<output::Block> deliver()
+        {
+            std::set<std::string> inc_decls;
+            std::set<std::string> compiled;
+            std::vector<util::sptr<output::Function const>> init_funcs;
+            std::vector<util::sptr<output::Expression const>> init_calls;
+            while (compiled.size() != this->_includings.size()) {
+                for (auto& i: this->_includings) {
+                    if (compiled.find(i.first) == compiled.end()) {
+                        compiled.insert(i.first);
+                        this->_compileInclude(init_funcs, init_calls, inc_decls, i.second);
+                    }
+                }
+            }
+            util::sptr<output::Block> g(new output::Block);
+            g->setLocalDecls(inc_decls);
+            for (auto& f: init_funcs) {
+                g->addFunc(std::move(f));
+            }
+            for (auto i = init_calls.rbegin(); i != init_calls.rend(); ++i) {
+                g->addStmt(makeArith(std::move(*i)));
+            }
+            g->append(FileScope::deliver());
+            return std::move(g);
+        }
+    private:
+        void _compileInclude(std::vector<util::sptr<output::Function const>>& init_funcs,
+                             std::vector<util::sptr<output::Expression const>>& init_calls,
+                             std::set<std::string>& inc_decls, IncludedFile const& inc)
+        {
+            util::uid include_id(inc.include_id);
+            inc_decls.insert(output::formModuleExportName(inc.include_id));
+            IncludeFileScope file_scope(util::mkref(*this), inc.include_id);
+            inc.file->compile(file_scope);
+            util::sptr<output::ModuleInitFunc const> f(new output::ModuleInitFunc(
+                            inc.include_id, file_scope.deliver()));
+            init_calls.push_back(f->callMe(f->exportArg()));
+            init_funcs.push_back(std::move(f));
+        }
+
+        std::map<std::string, IncludedFile> _includings;
     };
 
     struct PipelineScope
@@ -347,7 +460,7 @@ namespace {
             if (!this->terminated()) {
                 this->block()->addStmt(util::mkptr(new output::ExprScheme(
                     this->_continueMethod()
-                  , util::mkptr(new output::PipeContinue(misc::position(), this->pipe_id)))));
+                  , util::mkptr(new output::PipeContinue(this->pipe_id)))));
             }
             return SubScope::deliver();
         }
@@ -412,8 +525,5 @@ util::sptr<Scope> Scope::makeAsyncRangeScope(util::uid pipe_id)
 
 util::sptr<Scope> Scope::global()
 {
-    util::sptr<Scope> scope(new GlobalScope);
-    scope->sym()->addExternNames(misc::position(0), std::vector<std::string>(
-            flats::Globals::g.external_syms.begin(), flats::Globals::g.external_syms.end()));
-    return std::move(scope);
+    return util::mkptr(new GlobalScope);
 }

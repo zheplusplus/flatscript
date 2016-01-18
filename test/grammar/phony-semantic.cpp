@@ -40,7 +40,7 @@ Constructor::Constructor(misc::position const& ps, std::vector<std::string> para
 
 void Class::compile(util::sref<Scope>) const {}
 
-util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bool) const
+util::sptr<output::Function const> Function::compile(util::sref<Scope>, bool) const
 {
     DataTree::actualOne()(pos, FUNC_DEF, name);
     std::for_each(param_names.begin()
@@ -54,10 +54,10 @@ util::sptr<output::Function const> Function::compile(util::sref<SymbolTable>, bo
 }
 
 util::sptr<output::Function const> RegularAsyncFunction::compile(
-        util::sref<SymbolTable>, bool) const
+        util::sref<Scope>, bool) const
 {
     DataTree::actualOne()(pos, REGULAR_ASYNC_PARAM_INDEX, async_param_index);
-    return Function::compile(nulSymbols(), false);
+    return Function::compile(nulScope(), false);
 }
 
 void Block::compile(util::sref<Scope>) const
@@ -65,7 +65,7 @@ void Block::compile(util::sref<Scope>) const
     DataTree::actualOne()(BLOCK_BEGIN);
     _funcs.iter([&](util::sptr<Function const> const& func, int)
                 {
-                    func->compile(nulSymbols());
+                    func->compile(nulScope());
                 });
     _stmts.iter([&](util::sptr<Statement const> const& stmt, int)
                 {
@@ -137,6 +137,14 @@ void ExceptionStall::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, TRY);
     try_block->compile(nulScope());
+    DataTree::actualOne()(pos, CATCH, except_name);
+    catch_block->compile(nulScope());
+}
+
+void ExceptionStallDeprecated::compile(util::sref<Scope>) const
+{
+    DataTree::actualOne()(pos, TRY);
+    try_block->compile(nulScope());
     DataTree::actualOne()(pos, CATCH);
     catch_block->compile(nulScope());
 }
@@ -164,6 +172,11 @@ void Break::compile(util::sref<Scope>) const
 void Continue::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, CONTINUE);
+}
+
+void IncludeFile::compile(util::sref<Scope>) const
+{
+    DataTree::actualOne()(pos, INCLUDE, this->file);
 }
 
 util::sptr<output::Expression const> PreUnaryOp::compile(util::sref<Scope>) const
@@ -427,7 +440,7 @@ util::sptr<output::Expression const> Conditional::compile(util::sref<Scope>) con
     return nulOutputExpr();
 }
 
-util::sptr<output::Expression const> ExceptionObj::compile(util::sref<Scope>) const
+util::sptr<output::Expression const> ExceptionObjDeprecated::compile(util::sref<Scope>) const
 {
     DataTree::actualOne()(pos, EXCEPTION_OBJ);
     return nulOutputExpr();
@@ -457,9 +470,9 @@ util::sptr<Expression const> Pipeline::createFilter(misc::position const& pos
 }
 
 util::sptr<output::Statement const> Function::_compileBody(
-        util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
+        util::sref<Scope>, bool) const { return nulOutputStmt(); }
 util::sptr<output::Statement const> RegularAsyncFunction::_compileBody(
-        util::sref<SymbolTable>, bool) const { return nulOutputStmt(); }
+        util::sref<Scope>, bool) const { return nulOutputStmt(); }
 bool Reference::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Reference::literalType(util::sref<SymbolTable const>) const { return ""; }
 bool Reference::boolValue(util::sref<SymbolTable const>) const { return false; }
@@ -504,6 +517,7 @@ bool Return::isAsync() const { return false; }
 bool Export::isAsync() const { return false; }
 bool AttrSet::isAsync() const { return false; }
 bool ExceptionStall::isAsync() const { return false; }
+bool ExceptionStallDeprecated::isAsync() const { return false; }
 bool Block::isAsync() const { return true; }
 bool Conditional::isLiteral(util::sref<SymbolTable const>) const { return false; }
 std::string Conditional::literalType(util::sref<SymbolTable const>) const { return ""; }
@@ -513,6 +527,6 @@ mpf_class Conditional::floatValue(util::sref<SymbolTable const>) const { return 
 std::string Conditional::stringValue(util::sref<SymbolTable const>) const { return ""; }
 bool Conditional::isAsync() const { return false; }
 util::sptr<output::Expression const> Function::compileToLambda(
-        util::sref<SymbolTable>, bool) const { return nulOutputExpr(); }
+        util::sref<Scope>, bool) const { return nulOutputExpr(); }
 util::sptr<output::Expression const> RegularAsyncFunction::compileToLambda(
-        util::sref<SymbolTable>, bool) const { return nulOutputExpr(); }
+        util::sref<Scope>, bool) const { return nulOutputExpr(); }

@@ -197,7 +197,7 @@ ReportFunc(
 lineno() + '''
 std::cerr << this_pos.str() << std::endl;
 std::cerr << "    another `" << successor << "' already matches the `" << match << "' at "
-          << prev_pos.str() << std::endl;
+          << prev_pos.as_line() << std::endl;
 '''
 , Param(POS_TYPE, 'prev_pos'), Param(POS_TYPE, 'this_pos'), Param(STR_TYPE, 'successor')
 , Param(STR_TYPE, 'match')),
@@ -230,7 +230,7 @@ ReportFunc(
 'duplicateCtor',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    a constructor already defined at " << def_pos.str() << std::endl;
+std::cerr << "    a constructor already defined at " << def_pos.as_line() << std::endl;
 '''
 , Param(POS_TYPE, 'def_pos'), Param(POS_TYPE, 'pos')),
 
@@ -247,7 +247,7 @@ ReportFunc(
 lineno() + '''
 std::cerr << this_pos.str() << std::endl;
 std::cerr << "    a member function named `" << name << "' already defined at "
-          << prev_pos.str() << std::endl;
+          << prev_pos.as_line() << std::endl;
 '''
 , Param(POS_TYPE, 'prev_pos'), Param(POS_TYPE, 'this_pos'), Param(STR_TYPE, 'name')),
 
@@ -294,9 +294,18 @@ std::cerr << "    invalid indentation" << std::endl;
 ReportFunc(
 'unexpectedEof',
 lineno() + '''
-std::cerr << "Unexpected end of file; expression not finished" << std::endl;
+std::cerr << pos.str() << std::endl;
+std::cerr << "    Unexpected end of file" << std::endl;
 '''
-),
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'unexpectedEot',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    unexpected end of token " << token_type << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'token_type')),
 
 ReportFunc(
 'asyncPlaceholderNotArgument',
@@ -334,7 +343,7 @@ ReportFunc(
 'flowTerminated',
 lineno() + '''
 std::cerr << this_pos.str() << std::endl;
-std::cerr << "    flow already terminated at " << prev_pos.str() << std::endl;
+std::cerr << "    flow already terminated at " << prev_pos.as_line() << std::endl;
 '''
 , Param(POS_TYPE, 'this_pos'), Param(POS_TYPE, 'prev_pos')),
 
@@ -391,7 +400,7 @@ ReportFunc(
 lineno() + '''
 std::cerr << this_def_pos.str() << std::endl;
 std::cerr << "    name `" << name << "' already defined." << std::endl;
-std::cerr << "    see previous definition in local at " << prev_def_pos.str() << std::endl;
+std::cerr << "    see previous definition in local at " << prev_def_pos.as_line() << std::endl;
 '''
 , Param(POS_TYPE, 'prev_def_pos'), Param(POS_TYPE, 'this_def_pos'), Param(STR_TYPE, 'name')),
 
@@ -405,7 +414,7 @@ std::for_each(ref_positions.begin()
             , ref_positions.end()
             , [&](misc::position const& pos)
               {
-                  std::cerr << "    - " << pos.str() << std::endl;
+                  std::cerr << "    - " << pos.as_line() << std::endl;
               });
 '''
 , Param(POS_TYPE, 'def_pos'), Param(POS_LIST_TYPE, 'ref_positions'), Param(STR_TYPE, 'name')),
@@ -449,7 +458,15 @@ ReportFunc(
 'asyncNotAllowedInThrow',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    asynchronous expression not allowed in throw." << std::endl;
+std::cerr << "    asynchronous expression not allowed being thrown." << std::endl;
+'''
+, Param(POS_TYPE, 'pos')),
+
+ReportFunc(
+'asyncNotAllowedInIncludedFile',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    asynchronous expression not allowed in global flow of an included file." << std::endl;
 '''
 , Param(POS_TYPE, 'pos')),
 
@@ -522,9 +539,17 @@ ReportFunc(
 'importReservedWord',
 lineno() + '''
 std::cerr << pos.str() << std::endl;
-std::cerr << "    import reserved word as name: " << name << std::endl;
+std::cerr << "    declare Javascript reserved word: " << name << std::endl;
 '''
 , Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'name')),
+
+ReportFunc(
+'externalError',
+lineno() + '''
+std::cerr << pos.str() << std::endl;
+std::cerr << "    " << msg << std::endl;
+'''
+, Param(POS_TYPE, 'pos'), Param(STR_TYPE, 'msg')),
 
 ]
 
@@ -563,13 +588,7 @@ def write_errors_impl():
             {
                 return has_error;
             }
-
-            void yyerror(std::string const& msg)
-            {
-                has_error = true;
-                std::cerr << "Line " << grammar::lineno << ":" << std::endl;
-                std::cerr << "    " <<  msg << std::endl;
-            }''' +
+            ''' +
             '\n'.join([ r.build_impl() for r in ERROR_REPORTS ]))
         out.flush()
 
@@ -602,11 +621,6 @@ def write_errors_test_impl():
             using namespace test;
 
             static bool has_error = false;
-
-            void yyerror(std::string const&)
-            {
-                has_error = true;
-            }
 
             bool error::hasError()
             {

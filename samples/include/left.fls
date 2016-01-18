@@ -1,0 +1,10 @@
+include "samples/include/right.fls" as right
+
+func foo()
+    return right.foo() + 1
+
+func bar()
+    return 9
+
+export foo: foo
+export ep.bar: bar

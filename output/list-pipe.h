@@ -9,9 +9,8 @@ namespace output {
     struct PipelineBase
         : Expression
     {
-        PipelineBase(misc::position const& pos, util::sptr<Expression const> lst, util::uid id)
-            : Expression(pos)
-            , list(std::move(lst))
+        PipelineBase(util::sptr<Expression const> lst, util::uid id)
+            : list(std::move(lst))
             , pipe_id(id)
         {}
 
@@ -24,13 +23,12 @@ namespace output {
     struct AsyncPipeline
         : PipelineBase
     {
-        AsyncPipeline(misc::position const& pos
-                    , util::sptr<Expression const> list
+        AsyncPipeline(util::sptr<Expression const> list
                     , util::sptr<Statement const> recur
                     , util::sptr<Statement const> suc
                     , util::uid pipe_id
                     , Method t)
-            : PipelineBase(pos, std::move(list), pipe_id)
+            : PipelineBase(std::move(list), pipe_id)
             , recursion(std::move(recur))
             , succession(std::move(suc))
             , thrower(std::move(t))
@@ -46,11 +44,10 @@ namespace output {
     struct SyncPipeline
         : PipelineBase
     {
-        SyncPipeline(misc::position const& pos
-                   , util::sptr<Expression const> list
+        SyncPipeline(util::sptr<Expression const> list
                    , util::sptr<Statement const> sec
                    , util::uid pipe_id)
-            : PipelineBase(pos, std::move(list), pipe_id)
+            : PipelineBase(std::move(list), pipe_id)
             , section(std::move(sec))
         {}
 
@@ -62,14 +59,13 @@ namespace output {
     struct RootSyncPipeline
         : PipelineBase
     {
-        RootSyncPipeline(misc::position const& pos
-                       , util::sptr<Expression const> list
+        RootSyncPipeline(util::sptr<Expression const> list
                        , util::sptr<Statement const> sec
                        , Method ext_ret
                        , util::uid pipe_id
                        , bool ret
                        , bool brk)
-            : PipelineBase(pos, std::move(list), pipe_id)
+            : PipelineBase(std::move(list), pipe_id)
             , section(std::move(sec))
             , ext_return(std::move(ext_ret))
             , has_ret(ret)
@@ -160,9 +156,8 @@ namespace output {
     struct PipeRefExpr
         : Expression
     {
-        PipeRefExpr(misc::position const& pos, util::uid id)
-            : Expression(pos)
-            , pipe_id(id)
+        PipeRefExpr(util::uid id)
+            : pipe_id(id)
         {}
 
         bool mayThrow() const { return false; }
@@ -173,8 +168,8 @@ namespace output {
     struct PipeElement
         : PipeRefExpr
     {
-        PipeElement(misc::position const& pos, util::uid id)
-            : PipeRefExpr(pos, id)
+        explicit PipeElement(util::uid id)
+            : PipeRefExpr(id)
         {}
 
         std::string str() const;
@@ -183,8 +178,8 @@ namespace output {
     struct PipeIndex
         : PipeRefExpr
     {
-        PipeIndex(misc::position const& pos, util::uid id)
-            : PipeRefExpr(pos, id)
+        explicit PipeIndex(util::uid id)
+            : PipeRefExpr(id)
         {}
 
         std::string str() const;
@@ -193,8 +188,8 @@ namespace output {
     struct PipeKey
         : PipeRefExpr
     {
-        PipeKey(misc::position const& pos, util::uid id)
-            : PipeRefExpr(pos, id)
+        explicit PipeKey(util::uid id)
+            : PipeRefExpr(id)
         {}
 
         std::string str() const;
@@ -203,8 +198,8 @@ namespace output {
     struct PipeResult
         : PipeRefExpr
     {
-        PipeResult(misc::position const& pos, util::uid id)
-            : PipeRefExpr(pos, id)
+        explicit PipeResult(util::uid id)
+            : PipeRefExpr(id)
         {}
 
         std::string str() const;
@@ -213,8 +208,8 @@ namespace output {
     struct PipeBreak
         : PipeRefExpr
     {
-        PipeBreak(misc::position const& pos, util::uid id)
-            : PipeRefExpr(pos, id)
+        explicit PipeBreak(util::uid id)
+            : PipeRefExpr(id)
         {}
 
         std::string str() const;
@@ -223,8 +218,8 @@ namespace output {
     struct PipeContinue
         : PipeRefExpr
     {
-        PipeContinue(misc::position const& pos, util::uid id)
-            : PipeRefExpr(pos, id)
+        explicit PipeContinue(util::uid id)
+            : PipeRefExpr(id)
         {}
 
         std::string str() const;

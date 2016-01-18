@@ -44,7 +44,7 @@ TEST_F(SymbolTableTest, DefName)
     refSym()->defName(pos, "seele");
     refSym()->defName(pos, "lilith");
     ASSERT_FALSE(error::hasError());
-    semantic::SyncFunctionScope inner_scope(pos, refSym(), std::vector<std::string>(), false);
+    semantic::SyncFunctionScope inner_scope(pos, scope(), std::vector<std::string>(), false);
     inner_scope.sym()->defName(pos, "nerv");
     inner_scope.sym()->defName(pos, "seele");
     inner_scope.sym()->defName(pos, "adam");
@@ -64,7 +64,7 @@ TEST_F(SymbolTableTest, RefLocalName)
     refSym()->compileRef(pos, "lilith")->str();
     ASSERT_FALSE(error::hasError());
 
-    semantic::SyncFunctionScope inner_scope(pos, refSym(), std::vector<std::string>(), false);
+    semantic::SyncFunctionScope inner_scope(pos, scope(), std::vector<std::string>(), false);
     inner_scope.sym()->defName(pos, "nerv");
     inner_scope.sym()->defName(pos, "seele");
     inner_scope.sym()->defName(pos, "adam");
@@ -77,14 +77,14 @@ TEST_F(SymbolTableTest, RefLocalName)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, REFERENCE, "nerv")
-        (pos, REFERENCE, "seele")
-        (pos, REFERENCE, "lilith")
+        (REFERENCE, "nerv")
+        (REFERENCE, "seele")
+        (REFERENCE, "lilith")
 
-        (pos, REFERENCE, "nerv")
-        (pos, REFERENCE, "seele")
-        (pos, REFERENCE, "adam")
-        (pos, REFERENCE, "eve")
+        (REFERENCE, "nerv")
+        (REFERENCE, "seele")
+        (REFERENCE, "adam")
+        (REFERENCE, "eve")
     ;
 }
 
@@ -110,7 +110,7 @@ TEST_F(SymbolTableTest, RedefName)
     ASSERT_EQ("aida", redefs[1].name);
 
     clearErr();
-    semantic::SyncFunctionScope inner_scope(pos, refSym(), std::vector<std::string>(), false);
+    semantic::SyncFunctionScope inner_scope(pos, scope(), std::vector<std::string>(), false);
     inner_scope.sym()->defName(pos, "aida");
     inner_scope.sym()->defName(pos, "suzuhara");
     ASSERT_FALSE(error::hasError());
@@ -123,7 +123,7 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     misc::position ref_pos1(601);
     refSym()->defName(pos, "katsuragi");
 
-    semantic::SyncFunctionScope inner_scope_a(pos, refSym(), std::vector<std::string>(), false);
+    semantic::SyncFunctionScope inner_scope_a(pos, scope(), std::vector<std::string>(), false);
     inner_scope_a.sym()->compileRef(ref_pos0, "katsuragi");
     inner_scope_a.sym()->compileRef(ref_pos1, "katsuragi");
     inner_scope_a.sym()->defName(pos, "katsuragi");
@@ -140,7 +140,7 @@ TEST_F(SymbolTableTest, NameRefBeforeDef)
     refSym()->defName(pos, "penpen");
     refSym()->compileRef(pos, "penpen");
 
-    semantic::SyncFunctionScope inner_scope_b(pos, refSym(), std::vector<std::string>(), false);
+    semantic::SyncFunctionScope inner_scope_b(pos, scope(), std::vector<std::string>(), false);
     inner_scope_b.sym()->compileRef(pos, "katsuragi");
     inner_scope_b.sym()->defName(pos, "penpen");
     ASSERT_FALSE(error::hasError());
@@ -215,9 +215,9 @@ TEST_F(SymbolTableTest, CompileRef)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (ref_pos, IMPORTED_NAME, "akemi")
-        (pos, INTEGER, "20121115")
-        (ref_pos, REFERENCE, "miki")
+        (IMPORTED_NAME, "akemi")
+        (INTEGER, "20121115")
+        (REFERENCE, "miki")
     ;
 }
 
@@ -237,7 +237,7 @@ TEST_F(SymbolTableTest, ForbidDef)
                    , std::move(consq_block)
                    , util::mkptr(new semantic::Block(pos)))));
 
-    compile(block, refSym());
+    compile(block, scope());
 
     ASSERT_TRUE(error::hasError());
 

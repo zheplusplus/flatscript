@@ -1,6 +1,5 @@
 #include <cstring>
 #include <map>
-#include <algorithm>
 
 #include <report/errors.h>
 
@@ -91,12 +90,9 @@ std::string util::cstr_repr(char const* input, int length)
     std::string result;
     result.reserve(length * 2 + 2);
     result += '"';
-    std::for_each(input
-                , input + length
-                , [&](char ch)
-                  {
-                      result += enc.get(ch);
-                  });
+    for (auto i = 0; i < length; ++i) {
+        result += enc.get(input[i]);
+    }
     result += '"';
     return result;
 }

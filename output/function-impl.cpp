@@ -11,9 +11,8 @@ namespace {
     struct MangledReference
         : Expression
     {
-        MangledReference(misc::position const& pos, std::string const& n)
-            : Expression(pos)
-            , name(n)
+        explicit MangledReference(std::string const& n)
+            : name(n)
         {}
 
         std::string str() const { return name; }
@@ -31,12 +30,9 @@ void Function::write(std::ostream& os) const
     os << "}" << std::endl;
 }
 
-util::sptr<Expression const> Function::callMe(
-        misc::position const& pos, util::ptrarr<Expression const> args) const
+util::sptr<Expression const> Function::callMe(util::ptrarr<Expression const> args) const
 {
-    return util::mkptr(new output::Call(
-                pos, util::mkptr(new MangledReference(pos, mangledName())),
-                std::move(args)));
+    return util::mkptr(new Call(util::mkptr(new MangledReference(mangledName())), std::move(args)));
 }
 
 util::sref<Statement const> RegularFunction::body() const
@@ -86,7 +82,33 @@ std::vector<std::string> NoParamCallback::parameters() const
     return std::vector<std::string>();
 }
 
-std::vector<std::string> AsyncCatcher::parameters() const
+std::vector<std::string> AsyncCatchFunc::parameters() const
+{
+    return std::vector<std::string>({ formSubName(this->except_name, this->catch_id) });
+}
+
+std::vector<std::string> AsyncCatcherDeprecated::parameters() const
 {
     return std::vector<std::string>({ TERM_EXCEPTION });
+}
+
+std::string ModuleInitFunc::mangledName() const
+{
+    return formModuleFuncName(this->module_id);
+}
+
+std::vector<std::string> ModuleInitFunc::parameters() const
+{
+    return {TERM_EXPORT};
+}
+
+util::sptr<Expression const> ModuleInitFunc::exportArg() const
+{
+    return util::mkptr(new Assignment(util::mkptr(new InitTarget(this->module_id)),
+                                      util::mkptr(new Dictionary)));
+}
+
+std::string ModuleInitFunc::InitTarget::str() const
+{
+    return formModuleExportName(this->module_id);
 }

@@ -33,9 +33,10 @@ void ClauseBase::acceptElse(misc::position const& else_pos, util::sptr<Statement
     _block->acceptElse(else_pos, std::move(block));
 }
 
-void ClauseBase::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block)
+void ClauseBase::acceptCatch(misc::position const& catch_pos, util::sptr<Statement const> block,
+                             std::string except_name)
 {
-    _block->acceptCatch(catch_pos, std::move(block));
+    this->_block->acceptCatch(catch_pos, std::move(block), std::move(except_name));
 }
 
 bool ClauseBase::shrinkOn(int level) const
@@ -61,11 +62,6 @@ bool ClauseBase::tryFinish(misc::position const& pos, std::vector<util::sptr<Cla
 void ClauseBase::prepareArith()
 {
     _stack.push(util::mkptr(new ExprStmtAutomation(util::mkref(*this))));
-}
-
-void ClauseBase::prepareExport(std::vector<std::string> const& names)
-{
-    _stack.push(util::mkptr(new ExportStmtAutomation(util::mkref(*this), names)));
 }
 
 void ClauseBase::setMemberIndent(int level, misc::position const& pos)
@@ -150,12 +146,12 @@ void TryClause::deliver()
 
 void CatchClause::deliver()
 {
-    _parent->acceptCatch(catch_pos, std::move(_block));
+    this->_parent->acceptCatch(catch_pos, std::move(this->_block), std::move(this->_except_name));
 }
 
 void BlockReceiverClause::deliver()
 {
-    _blockRecr->accepted(_stack, _pos, std::move(_block));
+    this->_blockRecr->accepted(this->_parent_stack, this->_pos, std::move(this->_block));
 }
 
 bool BlockReceiverClause::shrinkOn(int level) const

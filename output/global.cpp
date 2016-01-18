@@ -2,6 +2,7 @@
 #include <globals.h>
 
 #include "global.h"
+#include "name-mangler.h"
 
 using namespace output;
 using flats::Globals;
@@ -20,16 +21,54 @@ void output::wrapGlobal(std::ostream& os, util::sref<Statement const> global)
     std::vector<std::string> parameters;
     std::vector<std::string> arguments;
     if (Globals::g.use_export) {
-        parameters.push_back("$export");
+        parameters.push_back(TERM_EXPORT);
         arguments.push_back(
             "typeof module !== 'undefined' && typeof module.exports !== 'undefined'"
             " ? module.exports : " + export_point_for_browser());
     }
-    os << "(function(" << util::join(",", parameters) << ") {" << std::endl;
+    os <<
+        "(function(" << util::join(",", parameters) << ") {"
+            // From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+            "if (!Object.keys) {"
+              "Object.keys = (function() {"
+                "'use strict';"
+                "var hasOwnProperty = Object.prototype.hasOwnProperty,"
+                    "hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),"
+                    "dontEnums = ["
+                      "'toString',"
+                      "'toLocaleString',"
+                      "'valueOf',"
+                      "'hasOwnProperty',"
+                      "'isPrototypeOf',"
+                      "'propertyIsEnumerable',"
+                      "'constructor'"
+                    "],"
+                    "dontEnumsLength = dontEnums.length;"
+                "return function(obj) {"
+                  "if (typeof obj !== 'object' && (typeof obj !== 'function' || obj === null)) {"
+                    "throw new TypeError('Object.keys called on non-object');"
+                  "}"
+                  "var result = [], prop, i;"
+                  "for (prop in obj) {"
+                    "if (hasOwnProperty.call(obj, prop)) {"
+                      "result.push(prop);"
+                    "}"
+                  "}"
+                  "if (hasDontEnumBug) {"
+                    "for (i = 0; i < dontEnumsLength; i++) {"
+                      "if (hasOwnProperty.call(obj, dontEnums[i])) {"
+                        "result.push(dontEnums[i]);"
+                      "}"
+                    "}"
+                  "}"
+                  "return result;"
+                "};"
+              "}());"
+            "}"
+        << std::endl;
     if (Globals::g.use_class_ext) {
         os <<
-            "function $extend(i, b) {"
-                "var base = b.$class;"
+            "function $extend(i, base) {"
                 "for (var k in base) {"
                     "if (base.hasOwnProperty(k)) {"
                         "i[k] = base[k]"
@@ -48,7 +87,7 @@ void output::wrapGlobal(std::ostream& os, util::sref<Statement const> global)
         os <<
             "function $listslice($list, $begin, $end, $step) {"
                 "function $rnd(x, dft) {"
-                    "if (typeof x === 'undefined') return dft;"
+                    "if (x === undefined) return dft;"
                     "if (x > $list.length) return $list.length;"
                     "if (x < 0) return x % $list.length + $list.length;"
                     "return x"
@@ -75,7 +114,7 @@ void output::wrapGlobal(std::ostream& os, util::sref<Statement const> global)
     }
     if (Globals::g.use_list_pipe) {
         os <<
-            "function $listpipe($list, $next) {"
+            "function $listpipesync($list, $next) {"
                 "if (!($list)) return;"
                 "var $result = [];"
                 "var $ind = 0;"

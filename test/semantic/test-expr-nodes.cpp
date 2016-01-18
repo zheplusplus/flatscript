@@ -57,14 +57,14 @@ TEST_F(ExprNodesTest, SimpleLiterals)
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, INTEGER, "20110116")
-        (pos, FLOATING, "19.5")
-        (pos, BOOLEAN, "true")
-        (pos, INTEGER, "441499")
-        (pos, FLOATING, "0.195")
-        (pos, BOOLEAN, "false")
-        (pos, STRING, "")
-        (pos, STRING, "x")
+        (INTEGER, "20110116")
+        (FLOATING, "19.5")
+        (BOOLEAN, "true")
+        (INTEGER, "441499")
+        (FLOATING, "0.195")
+        (BOOLEAN, "false")
+        (STRING, "")
+        (STRING, "x")
     ;
 }
 
@@ -86,10 +86,10 @@ TEST_F(ExprNodesTest, ListLiterals)
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, LIST, 3)
-            (pos, INTEGER, "20110814")
-            (pos, LIST, 0)
-            (pos, FLOATING, "20.54")
+        (LIST, 3)
+            (INTEGER, "20110814")
+            (LIST, 0)
+            (FLOATING, "20.54")
     ;
 }
 
@@ -111,8 +111,8 @@ TEST_F(ExprNodesTest, Reference)
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, REFERENCE, "a20110116")
-        (pos, REFERENCE, "b1950")
+        (REFERENCE, "a20110116")
+        (REFERENCE, "b1950")
     ;
 }
 
@@ -145,14 +145,14 @@ TEST_F(ExprNodesTest, Calls)
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, CALL, 0)
-            (pos, REFERENCE, "fib")
-        (pos, CALL, 4)
-            (pos, REFERENCE, "leap")
-            (pos, BOOLEAN, "false")
-            (pos, FLOATING, "-11.11")
-            (pos, BOOLEAN, "false")
-            (pos, REFERENCE, "darekatasukete")
+        (CALL, 0)
+            (REFERENCE, "fib")
+        (CALL, 4)
+            (REFERENCE, "leap")
+            (BOOLEAN, "false")
+            (FLOATING, "-11.11")
+            (BOOLEAN, "false")
+            (REFERENCE, "darekatasukete")
     ;
 }
 
@@ -176,8 +176,8 @@ TEST_F(ExprNodesTest, FoldBinaryOp)
 
     ASSERT_FALSE(error::hasError());
     DataTree::expectOne()
-        (pos, FLOATING, "0.6")
-        (pos, STRING, "nov 8th, 2012")
+        (FLOATING, "0.6")
+        (STRING, "nov 8th, 2012")
     ;
 }
 
@@ -198,12 +198,12 @@ TEST_F(ExprNodesTest, ListAppending)
     lsa.compile(*scope)->str();
 
     DataTree::expectOne()
-        (pos, BINARY_OP, "++")
-            (pos, REFERENCE, "chiaki")
-            (pos, REFERENCE, "douma")
-        (pos, BINARY_OP, "++")
-            (pos, REFERENCE, "chiaki")
-            (pos, REFERENCE, "douma")
+        (BINARY_OP, "++")
+            (REFERENCE, "chiaki")
+            (REFERENCE, "douma")
+        (BINARY_OP, "++")
+            (REFERENCE, "chiaki")
+            (REFERENCE, "douma")
     ;
 }
 
@@ -258,11 +258,11 @@ TEST_F(ExprNodesTest, TypeOf)
     EXPECT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, STRING, "boolean")
-        (pos, STRING, "string")
-        (pos, PRE_UNARY_OP, "typeof ")
-            (pos, REFERENCE, "v1701")
-        (pos, BOOLEAN, "true")
+        (STRING, "boolean")
+        (STRING, "string")
+        (PRE_UNARY_OP, "typeof ")
+            (REFERENCE, "v1701")
+        (BOOLEAN, "true")
     ;
 }
 
@@ -295,9 +295,9 @@ TEST_F(ExprNodesTest, FoldBitwiseShift)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, INTEGER, "-1")
-        (pos, INTEGER, "-16")
-        (pos, INTEGER, "16")
+        (INTEGER, "-1")
+        (INTEGER, "-16")
+        (INTEGER, "16")
     ;
 }
 
@@ -373,10 +373,10 @@ TEST_F(ExprNodesTest, SyncConditional)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, CONDITIONAL)
-            (pos, REFERENCE, "shanon")
-            (pos, REFERENCE, "kanon")
-            (pos, REFERENCE, "beatoriche")
+        (CONDITIONAL)
+            (REFERENCE, "shanon")
+            (REFERENCE, "kanon")
+            (REFERENCE, "beatoriche")
     ;
 
     util::sptr<semantic::Expression const> ca(new semantic::Conditional(
@@ -413,7 +413,7 @@ TEST_F(ExprNodesTest, SyncConditionalFoldOnLiteralPredicate)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, REFERENCE, "beatoriche")
+        (REFERENCE, "beatoriche")
     ;
 }
 
@@ -434,6 +434,6 @@ TEST_F(ExprNodesTest, SyncConditionalLiteral)
     ASSERT_FALSE(error::hasError());
 
     DataTree::expectOne()
-        (pos, STRING, "kirie")
+        (STRING, "kirie")
     ;
 }

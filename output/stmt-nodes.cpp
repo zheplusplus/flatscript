@@ -29,7 +29,7 @@ void Branch::write(std::ostream& os) const
 void AsyncCallResultDef::write(std::ostream& os) const
 {
     if (this->need_decl) {
-        os << "var " << formAsyncRef(this->async_result->id) << "=";
+        os << "var " << formAsyncRef(this->async_id) << "=";
     }
     os << async_result->str() << ";" << std::endl;
 }
@@ -72,6 +72,22 @@ void ThisDeclaration::write(std::ostream& os) const
 
 void ExceptionStall::write(std::ostream& os) const
 {
+    if (0 == this->try_block->count()) {
+        return;
+    }
+    if (!this->try_block->mayThrow()) {
+        this->try_block->write(os);
+        return;
+    }
+    os << "try {" << std::endl;
+    this->try_block->write(os);
+    os << "} catch (" << formSubName(this->except_name, this->catch_id) << ") {" << std::endl;
+    this->catch_block->write(os);
+    os << "}" << std::endl;
+}
+
+void ExceptionStallDeprecated::write(std::ostream& os) const
+{
     if (0 == try_block->count()) {
         return;
     }
@@ -86,7 +102,7 @@ void ExceptionStall::write(std::ostream& os) const
     os << "}" << std::endl;
 }
 
-int ExceptionStall::count() const
+int ExceptionStallDeprecated::count() const
 {
     return std::max(try_block->count(), 1);
 }

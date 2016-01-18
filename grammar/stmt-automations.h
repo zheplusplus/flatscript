@@ -120,7 +120,6 @@ namespace grammar {
         void activated(AutomationStack& stack);
         void accepted(AutomationStack&, util::sptr<Expression const> expr);
         bool finishOnBreak(bool) const { return true; }
-        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
 
         explicit ExprReceiver(util::sref<ClauseBase> clause)
             : _clause(clause)
@@ -183,11 +182,15 @@ namespace grammar {
     struct CatchAutomation
         : StandaloneKeyWordAutomation
     {
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
+
         explicit CatchAutomation(misc::position const& pos)
             : StandaloneKeyWordAutomation(pos)
         {}
 
         util::sptr<ClauseBase> createClause(ClauseStackWrapper& wrapper);
+    private:
+        std::string _except_name;
     };
 
     struct ClassAutomation
@@ -270,6 +273,41 @@ namespace grammar {
         util::sref<ClauseBase> const _clause;
         std::vector<std::string> _export_point;
         util::sptr<Expression const> _value;
+    };
+
+    struct EnumAutomation
+        : AutomationBase
+    {
+        explicit EnumAutomation(util::sref<ClauseBase> clause);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const& pos);
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        bool finishOnBreak(bool sub_empty) const {return this->_after_name || !sub_empty;}
+    private:
+        int _current_value;
+        std::vector<util::sptr<Statement>> _defs;
+        util::sref<ClauseBase> const _clause;
+        bool _after_name;
+    };
+
+    struct IncludeAutomation
+        : AutomationBase
+    {
+        IncludeAutomation(misc::position const& pos, util::sref<ClauseBase> clause);
+        void pushFactor(AutomationStack&, FactorToken& factor);
+        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const& pos);
+        void accepted(AutomationStack&, util::sptr<Expression const>) {}
+        bool finishOnBreak(bool) const {return !bool(this->_next_factor);}
+    private:
+        misc::position _pos;
+        std::function<void(FactorToken& factor)> _next_factor;
+        util::sref<ClauseBase> const _clause;
+        std::string _file_path;
+        std::string _alias;
+
+        void _fill_path(FactorToken& factor);
+        void _as(FactorToken& factor);
+        void _fill_alias(FactorToken& factor);
     };
 
     struct IgnoreAny
