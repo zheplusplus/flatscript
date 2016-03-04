@@ -3,7 +3,7 @@
 using namespace flats;
 
 Globals Globals::g;
-std::string const Globals::version("0.6.1-2016-01-29-Chika");
+std::string const Globals::version("0.6.2-2016-03-04-Misao");
 
 static std::set<std::string> const RESERVED_WORDS({
     "break", "case", "catch", "continue", "debugger", "default", "delete", "do", "else",

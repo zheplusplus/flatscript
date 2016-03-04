@@ -277,7 +277,9 @@ namespace {
 
         util::uid includeFile(misc::position const& p, std::string const& file)
         {
-            return this->_parent->includeFile(p, file);
+            util::uid i(this->_parent->includeFile(p, file));
+            this->_deps.insert(i);
+            return i;
         }
 
         void setAsyncSpace(misc::position const& pos
@@ -287,8 +289,14 @@ namespace {
             error::asyncNotAllowedInIncludedFile(pos);
         }
 
+        std::set<util::uid> deliverDeps()
+        {
+            return std::move(this->_deps);
+        }
+
         util::uid const file_id;
     private:
+        std::set<util::uid> _deps;
         util::sref<Scope> const _parent;
     };
 
@@ -322,17 +330,42 @@ namespace {
             return include_id;
         }
 
+        struct DepsCall {
+            std::set<util::uid> deps;
+            util::sptr<output::Expression const> call;
+
+            DepsCall(std::set<util::uid> d, util::sptr<output::Expression const> c)
+                : deps(std::move(d))
+                , call(std::move(c))
+            {}
+
+            DepsCall(DepsCall&& rhs)
+                : deps(std::move(rhs.deps))
+                , call(std::move(rhs.call))
+            {}
+
+            void remove_dep(util::uid i)
+            {
+                this->deps.erase(i);
+            }
+
+            bool no_dep() const
+            {
+                return this->deps.empty();
+            }
+        };
+
         util::sptr<output::Block> deliver()
         {
             std::set<std::string> inc_decls;
             std::set<std::string> compiled;
             std::vector<util::sptr<output::Function const>> init_funcs;
-            std::vector<util::sptr<output::Expression const>> init_calls;
+            std::map<util::uid, DepsCall> deps_calls;
             while (compiled.size() != this->_includings.size()) {
                 for (auto& i: this->_includings) {
                     if (compiled.find(i.first) == compiled.end()) {
                         compiled.insert(i.first);
-                        this->_compileInclude(init_funcs, init_calls, inc_decls, i.second);
+                        this->_compileInclude(init_funcs, deps_calls, inc_decls, i.second);
                     }
                 }
             }
@@ -341,24 +374,52 @@ namespace {
             for (auto& f: init_funcs) {
                 g->addFunc(std::move(f));
             }
-            for (auto i = init_calls.rbegin(); i != init_calls.rend(); ++i) {
-                g->addStmt(makeArith(std::move(*i)));
-            }
+            this->_writeModuleInit(std::move(deps_calls), *g);
             g->append(FileScope::deliver());
             return std::move(g);
         }
     private:
+        void _writeRandomInit(std::map<util::uid, DepsCall> deps_calls, util::sref<output::Block> g)
+        {
+            for (auto i = deps_calls.begin(); i != deps_calls.end(); ++i) {
+                g->addStmt(makeArith(std::move(i->second.call)));
+            }
+        }
+
+        void _writeModuleInit(std::map<util::uid, DepsCall> deps_calls, util::sref<output::Block> g)
+        {
+            if (deps_calls.empty()) {
+                return;
+            }
+            auto f(std::find_if(deps_calls.begin(), deps_calls.end(),
+                                [](std::pair<util::uid const, DepsCall> const& i)
+                                {
+                                    return i.second.no_dep();
+                                }));
+            if (f == deps_calls.end()) {
+                return this->_writeRandomInit(std::move(deps_calls), g);
+            }
+            util::uid d(f->first);
+            g->addStmt(makeArith(std::move(f->second.call)));
+            deps_calls.erase(f);
+            for (auto i = deps_calls.begin(); i != deps_calls.end(); ++i) {
+                i->second.remove_dep(d);
+            }
+            this->_writeModuleInit(std::move(deps_calls), g);
+        }
+
         void _compileInclude(std::vector<util::sptr<output::Function const>>& init_funcs,
-                             std::vector<util::sptr<output::Expression const>>& init_calls,
+                             std::map<util::uid, DepsCall>& deps_calls,
                              std::set<std::string>& inc_decls, IncludedFile const& inc)
         {
             util::uid include_id(inc.include_id);
-            inc_decls.insert(output::formModuleExportName(inc.include_id));
-            IncludeFileScope file_scope(util::mkref(*this), inc.include_id);
+            inc_decls.insert(output::formModuleExportName(include_id));
+            IncludeFileScope file_scope(util::mkref(*this), include_id);
             inc.file->compile(file_scope);
             util::sptr<output::ModuleInitFunc const> f(new output::ModuleInitFunc(
-                            inc.include_id, file_scope.deliver()));
-            init_calls.push_back(f->callMe(f->exportArg()));
+                            include_id, file_scope.deliver()));
+            deps_calls.insert(std::make_pair(include_id, DepsCall(
+                            file_scope.deliverDeps(), f->callMe(f->exportArg()))));
             init_funcs.push_back(std::move(f));
         }
 

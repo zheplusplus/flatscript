@@ -20,6 +20,7 @@ TEST_F(ClauseTest, FuncClause)
                                     , "func1"
                                     , std::vector<std::string>({ "Duke", "Duran" })
                                     , -1
+                                    , false
                                     , util::mkref(receiver));
     func_acc0.acceptStmt(util::mkptr(new grammar::Arithmetics(
                       pos, util::mkptr(new grammar::FloatLiteral(pos, "21.37")))));
@@ -51,6 +52,7 @@ TEST_F(ClauseTest, FuncClause)
                                     , "func2"
                                     , std::vector<std::string>({ "Mengsk" })
                                     , -1
+                                    , false
                                     , util::mkref(test_receiver));
     func_acc1.acceptElse(pos_else, util::mkptr(new grammar::Block));
     ASSERT_TRUE(error::hasError());
@@ -72,6 +74,7 @@ TEST_F(ClauseTest, FuncAccNested)
                                     , "funca"
                                     , std::vector<std::string>({ "firebat", "ghost" })
                                     , -1
+                                    , false
                                     , util::mkref(receiver));
     func_acc0.acceptStmt(util::mkptr(new grammar::Arithmetics(pos, util::mkptr(
                                                 new grammar::FloatLiteral(pos, "22.15")))));
@@ -83,6 +86,7 @@ TEST_F(ClauseTest, FuncAccNested)
                                     , "funca"
                                     , std::vector<std::string>({ "vulture" })
                                     , -1
+                                    , false
                                     , util::mkref(func_acc0));
     func_acc1.acceptStmt(util::mkptr(new grammar::Arithmetics(pos, util::mkptr(
                                                 new grammar::Identifier(pos, "goliath")))));

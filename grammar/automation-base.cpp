@@ -18,7 +18,6 @@ void AutomationStack::push(util::sptr<AutomationBase> automation)
     }
     _stack.push_back(std::move(automation));
     top()->activated(*this);
-    top()->resumed(*this);
 }
 
 void AutomationStack::replace(util::sptr<AutomationBase> automation)
@@ -36,22 +35,17 @@ void AutomationStack::reduced(util::sptr<Expression const> expr)
 {
     _stack.pop_back();
     top()->accepted(*this, std::move(expr));
-    top()->resumed(*this);
 }
 
 void AutomationStack::reduced(std::vector<util::sptr<Expression const>> list)
 {
     _stack.pop_back();
     top()->accepted(*this, std::move(list));
-    top()->resumed(*this);
 }
 
 void AutomationStack::pop()
 {
     _stack.pop_back();
-    if (!empty()) {
-        top()->resumed(*this);
-    }
 }
 
 bool AutomationStack::empty() const

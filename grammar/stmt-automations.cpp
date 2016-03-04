@@ -288,12 +288,9 @@ bool FunctionAutomation::finishOnBreak(bool) const
 void FunctionAutomation::finish(
                 ClauseStackWrapper& wrapper, AutomationStack& stack, misc::position const&)
 {
-    wrapper.pushClause(util::mkptr(new FunctionClause(wrapper.last_indent
-                                                    , _pos
-                                                    , _func_name
-                                                    , _params
-                                                    , _async_param_index
-                                                    , wrapper.lastClause())));
+    wrapper.pushClause(util::mkptr(new FunctionClause(
+                wrapper.last_indent, this->_pos, this->_func_name, this->_params
+              , this->_async_param_index, this->_export, wrapper.lastClause())));
     stack.pop();
 }
 
@@ -310,16 +307,6 @@ void ExprReceiver::accepted(AutomationStack&, util::sptr<Expression const> expr)
 void ReturnAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
 {
     this->_clause->acceptStmt(util::mkptr(new Return(this->pos, std::move(this->_expr))));
-    stack.pop();
-}
-
-void ExportStmtAutomation::finish(
-                        ClauseStackWrapper&, AutomationStack& stack, misc::position const&)
-{
-    if (_expr->empty()) {
-        error::invalidEmptyExpr(_expr->pos);
-    }
-    _clause->acceptStmt(util::mkptr(new Export(_expr->pos, export_point, std::move(_expr))));
     stack.pop();
 }
 
@@ -378,7 +365,7 @@ void ClassAutomation::finish(
 {
     wrapper.pushClause(util::mkptr(new ClassClause(
             wrapper.last_indent, this->_pos, this->_class_name
-          , std::move(this->_base_class), wrapper.lastClause())));
+          , std::move(this->_base_class), this->_export, wrapper.lastClause())));
     stack.pop();
 }
 
@@ -534,9 +521,25 @@ void ExternAutomation::finish(ClauseStackWrapper&, AutomationStack& stack, misc:
     stack.pop();
 }
 
-void ExportAutomation::activated(AutomationStack& stack)
+ExportAutomation::ExportAutomation(misc::position const& pos, util::sref<ClauseBase> clause)
+    : _pos(pos)
+    , _clause(clause)
+    , _value(nullptr)
+{
+    this->_actions[FUNC] = [](AutomationStack& stack, TypedToken const&)
+    {
+        stack.replace(util::mkptr(new FunctionAutomation(true)));
+    };
+    this->_actions[CLASS] = [](AutomationStack& stack, TypedToken const& token)
+    {
+        stack.replace(util::mkptr(new ClassAutomation(token.pos, true)));
+    };
+}
+
+void ExportAutomation::pushFactor(AutomationStack& stack, FactorToken& factor)
 {
     stack.push(util::mkptr(new ExportPointAutomation));
+    stack.top()->pushFactor(stack, factor);
 }
 
 void ExportAutomation::accepted(AutomationStack& stack

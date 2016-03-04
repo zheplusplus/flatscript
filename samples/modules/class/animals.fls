@@ -5,7 +5,7 @@ class Animal
     func sound()
         return '''Animal doesn't have a sound'''
 
-class Cat: Animal
+export class Cat: Animal
     ctor(name) super(name)
         0
 
@@ -13,4 +13,3 @@ class Cat: Animal
         return this.name + ' meow'
 
 export Animal: Animal
-export Cat: Cat

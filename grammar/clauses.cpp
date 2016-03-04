@@ -2,6 +2,7 @@
 
 #include "clauses.h"
 #include "stmt-nodes.h"
+#include "expr-nodes.h"
 #include "stmt-automations.h"
 
 using namespace grammar;
@@ -105,13 +106,21 @@ void FunctionClause::deliver()
 {
     this->_parent->acceptFunc(util::mkptr(
                     new Function(pos, name, param_names, async_param_index, std::move(_block))));
+    if (this->_export) {
+        this->_parent->acceptStmt(util::mkptr(new Export(this->pos, {this->name}, util::mkptr(
+                            new Identifier(this->pos, this->name)))));
+    }
 }
 
 void ClassClause::deliver()
 {
     this->_parent->acceptClass(util::mkptr(new Class(
-          pos, std::move(this->_class_name), std::move(this->_base_class)
-        , std::move(this->_block))));
+          pos, this->_class_name, std::move(this->_base_class), std::move(this->_block))));
+    if (this->_export) {
+        this->_parent->acceptStmt(util::mkptr(new Export(
+                this->pos, {this->_class_name},
+                util::mkptr(new Identifier(this->pos, this->_class_name)))));
+    }
 }
 
 void ClassClause::acceptClass(util::sptr<Class> cls)

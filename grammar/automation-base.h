@@ -12,10 +12,6 @@ namespace grammar {
 
     struct ClauseBase;
     struct ClauseStackWrapper;
-    struct AutomationBase;
-
-    typedef std::function<void (AutomationStack&, TypedToken const&)> TokenAction;
-    typedef std::function<util::sptr<AutomationBase> (TypedToken const&)> AutomationCreator;
 
     struct AutomationBase {
         AutomationBase(AutomationBase const&) = delete;
@@ -23,7 +19,6 @@ namespace grammar {
         virtual ~AutomationBase() {}
 
         virtual void activated(AutomationStack&) {};
-        virtual void resumed(AutomationStack&) {};
 
         void nextToken(AutomationStack& stack, TypedToken const& token);
         virtual void pushFactor(AutomationStack& stack, FactorToken& factor);
@@ -38,6 +33,9 @@ namespace grammar {
 
         static void discardToken(AutomationStack&, TypedToken const& token);
     protected:
+        typedef std::function<void (AutomationStack&, TypedToken const&)> TokenAction;
+        typedef std::function<util::sptr<AutomationBase> (TypedToken const&)> AutomationCreator;
+
         util::sref<AutomationBase const> _previous;
         TokenAction _actions[TOKEN_TYPE_COUNT];
 

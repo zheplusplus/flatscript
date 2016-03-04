@@ -124,6 +124,7 @@ namespace grammar {
                      , std::string const& func_name
                      , std::vector<std::string> const& params
                      , int async_param_idx
+                     , bool exprt
                      , util::sref<ClauseBase> parent)
             : ClauseBase(indent_level)
             , pos(ps)
@@ -131,6 +132,7 @@ namespace grammar {
             , param_names(params)
             , async_param_index(async_param_idx)
             , _parent(parent)
+            , _export(exprt)
         {}
 
         misc::position const pos;
@@ -139,18 +141,21 @@ namespace grammar {
         int const async_param_index;
     private:
         util::sref<ClauseBase> const _parent;
+        bool const _export;
     };
 
     struct ClassClause
         : ClauseBase
     {
         ClassClause(int indent_len, misc::position const& ps, std::string cls_name
-                  , util::sptr<Expression const> base_cls, util::sref<ClauseBase> parent)
+                  , util::sptr<Expression const> base_cls, bool exprt
+                  , util::sref<ClauseBase> parent)
             : ClauseBase(indent_len)
             , pos(ps)
             , _class_name(std::move(cls_name))
             , _base_class(std::move(base_cls))
             , _parent(parent)
+            , _export(exprt)
         {}
 
         void deliver();
@@ -166,6 +171,7 @@ namespace grammar {
         std::string _class_name;
         util::sptr<Expression const> _base_class;
         util::sref<ClauseBase> const _parent;
+        bool const _export;
     };
 
     struct CtorClause

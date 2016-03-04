@@ -17,7 +17,8 @@ static std::set<std::string> const pre_defined({
     "parseFloat", "isFinite", "isNaN", "Number", "Array", "Object", "Function",
     "JSON", "RegExp", "Math", "String", "Date", "NaN", "undefined", "Infinity",
     "null", "escape", "unescape", "encodeURI", "decodeURI", "encodeURIComponent",
-    "decodeURIComponent",
+    "decodeURIComponent", "Error", "EvalError", "RangeError", "ReferenceError",
+    "SyntaxError", "TypeError", "URIError",
 });
 
 namespace {

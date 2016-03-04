@@ -94,10 +94,15 @@ namespace grammar {
     struct FunctionAutomation
         : AutomationBase
     {
-        FunctionAutomation()
+        explicit FunctionAutomation(bool exprt)
             : _before_open_paren(true)
             , _finished(false)
+            , _export(exprt)
             , _async_param_index(-1)
+        {}
+
+        FunctionAutomation()
+            : FunctionAutomation(false)
         {}
 
         void pushFactor(AutomationStack& stack, FactorToken& factor);
@@ -108,6 +113,7 @@ namespace grammar {
     private:
         bool _before_open_paren;
         bool _finished;
+        bool const _export;
         misc::position _pos;
         std::string _func_name;
         std::vector<std::string> _params;
@@ -141,19 +147,6 @@ namespace grammar {
         {}
 
         misc::position const pos;
-    };
-
-    struct ExportStmtAutomation
-        : ExprReceiver
-    {
-        void finish(ClauseStackWrapper&, AutomationStack& stack, misc::position const&);
-
-        ExportStmtAutomation(util::sref<ClauseBase> clause, std::vector<std::string> const& ep)
-            : ExprReceiver(clause)
-            , export_point(ep)
-        {}
-
-        std::vector<std::string> const export_point;
     };
 
     struct ThrowAutomation
@@ -197,8 +190,13 @@ namespace grammar {
         : AutomationBase
     {
         explicit ClassAutomation(misc::position const& pos)
+            : ClassAutomation(pos, false)
+        {}
+
+        ClassAutomation(misc::position const& pos, bool exprt)
             : _pos(pos)
             , _base_class(nullptr)
+            , _export(exprt)
         {}
 
         void pushFactor(AutomationStack& stack, FactorToken& factor);
@@ -209,6 +207,7 @@ namespace grammar {
         misc::position const _pos;
         std::string _class_name;
         util::sptr<Expression const> _base_class;
+        bool const _export;
     };
 
     struct CtorAutomation
@@ -257,13 +256,8 @@ namespace grammar {
     struct ExportAutomation
         : AutomationBase
     {
-        ExportAutomation(misc::position const& pos, util::sref<ClauseBase> clause)
-            : _pos(pos)
-            , _clause(clause)
-            , _value(nullptr)
-        {}
-
-        void activated(AutomationStack& stack);
+        ExportAutomation(misc::position const& pos, util::sref<ClauseBase> clause);
+        void pushFactor(AutomationStack& stack, FactorToken& factor);
         void accepted(AutomationStack&, std::vector<util::sptr<Expression const>> list);
         void accepted(AutomationStack&, util::sptr<Expression const> e);
         bool finishOnBreak(bool sub_empty) const { return !sub_empty; }

@@ -18,8 +18,20 @@ namespace util {
 
         std::string str() const;
 
-        bool operator==(uid const& rhs) const;
-        bool operator!=(uid const& rhs) const;
+        bool operator<(uid const& rhs) const
+        {
+            return this->id < rhs.id;
+        }
+
+        bool operator==(uid const& rhs) const
+        {
+            return this->id == rhs.id;
+        }
+
+        bool operator!=(uid const& rhs) const
+        {
+            return !operator==(rhs);
+        }
     private:
         uid();
     public:
