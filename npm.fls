@@ -2,10 +2,16 @@ include 'misc.fls' as misc
 
 console.log(JSON.stringify({
     name: 'flatscript',
-    version: misc.__version__,
+    version: misc.version,
     main: 'flsc-recur.js',
     license: 'MIT',
     files: ['flsc', 'flsc-recur.js'],
     preferGlobal: true,
     bin: {flsc: './flsc'},
+    dependencies: {
+        'optparse': '>=1.0.0',
+    },
+    devDependencies: {
+        'mocha': '>=2.0.0',
+    },
 }))

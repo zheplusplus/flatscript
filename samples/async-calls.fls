@@ -1,37 +1,54 @@
-func asyncTextGen(input, cb)
-    if true
-        setTimeout(%, 1)
-        if input.length < 4
-            cb(input + ' is quite short')
+# This simulates a regular async function
+func asyncDiv(x, y, callback)
+    setTimeout(():
+        if y = 0
+            return callback(Error('Divide ' + x + ' by zero'), undefined)
         else
-            cb(input + ' is quite long')
-    return input.length
+            callback(null, x / y)
+    , 0)
 
-console.log(asyncTextGen('cat', %text))
+console.log(asyncDiv(5, 1, %%))
+console.log(asyncDiv(5, 2, %%))
+console.log(asyncDiv(5, 4, %%))
+
+try
+    asyncDiv(5, 0, %%)
+catch e
+    console.log(e.message)
+
+# ===========================================
+console.log('-- Non-regular async functions')
+
+func asyncTextGen(input, cb)
+    setTimeout(%, 0)
+    if input.length < 4
+        cb(input + ' is quite short')
+    else
+        cb(input + ' is quite long')
+
+asyncTextGen('cat', %text)
 console.log(text)
-console.log(asyncTextGen(text, %moreText))
+asyncTextGen(text, %moreText)
 console.log(moreText)
 
+# ====================================
+console.log('-- Regular async lambda')
 regularAsyncTextGen: (input, %%):
-    setTimeout(%, 1)
+    setTimeout(%, 0)
     return input + (' is quite short' if input.length < 4 else ' is quite long')
 
 console.log(regularAsyncTextGen('cat', %%))
 console.log(regularAsyncTextGen('raven', %%))
 
-func cancelAtFirstTime(timeoutHandle)
-    clearTimeout(timeoutHandle)
+# =================================================
+console.log('-- Raise exception at async function')
+func asyncRaiseError(%%)
+    setTimeout(%, 0)
+    throw Error('error message')
 
-cancelAtFirstTime(setInterval(%, 1))
-
-func asyncRaiseError(callback)
-    setTimeout(%, 1)
-    callback('error message')
-
-((%%):
+try
     asyncRaiseError(%%)
-)((error, result):
-    console.log(error)
-)
+catch e
+    console.log(e.message)
 
 console.log('End')

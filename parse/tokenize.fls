@@ -1,6 +1,7 @@
 include 'errors.fls' as errors
 include 'misc.fls' as misc
 include 'parse/expressions.fls' as exprs
+include 'parse/macros.fls' as macros
 
 class Pattern
     ctor(pattern, accept, ignore, stop)
@@ -11,9 +12,7 @@ class Pattern
 
     func match(string)
         r: this.pattern.exec(string)
-        ifnot r
-            return null
-        return r[0]
+        return r[0] if r else null
 
 PATTERNS: [
     Pattern(/^[ \t\r]+/, 'space', true),
@@ -132,11 +131,11 @@ KEYWORDS: {
     'export': true,
     'enum': true,
     'include': true,
+    'delete': true,
 }
 
 RESERVED: {
     'from': true,
-    'delete': true,
     'elif': true,
     'while': true,
     'gen': true,
@@ -145,6 +144,12 @@ RESERVED: {
     'finally': true,
     'switch': true,
     'case': true,
+}
+
+OPERATORS: {
+    'typeof': true,
+    'owns': true,
+    'instanceof': true,
 }
 
 FACTOR_TYPES: {
@@ -162,14 +167,16 @@ FACTOR_TYPES: {
     ident: (pos, image):
         if image = 'this'
             return FactorToken(pos, image, exprs.This(pos))
-        if image = 'typeof'
+        if OPERATORS owns image
             return TypedToken(pos, image, 'operator')
         if image = 'true' || image = 'false'
             return FactorToken(pos, image, exprs.Bool(pos, image = 'true'))
-        if KEYWORDS.hasOwnProperty(image)
+        if KEYWORDS owns image
             return TypedToken(pos, image, image)
-        if RESERVED.hasOwnProperty(image)
+        if RESERVED owns image
             errors.UseReserved(pos, image)
+        if image.length > 4 && image[, 2] = '__' && image[-2, ] = '__'
+            return FactorToken(pos, image, macros.make(pos, image))
         return FactorToken(pos, image, exprs.Identifier(pos, image))
     ,
     pipe_element: (pos, image): FactorToken(pos, image, exprs.PipeElement(pos)),

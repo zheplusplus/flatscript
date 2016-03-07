@@ -271,6 +271,16 @@ export class Include: Statement
         scope.sym().defModule(this.pos, this.moduleAlias,
                               scope.includeFile(this.pos, this.includePath, %%).includeId)
 
+export class Delete: Statement
+    ctor(pos, del) super(pos)
+        this.del: del
+
+    func isAsync()
+        return this.del.isAsync()
+
+    func compile(scope, %%)
+        scope.addStmt(this.pos, backend.Delete(this.del.delMe(scope, %%)))
+
 export class Block: Statement
     ctor(pos, stmts, funcs) super(pos)
         this.stmts: stmts
@@ -283,7 +293,7 @@ export class Block: Statement
         return false
 
     func compile(scope, %%)
-        setTimeout(%, 0)
+        process.nextTick(%)
         block: scope.block()
         this.funcs |: scope.sym().defFunc($.pos, $.name)
         this.stmts |: $.compile(scope, %%)

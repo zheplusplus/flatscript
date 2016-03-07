@@ -36,7 +36,7 @@ class Automation
     func finished()
         return true
 
-enum FORCE_REDUCE, OR, AND, NOT, CMP, BITOP, ADD, PRODUCT, UNARY_ADD, MEMBER
+enum FORCE_REDUCE, OR, AND, NOT, REL, CMP, BITOP, ADD, PRODUCT, UNARY_ADD, MEMBER
 
 UNARY_OP_PRI: {
     '!': NOT,
@@ -50,6 +50,9 @@ UNARY_OP_PRI: {
 BINARY_OP_PRI: {
     '||': OR,
     '&&': AND,
+
+    'owns': REL,
+    'instanceof': REL,
 
     '=': CMP,
     '!=': CMP,
@@ -837,6 +840,19 @@ class IncludeAutomation: Automation
     func finished()
         return false
 
+class DeleteAutomation: Automation
+    ctor(stack, pos) super(stack)
+
+    func activated()
+        this.stack.push(PipelineAutomationAllowEmpty(this.stack))
+
+    func reduced(expr)
+        this.finish(expr.pos)
+        if expr.empty()
+            errors.ExpectExpression(expr.pos)
+        this.stack.acceptStmt(stmts.Delete(expr))
+        this.finish(expr.pos)
+
 class IgnoreAny: Automation
     ctor(stack, reportFirst) super(stack)
         this.reportFirst: reportFirst
@@ -926,6 +942,9 @@ export class BootstrapAutomation: Automation
 
     func _push_include(token)
         this.stack.replace(IncludeAutomation(this.stack))
+
+    func _push_delete(token)
+        this.stack.replace(DeleteAutomation(this.stack))
 
     func nextFactor(factor)
         this._replaceArith(factor)

@@ -1,0 +1,33 @@
+class Point
+    ctor(x, y)
+        this.x: x
+        this.y: y
+
+    func toString()
+        return '(' + this.x + ', ' + this.y + ')'
+
+p: Point(3.14, 2.7)
+console.log(p.toString())
+console.log(p owns 'x')
+console.log(p owns 'y')
+console.log(p owns 'toString')
+console.log(p.toString != undefined)
+console.log(p.__other__ != undefined)
+
+console.log('+ list index')
+pl: [Point(0, 0), Point(0, 1), Point(1, 0)]
+for i range 4
+    console.log(pl owns i)
+
+console.log('+ delete x')
+delete p.x
+console.log(p owns 'x')
+console.log(p owns 'y')
+console.log(p owns 'toString')
+console.log(p.toString != undefined)
+console.log('+ delete toString')
+delete p.toString
+console.log(p owns 'x')
+console.log(p owns 'y')
+console.log(p owns 'toString')
+console.log(p.toString != undefined)

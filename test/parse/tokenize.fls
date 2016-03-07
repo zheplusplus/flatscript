@@ -304,3 +304,19 @@ export func run(%%)
             image: 'for0',
             name: 'for0',
         }, r.tokens[6])
+
+    if true
+        it('non-macros', %)
+        src: '_a__ __a_ __a_b_ _a_b__ __a__b ____'
+        r: t.tokenize(src, null, 1)
+        assert.eq(6, r.tokens.length)
+        assert.eq(0, r.lineInc)
+        assert.eq('', r.source)
+        assert.not(errors.hasError())
+
+        src.split(' ') |:
+            assertFactorEq({
+                pos: {file: null, line: 1},
+                name: $,
+                image: $,
+            }, r.tokens[$i])

@@ -6,7 +6,7 @@ include 'resolve/expressions.fls' as resolve
 include 'resolve/statements.fls' as resolve_stmts
 include 'resolve/pipeline.fls' as resolve_pipe
 
-class Expression
+export class Expression
     ctor(pos)
         this.pos: pos
 
@@ -139,6 +139,11 @@ export class BinaryOp: Expression
         if this.op = '&&'
             return resolve.Conditional(this.pos, this.lhs.compileAsExpr(),
                                        this.rhs.compileAsExpr(), resolve.Literal(this.pos, false))
+        if this.op = 'owns'
+            return resolve.SyncArgsCall(
+                this.pos,
+                resolve.MemberAccess(this.lhs.pos, this.lhs.compileAsExpr(), 'hasOwnProperty'),
+                [this.rhs.compileAsExpr()])
         return resolve.BinaryOp(this.pos, lang.mapBinOp(this.op), this.lhs.compileAsExpr(),
                                 this.rhs.compileAsExpr())
 

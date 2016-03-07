@@ -1,8 +1,13 @@
-3
+5
+2.5
+1.25
+Divide 5 by zero
+-- Non-regular async functions
 cat is quite short
-18
 cat is quite short is quite long
+-- Regular async lambda
 cat is quite short
 raven is quite long
-End
+-- Raise exception at async function
 error message
+End

@@ -144,3 +144,18 @@ export func run(%%)
             defPos: {file: null, line: 6},
         }], errors.deliver())
         done()
+
+    if true
+        it('statement in body', %done)
+        buildAndCompile('''
+            class MyClass
+                ctor(x)
+                    this.x: x
+
+                y: 0
+        ''', %%)
+        assert.deepEq([{
+            pos: {file: null, line: 6},
+            type: 'StmtsForbiddedInClassBody',
+        }], errors.deliver())
+        done()

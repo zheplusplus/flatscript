@@ -259,3 +259,39 @@ export func run()
             pos: POS,
             type: 'MoreThanOneAsyncPlaceholder',
         }], errors.deliver())
+
+    if true
+        it('invalid macro', %)
+        build.build('__zzz__', null)
+        POS: {file: null, line: 1}
+        assert.deepEq([{
+            type: 'NoSuchMacro',
+            pos: POS,
+            image: '__zzz__',
+        }], errors.deliver())
+
+    if true
+        it('owns', %)
+        POS: {file: null, line: 1}
+        assert.deepEq({
+          pos: POS,
+          callee: {
+            pos: POS,
+            name: 'g',
+          },
+          args: [{
+            pos: POS,
+            callee: {
+              pos: POS,
+              obj: {
+                pos: POS,
+                name: 'a',
+              },
+              prop: 'hasOwnProperty',
+            },
+            args: [{
+              pos: POS,
+              name: 'b',
+            }],
+          }],
+        }, buildForExpr('g(a owns b)'))

@@ -1,0 +1,54 @@
+include 'errors.fls' as errors
+include 'resolve/expressions.fls' as base
+
+class Macro: base.AtomicItem
+    ctor(pos) super(pos)
+
+    func isLiteral(sym)
+        return true
+
+    func syncCompile(scope)
+        return this.literalValue(scope.sym()).syncCompile(scope)
+
+export class FileName: Macro
+    ctor(pos) super(pos)
+
+    func literalValue(sym)
+        return base.Literal(this.pos, this.pos.file)
+
+export class LineNumber: Macro
+    ctor(pos, image) super(pos, image)
+
+    func literalValue(sym)
+        return base.Literal(this.pos, this.pos.line)
+
+func defaultStr(s)
+    return '' if s = null else s
+
+export class FuncName: Macro
+    ctor(pos, image) super(pos, image)
+
+    func literalValue(sym)
+        n: sym.funcName()
+        if n = null
+            errors.NotInFunc(this.pos)
+        return base.Literal(this.pos, defaultStr(n))
+
+export class ClassName: Macro
+    ctor(pos, image) super(pos, image)
+
+    func literalValue(sym)
+        n: sym.className()
+        if n = null
+            errors.NotInClass(this.pos)
+        return base.Literal(this.pos, defaultStr(n))
+
+export class ClassFuncNmae: Macro
+    ctor(pos, image) super(pos, image)
+
+    func literalValue(sym)
+        cn: sym.className()
+        fn: sym.funcName()
+        if cn = null
+            errors.NotInClass(this.pos)
+        return base.Literal(this.pos, [defaultStr(cn), defaultStr(fn)].join('.'))

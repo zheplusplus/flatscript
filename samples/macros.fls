@@ -1,0 +1,12 @@
+console.log(__line__)
+
+class MacroTest
+    func getClassName()
+        return __class__
+
+console.log(MacroTest().getClassName())
+
+func macroTest()
+    return __func__
+
+console.log(macroTest())

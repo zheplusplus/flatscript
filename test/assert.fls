@@ -12,21 +12,33 @@ export uid: (uid):
     assert.ok('-' < uid.toString())
     return uid
 
-func deepEqPath(path, expected, actual)
+ROOT: null
+
+func showDiff(path, expected, actual, expectedParent, actualParent)
+    console.error('Difference at:', path.join('.'))
+    console.error('    ', expected, '<>', actual)
+    if expectedParent != ROOT && actualParent != ROOT
+        console.error('Parent (E):', expectedParent)
+        console.error('Parent (A):', actualParent)
+    assert.strictEqual(expected, actual)
+
+func deepEqPath(path, expected, actual, expectedParent, actualParent)
+    if expected = null && actual != null || expected != null && actual = null
+        return showDiff(path, expected, actual, expectedParent, actualParent)
+    if expected = undefined && actual != undefined || expected != undefined && actual = undefined
+        return showDiff(path, expected, actual, expectedParent, actualParent)
     if typeof expected = 'object' && typeof actual = 'object'
         compared: {}
         expected |:
-            deepEqPath(path ++ [$k], $, actual[$k])
+            deepEqPath(path ++ [$k], $, actual[$k], expected, actual)
             compared[$k]: true
         actual |:
             if compared[$k]
                 continue
-            deepEqPath(path ++ [$k], expected[$k], $)
+            deepEqPath(path ++ [$k], expected[$k], $, expected, actual)
         return
     if expected != actual
-        console.error('Difference at:', path.join('.'))
-        console.error('    ', expected, '<>', actual)
-        assert.strictEqual(expected, actual)
+        return showDiff(path, expected, actual, expectedParent, actualParent)
 
 export func deepEq(expected, actual)
-    deepEqPath([], expected, actual)
+    deepEqPath([], expected, actual, ROOT, ROOT)

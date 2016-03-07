@@ -926,3 +926,61 @@ export func run()
             pos: POS,
             expected: ')',
         }], errors.deliver())
+
+    if true
+        it('macros', %)
+        assert.deepEq({
+          pos: POS,
+          op: '+',
+          lhs: {
+            pos: POS,
+            image: '__file__',
+          },
+          rhs: {
+            pos: POS,
+            obj: {
+              pos: POS,
+              obj: {
+                __line__: {
+                  pos: POS,
+                  value: 0,
+                },
+              },
+            },
+            prop: {
+              pos: POS,
+              image: '__line__',
+            },
+          },
+        }, tknzForOneExpr('__file__ + {__line__: 0}.__line__'))
+
+    if true
+        it('binary relation operators', %)
+        assert.deepEq({
+          pos: POS,
+          op: '&&',
+          lhs: {
+            pos: POS,
+            op: 'owns',
+            lhs: {
+              pos: POS,
+              name: 'a',
+            },
+            rhs: {
+              pos: POS,
+              name: 'b',
+            },
+          },
+          rhs: {
+            pos: POS,
+            op: 'instanceof',
+            lhs: {
+              pos: POS,
+              name: 'c',
+            },
+            rhs: {
+              pos: POS,
+              name: 'D',
+            },
+          },
+        }, tknzForOneExpr('a owns b && c instanceof D'))

@@ -105,3 +105,14 @@ export func run()
             value: 1,
             op: 'unary *',
         }], errors.deliver())
+
+    if true
+        it('instanceof to literal', %)
+        v: buildForExpr('0 instanceof true')
+        v.literalValue(st.GlobalSymbolTable())
+        assert.deepEq([{
+            pos: {file: null, line: 1},
+            type: 'LiteralValueError',
+            value: true,
+            op: 'instanceof',
+        }], errors.deliver())

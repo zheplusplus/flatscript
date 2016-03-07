@@ -34,13 +34,13 @@ export class Constructor
     func hasSuper()
         return this.superInitCall != null
 
-    func compile(scope, hasBase, %%)
+    func compile(scope, hasBase, clsName, %%)
         if hasBase && !this.superInit()
             errors.ContructorNotCallSuper(this.pos)
         if this.superInit() && !hasBase
             errors.NoSuperClass(this.pos)
 
-        ctorScope: sc.SyncFuncScope(this.pos, scope, this.params, false)
+        ctorScope: sc.SyncFuncScope(this.pos, scope, this.params, false, 'ctor', clsName)
         if hasBase
             ctorScope.referenceThis(this.pos)
         if this.superInitCall != null
@@ -67,14 +67,16 @@ export class Class: base.Statement
         if this.ct = null && this.hasBaseClass()
             errors.ContructorNotCallSuper(this.pos)
         ct: backend.Constructor([], backend_stmts.Block()) if this.ct = null
-            else this.ct.compile(scope, this.hasBaseClass(), %%)
+            else this.ct.compile(scope, this.hasBaseClass(), this.name, %%)
         base: null if this.base = null else this.base.compile(scope, %%)
 
         body: backend_stmts.Block()
         memfnDefPos: {}
         memfns: {}
+        if this.body.stmts.length != 0
+            errors.StmtsForbiddedInClassBody(this.body.stmts[0].pos)
         this.body.funcs |:
-            if memfnDefPos.hasOwnProperty($.name)
+            if memfnDefPos owns $.name
                 return errors.DuplicateMemFunc($.pos, $.name, memfnDefPos[$.name])
             memfnDefPos[$.name]: $.pos
             memfns[$.name]: $

@@ -1241,3 +1241,50 @@ func async(%%)
           },
         }, r.stmts[0])
         done()
+
+    if true
+        it('delete property or member access', %done)
+        assert.deepEq({
+          localDefs: [],
+          funcs: [],
+          stmts: [{
+            del: {
+              obj: {
+                image: 'a',
+              },
+              prop: 'b',
+            },
+          }, {
+            del: {
+              obj: {
+                image: 'c',
+              },
+              key: {
+                value: 0,
+              },
+            },
+          }],
+        }, buildForAll('''
+            extern a, c
+            delete a.b
+            delete c[0]
+        ''', %%))
+        done()
+
+    if true
+        it('delete non-property', %done)
+        POS0: {file: null, line: 3}
+        POS1: {file: null, line: 4}
+        buildAndCompile('''
+            extern a, b
+            delete a
+            delete b()
+        ''', %%)
+        assert.deepEq([{
+            pos: POS0,
+            type: 'NotDeleteProperty',
+        }, {
+            pos: POS1,
+            type: 'NotDeleteProperty',
+        }], errors.deliver())
+        done()

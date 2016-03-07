@@ -1,0 +1,88 @@
+include 'errors.fls' as errors
+include 'test/assert.fls' as assert
+include 'test/resolve/utils.fls' as utils
+include 'resolve/scope.fls' as scope
+
+buildAndCompile: utils.buildAndCompile
+buildForAll: utils.buildForAll
+
+export func run(%%)
+    describe('macros', %)
+    if true
+        it('correct', %done)
+        assert.deepEq({
+          localDefs: [{name: 'MyClass'}],
+          funcs: [],
+          stmts: [{
+            name: 'MyClass',
+            inherit: false,
+            ct: {
+              paramsRefs: [],
+              body: {
+                localDefs: [],
+                funcs: [],
+                stmts: [],
+              },
+            },
+            memfns: {
+              macro: {
+                params: [],
+                body: {
+                  localDefs: [],
+                  funcs: [],
+                  stmts: [{
+                    expr: {
+                      callee: {image: 'f'},
+                      args: [{value: 'MyClass'}],
+                    },
+                  }, {
+                    expr: {
+                      callee: {image: 'f'},
+                      args: [{value: 'macro'}],
+                    },
+                  }, {
+                    expr: {
+                      callee: {image: 'f'},
+                      args: [{value: 'MyClass.macro'}],
+                    },
+                  }, {
+                    expr: {
+                      callee: {image: 'f'},
+                      args: [{value: 9}],
+                    },
+                  }],
+                }
+              },
+            },
+          }, {
+            name: 'MyClass',
+            base: null,
+          }],
+        }, buildForAll('''
+            extern f
+
+            class MyClass
+                func macro()
+                    f(__class__)
+                    f(__func__)
+                    f(__class_func__)
+                    f(__line__)
+        ''', %%))
+        done()
+
+    if true
+        it('misplaced', %done)
+        buildAndCompile('''
+            extern f
+
+            f(__class__)
+            f(__func__)
+        ''', %%)
+        assert.deepEq([{
+            pos: {file: null, line: 4},
+            type: 'NotInClass',
+        }, {
+            pos: {file: null, line: 5},
+            type: 'NotInFunc',
+        }], errors.deliver())
+        done()

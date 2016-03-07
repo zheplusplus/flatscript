@@ -1,0 +1,21 @@
+class MyError: Error
+    ctor(m) super(m)
+        this.message: m
+
+func throwS(s)
+    throw Error(s)
+
+func throwM(s)
+    throw MyError(s)
+
+try
+    throwS('the quick brown fox')
+catch e
+    console.log('S', e instanceof Error, e instanceof MyError, e.message)
+
+try
+    throwM('a lazy dog')
+catch e
+    console.log('M', e instanceof Error, e instanceof MyError, e.message)
+
+console.log('B', true instanceof Error, false instanceof MyError)

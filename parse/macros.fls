@@ -1,0 +1,59 @@
+include 'errors.fls' as errors
+include 'parse/expressions.fls' as base
+include 'resolve/macros.fls' as resolve
+include 'resolve/expressions.fls' as resolve_exprs
+
+class Macro: base.Expression
+    ctor(pos, image) super(pos)
+        this.image: image
+
+    func reduceAsName()
+        return this.image
+
+class FileName: Macro
+    ctor(pos, image) super(pos, image)
+
+    func compileAsExpr()
+        return resolve.FileName(this.pos)
+
+class LineNumber: Macro
+    ctor(pos, image) super(pos, image)
+
+    func compileAsExpr()
+        return resolve.LineNumber(this.pos)
+
+class FuncName: Macro
+    ctor(pos, image) super(pos, image)
+
+    func compileAsExpr()
+        return resolve.FuncName(this.pos)
+
+class ClassName: Macro
+    ctor(pos, image) super(pos, image)
+
+    func compileAsExpr()
+        return resolve.ClassName(this.pos)
+
+class ClassFuncNmae: Macro
+    ctor(pos, image) super(pos, image)
+
+    func compileAsExpr()
+        return resolve.ClassFuncNmae(this.pos)
+
+class NonMacro: Macro
+    ctor(pos, image) super(pos, image)
+
+    func compileAsExpr()
+        errors.NoSuchMacro(this.pos, this.image)
+        return resolve_exprs.Literal(this.pos, '')
+
+_M: {
+    __file__: FileName,
+    __line__: LineNumber,
+    __func__: FuncName,
+    __class__: ClassName,
+    __class_func__: ClassFuncNmae,
+}
+
+export func make(pos, image)
+    return _M[image](pos, image) if _M owns image else NonMacro(pos, image)

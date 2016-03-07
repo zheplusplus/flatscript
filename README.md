@@ -33,8 +33,8 @@ To read a list of files and store their content, code is like
         for i range files.length
             content.push(fs.readFile(files[i], %%).toString())
         console.log('content', content)
-    catch
-        console.error($e)
+    catch e
+        console.error(e)
     console.log('end')
 
 Or more simply, to use Flatscript pipeline syntax like (using pipeline mapping operator `|:`)
@@ -43,8 +43,8 @@ Or more simply, to use Flatscript pipeline syntax like (using pipeline mapping o
     files: ['a.txt', 'b.txt', 'c.txt']
     try
         console.log('content', files |: fs.readFile($, %%).toString())
-    catch
-        console.error($e)
+    catch e
+        console.error(e)
     console.log('end')
 
 To encapsule this into a **regular asynchronous function** (like an `async` function in ES7)
@@ -56,8 +56,8 @@ To encapsule this into a **regular asynchronous function** (like an `async` func
 
     try
         console.log('content', readFiles(['a.txt', 'b.txt', 'c.txt'], %%))
-    catch
-        console.error($e)
+    catch e
+        console.error(e)
     console.log('end')
 
 ## Other Features
@@ -246,4 +246,4 @@ Use `jQuery` the identifier instead of `$` because `$` represents list elements 
 
 ## For More Information
 
-Please check the [wiki pages](https://github.com/neuront/flatscript/wiki/_pages). (Chinese version only)
+Please check the [wiki pages](https://github.com/neuront/flatscript/wiki/). (Chinese version only)

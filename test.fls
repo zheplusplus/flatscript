@@ -42,5 +42,8 @@ if true
         include 'test/resolve/class.fls' as t
         t.run(%%)
     if true
+        include 'test/resolve/macros.fls' as t
+        t.run(%%)
+    if true
         include 'test/resolve/unresolvables.fls' as t
         t.run(%%)

@@ -154,19 +154,36 @@ class SymbolTableBase
     func defModule(pos, name, moduleUid)
         this._defSymbol(name, ModuleSymbol(pos, moduleUid))
 
-    func makeFuncSymbolTable(pos, params)
-        s: FuncSymbolTable(this)
+    func makeFuncSymbolTable(pos, params, funcName, className)
+        s: FuncSymbolTable(this, funcName, className)
         params |: s.defParam(pos, $)
         return s
 
     func makeSubSymbolTable()
         return SubSymbolTable(this)
 
-export class FuncSymbolTable: SymbolTableBase
+    func funcName()
+        throw 'abstract SymbolTableBase.funcName'
+
+    func className()
+        throw 'abstract SymbolTableBase.className'
+
+class DomainSymbolTable: SymbolTableBase
     ctor(extSym) super(extSym)
 
     func defFunc(pos, name)
         this._defSymbol(name, FuncSymbol(pos))
+
+class FuncSymbolTable: DomainSymbolTable
+    ctor(extSym, name, clsName) super(extSym)
+        this.name: name
+        this.clsName: clsName
+
+    func funcName()
+        return this.name
+
+    func className()
+        return this.clsName
 
 class SubSymbolTable: SymbolTableBase
     ctor(extSym) super(extSym)
@@ -178,8 +195,20 @@ class SubSymbolTable: SymbolTableBase
     func _makeRefFor(name, symbol)
         return symbol.makeSubReference(name, this.uid)
 
-export class GlobalSymbolTable: FuncSymbolTable
+    func funcName()
+        return this.extSym.funcName()
+
+    func className()
+        return this.extSym.className()
+
+export class GlobalSymbolTable: DomainSymbolTable
     ctor() super(null)
 
     func addExternals(pos, externals)
         externals |: this._defSymbol($, ExternalSymbol(pos))
+
+    func funcName()
+        return null
+
+    func className()
+        return null

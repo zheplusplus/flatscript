@@ -144,3 +144,13 @@ export class AsyncCallResultDef: Statement
     func toString()
         decl: ('var ' + mangle.anonymousRef(this.defId) + '=') if this.decl else ''
         return decl + this.expr.toString() + ';'
+
+export class Delete: Statement
+    ctor(del) super()
+        this.del: del
+
+    func mayThrow()
+        return this.del.mayThrow()
+
+    func toString()
+        return 'delete ' + this.del.toString() + ';'

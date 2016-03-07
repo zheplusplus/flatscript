@@ -137,3 +137,10 @@ export class Include: Statement
 
     func compile()
         return resolve.Include(this.pos, this.includePath, this.moduleAlias)
+
+export class Delete: Statement
+    ctor(expr) super(expr.pos)
+        this.del: expr
+
+    func compile()
+        return resolve.Delete(this.pos, this.del.compileAsExpr())

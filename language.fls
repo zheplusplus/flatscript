@@ -36,4 +36,4 @@ JS_RESERVED_WORD: {
 }
 
 export func isReservedWord(n)
-    return JS_RESERVED_WORD.hasOwnProperty(n)
+    return JS_RESERVED_WORD owns n

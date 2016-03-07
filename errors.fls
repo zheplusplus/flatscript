@@ -23,151 +23,158 @@ class BaseError: CompileError
         throw 'abstract BaseError._message'
 
 export class IllegalToken: BaseError
-    ctor(pos, image) super(pos, 'IllegalToken')
+    ctor(pos, image) super(pos, __class__)
         this.image: image
 
     func _message()
         return 'illegal token: ' + this.image
 
 export class InvalidRegExp: BaseError
-    ctor(pos, image, error) super(pos, 'InvalidRegExp')
+    ctor(pos, image, error) super(pos, __class__)
         this.image: image
         this.error: error
 
     func _message()
         return this.error
 
+export class NoSuchMacro: BaseError
+    ctor(pos, image) super(pos, __class__)
+        this.image: image
+
+    func _message()
+        return 'no such macro ' + this.image
+
 export class UseReserved: BaseError
-    ctor(pos, image) super(pos, 'UseReserved')
+    ctor(pos, image) super(pos, __class__)
         this.image: image
 
     func _message()
         return 'use reserved: ' + this.image
 
 export class InvalidIndent: BaseError
-    ctor(pos) super(pos, 'InvalidIndent')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'invalid indentation'
 
 export class UnexpectedToken: BaseError
-    ctor(pos, image, type) super(pos, 'UnexpectedToken')
+    ctor(pos, image, type) super(pos, __class__)
         this.image: image
 
     func _message()
         return 'unexpected token: ' + this.image
 
 export class ExcessiveExprInStmt: BaseError
-    ctor(pos) super(pos, 'ExcessiveExprInStmt')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'excessive expressions in a statement'
 
 export class InvalidLeftValue: BaseError
-    ctor(pos) super(pos, 'InvalidLeftValue')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'invalid left value'
 
 export class MismatchParen: BaseError
-    ctor(pos, expected) super(pos, 'MismatchParen')
+    ctor(pos, expected) super(pos, __class__)
         this.expected: expected
 
     func _message()
         return 'mismatch parentheses, expect ' + this.expect
 
 export class InvalidParam: BaseError
-    ctor(pos) super(pos, 'InvalidParam')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'invalid parameter'
 
 export class MoreThanOneAsyncPlaceholder: BaseError
-    ctor(pos) super(pos, 'MoreThanOneAsyncPlaceholder')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'more than one asynchronous placeholders in one call'
 
 export class AsyncParamNotExpr: BaseError
-    ctor(pos) super(pos, 'AsyncParamNotExpr')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'asynchronous parameter should appear as an expression'
 
 export class ArgOmitted: BaseError
-    ctor(pos) super(pos, 'ArgOmitted')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'argument omitted'
 
 export class ArrElementOmitted: BaseError
-    ctor(pos) super(pos, 'ArrElementOmitted')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'array element omitted'
 
 export class ObjKeyOmitted: BaseError
-    ctor(pos) super(pos, 'ObjKeyOmitted')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'object key omitted'
 
 export class ObjValueOmitted: BaseError
-    ctor(pos) super(pos, 'ObjValueOmitted')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'object value omitted'
 
 export class ExceptionOmitted: BaseError
-    ctor(pos) super(pos, 'ExceptionOmitted')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'exception omitted in throw statement'
 
 export class InvalidName: BaseError
-    ctor(pos) super(pos, 'InvalidName')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'invalid name'
 
 export class TooManySliceParts: BaseError
-    ctor(pos) super(pos, 'TooManySliceParts')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'more than 3 expressions as list slice arguments'
 
 export class NoWrappedExpr: BaseError
-    ctor(pos) super(pos, 'NoWrappedExpr')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'no expression wrapped'
 
 export class ExcessiveWrappedExpr: BaseError
-    ctor(pos) super(pos, 'ExcessiveWrappedExpr')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'more than one expressions wrapped'
 
 export class PipeBodyOmitted: BaseError
-    ctor(pos) super(pos, 'PipeBodyOmitted')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'expression pipeline body omitted'
 
 export class LambdaRetOmitted: BaseError
-    ctor(pos) super(pos, 'LambdaRetOmitted')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'lambda return value omitted'
 
 export class EmptyPredicate: BaseError
-    ctor(pos) super(pos, 'EmptyPredicate')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'branch predicate omitted'
 
 export class ClauseNotMatch: BaseError
-    ctor(pos, clause, match) super(pos, 'ClauseNotMatch')
+    ctor(pos, clause, match) super(pos, __class__)
         this.clause: clause
         this.match: match
 
@@ -175,13 +182,13 @@ export class ClauseNotMatch: BaseError
         return 'clause ' + this.clause + ' not match ' + this.match
 
 export class CtorNotInClass: BaseError
-    ctor(pos) super(pos, 'CtorNotInClass')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'constructors not allowed outside class definition'
 
 export class DuplicatedMatch: BaseError
-    ctor(prevPos, thisPos, kw) super(thisPos, 'DuplicatedMatch')
+    ctor(prevPos, thisPos, kw) super(thisPos, __class__)
         this.kw: kw
         this.prevPos: prevPos
 
@@ -189,44 +196,44 @@ export class DuplicatedMatch: BaseError
         return 'duplicated match of ' + this.kw + ', previous match at ' + this.prevPos.asLine()
 
 export class TryWithoutCatch: BaseError
-    ctor(pos) super(pos, 'TryWithoutCatch')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'try without catch'
 
 export class CatchWithoutExcName: BaseError
-    ctor(pos) super(pos, 'CatchWithoutExcName')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'catch without exception name'
 
 export class ExcessiveExprInForRange: BaseError
-    ctor(pos) super(pos, 'ExcessiveExprInForRange')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'more than 3 expressions in for range'
 
 export class UnexpectedEOF: BaseError
-    ctor(pos) super(pos, 'UnexpectedEOF')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'unexpected end of file'
 
 export class SuperWithoutCall: BaseError
-    ctor(pos) super(pos, 'SuperWithoutCall')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'use of `super` is not a call to super property'
 
 export class SymbolNotDef: BaseError
-    ctor(pos, name) super(pos, 'SymbolNotDef')
+    ctor(pos, name) super(pos, __class__)
         this.name: name
 
     func _message()
         return 'name not defined: ' + this.name
 
 export class SymbolRedefined: BaseError
-    ctor(pos, name, defPos) super(pos, 'SymbolRedefined')
+    ctor(pos, name, defPos) super(pos, __class__)
         this.name: name
         this.defPos: defPos
 
@@ -235,7 +242,7 @@ export class SymbolRedefined: BaseError
                ', previous defined at ' + this.defPos.asLine()
 
 export class SymbolDefAfterRefs: BaseError
-    ctor(pos, name, refPosList) super(pos, 'SymbolDefAfterRefs')
+    ctor(pos, name, refPosList) super(pos, __class__)
         this.name: name
         this.refPosList: refPosList
 
@@ -244,101 +251,101 @@ export class SymbolDefAfterRefs: BaseError
                (this.refPosList |: '    - ' + $.asLine()).join('')
 
 export class LiteralValueError: BaseError
-    ctor(pos, value, op) super(pos, 'LiteralValueError')
+    ctor(pos, value, op) super(pos, __class__)
         this.value: value
         this.op: op
 
     func _message()
-        return 'unsupported operation `' + this.op + '` for literal value ' + this.value
+        return 'unsupported operation `' + this.op + '` on literal value ' + this.value
 
 export class ExternOnlyInGlobal: BaseError
-    ctor(pos) super(pos, 'ExternOnlyInGlobal')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'external names declaration can only appear in the global space'
 
 export class FuncDefNotAllowed: BaseError
-    ctor(pos) super(pos, 'FuncDefNotAllowed')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'functions definitions not allowed in branch or try-catch'
 
 export class ClassDefNotAllowed: BaseError
-    ctor(pos) super(pos, 'ClassDefNotAllowed')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'class definitions not allowed in branch or try-catch'
 
 export class FlowTerminated: BaseError
-    ctor(pos, termPos) super(pos, 'FlowTerminated')
+    ctor(pos, termPos) super(pos, __class__)
         this.termPos: termPos
 
     func _message()
         return 'block already terminated at ' + this.termPos.asLine()
 
 export class InvalidStatementInScope: BaseError
-    ctor(pos, stmt) super(pos, 'InvalidStatementInScope')
+    ctor(pos, stmt) super(pos, __class__)
         this.stmt: stmt
 
     func _message()
         return 'invalid statement ' + this.stmt + ' in the scope'
 
 export class ReferenceThisInGlobal: BaseError
-    ctor(pos) super(pos, 'ReferenceThisInGlobal')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'reference to `this` not allowed in global scope'
 
 export class AsyncNotAllowedInIncludeFile: BaseError
-    ctor(pos) super(pos, 'AsyncNotAllowedInIncludeFile')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'asynchronous expression not allowed in global scope of an included file'
 
 export class AsyncNotAllowedInThrow: BaseError
-    ctor(pos) super(pos, 'AsyncNotAllowedInThrow')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'asynchronous expression not allowed being thrown'
 
 export class RangeStepNonLiteral: BaseError
-    ctor(pos) super(pos, 'RangeStepNonLiteral')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'asynchronous expression not allowed being thrown'
 
 export class InvalidRangeStep: BaseError
-    ctor(pos) super(pos, 'InvalidRangeStep')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'step not a compile-time non-zero number in range iteration'
 
 export class PipeItemOutOfContext: BaseError
-    ctor(pos) super(pos, 'PipeItemOutOfContext')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'pipeline items not in pipeline context'
 
 export class SuperNotInMember: BaseError
-    ctor(pos) super(pos, 'SuperNotInMember')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return '`super` not in member function or constructor'
 
 export class ContructorNotCallSuper: BaseError
-    ctor(pos) super(pos, 'ContructorNotCallSuper')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'no call to the super class constructor'
 
 export class NoSuperClass: BaseError
-    ctor(pos) super(pos, 'NoSuperClass')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'no super class'
 
 export class DuplicateMemFunc: BaseError
-    ctor(pos, name, defPos) super(pos, 'DuplicateMemFunc')
+    ctor(pos, name, defPos) super(pos, __class__)
         this.name: name
         this.defPos: defPos
 
@@ -347,20 +354,44 @@ export class DuplicateMemFunc: BaseError
                this.defPos.asLine()
 
 export class InvalidFileName: BaseError
-    ctor(pos) super(pos, 'InvalidFileName')
+    ctor(pos) super(pos, __class__)
 
     func _message()
         return 'invalid include file name'
 
+export class NotInClass: BaseError
+    ctor(pos) super(pos, __class__)
+
+    func _message()
+        return 'not in a class scope'
+
+export class NotInFunc: BaseError
+    ctor(pos) super(pos, __class__)
+
+    func _message()
+        return 'not in a function scope'
+
+export class StmtsForbiddedInClassBody: BaseError
+    ctor(pos) super(pos, __class__)
+
+    func _message()
+        return 'no statement allowed in class body'
+
+export class NotDeleteProperty: BaseError
+    ctor(pos) super(pos, __class__)
+
+    func _message()
+        return 'not delete a property'
+
 export class ExternalError: BaseError
-    ctor(pos, what) super(pos, 'ExternalError')
+    ctor(pos, what) super(pos, __class__)
         this.what: what
 
     func _message()
         return 'external error: ' + this.what
 
 export class DepenedenciesUnresolvable: CompileError
-    ctor(circularDeps) super('DepenedenciesUnresolvable')
+    ctor(circularDeps) super(__class__)
         this.circularDeps: circularDeps
 
     func toString()

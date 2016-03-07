@@ -1,0 +1,21 @@
+(3.14, 2.7)
+true
+true
+false
+true
+false
++ list index
+true
+true
+true
+false
++ delete x
+false
+true
+false
+true
++ delete toString
+false
+true
+false
+true

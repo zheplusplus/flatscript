@@ -15,6 +15,7 @@ parser: *OptParser([
                                    + ' thus exporting names to window.EXPORT_POINT'],
     ['-h', '--help', 'Show this help message and exit'],
 ])
+parser.banner: 'Flatscript v' + misc.version
 parser.on('input-file', (opt, val):
     g.setInput(val)
 )

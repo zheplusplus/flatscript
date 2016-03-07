@@ -1369,6 +1369,38 @@ export func run()
         '''))
 
     if true
+        it('delete something', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          del: {
+            pos: POS0,
+            obj: {
+              pos: POS0,
+              name: 'a',
+            },
+            prop: 'b',
+          },
+        }, {
+          pos: POS1,
+          del: {
+            pos: POS1,
+            obj: {
+              pos: POS1,
+              name: 'a',
+            },
+            key: {
+              pos: POS1,
+              value: 0,
+            },
+          },
+        }], buildForStmts('''
+            delete a.b
+            delete a[0]
+        '''))
+
+    if true
         it('include', %)
         POS0: {file: null, line: 2}
         assert.deepEq([{

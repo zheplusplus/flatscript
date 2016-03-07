@@ -113,8 +113,9 @@ class DomainScope: ScopeBase
         this._classInits |:
             memfns: {}
             allowSuper: $.inherit
+            clsName: $.name
             $.memfns |:
-                memfns[$k]: $.compileToLambda(this, allowSuper, %%)
+                memfns[$k]: $.compileAsClassMember(this, allowSuper, clsName, %%)
             this._mainBlock.prependStmt(
                 backend_class.ClassInitDecl($.name, $.inherit, memfns, $.ct))
         return super.deliver(%%)
@@ -192,7 +193,7 @@ export class GlobalScope: FileScope
             errors.InvalidFileName(pos)
             return _NULID
         cfile: this.canonicalPath(file, pos)
-        if this._includings.hasOwnProperty(cfile)
+        if this._includings owns cfile
             return this._includings[cfile]
         i: IncludedSource(misc.uid(), cfile, this.parseFile(cfile, pos, %%))
         this._includings[cfile]: i
@@ -211,7 +212,7 @@ export class GlobalScope: FileScope
         if Object.keys(initFuncs).length = Object.keys(this._includings).length
             return initFuncs
         this._includings |:
-            ifnot initFuncs.hasOwnProperty($.includeId.toString())
+            ifnot initFuncs owns $.includeId.toString()
                 fileScope: IncludeFileScope(this, $.includeId)
                 $.parsed.compile(fileScope, %%)
                 initFuncs[$.includeId.toString()]: backend_func.ModuleInitFunc(
@@ -226,7 +227,7 @@ export class GlobalScope: FileScope
         if Object.keys(this._includings).length = calls.length
             return calls
         this._includings |:
-            if !callsAdded.hasOwnProperty($k) && this._countDeps($.deps) = 0
+            if !callsAdded owns $k && this._countDeps($.deps) = 0
                 callsAdded[$k]: true
                 calls.push(backend.PlaceExpr(initFuncs[$.includeId.toString()].callMe(
                     [backend_exprs.BinaryOp('=', backend_exprs.Module($.includeId),
@@ -241,7 +242,7 @@ export class GlobalScope: FileScope
             $.deps[d.path]: null
 
     func _unresolvableDependencies(incl, depStack, depFlagged)
-        ifnot depFlagged.hasOwnProperty(incl.includeId.toString())
+        ifnot depFlagged owns incl.includeId.toString()
             depStack.push(incl)
             depFlagged[incl.includeId.toString()]: true
             return this._unresolvableDependencies(incl.deps[Object.keys(incl.deps)[0]],
@@ -252,12 +253,12 @@ export class GlobalScope: FileScope
                 return
 
 class FuncScope: DomainScope
-    ctor(pos, parent, params, allowSuper) super()
+    ctor(pos, parent, params, allowSuper, funcName, className) super()
         this.parent: parent
         this._allowSuper: allowSuper
         this._firstReturn: null
         this._thisRef: false
-        this._sym: parent.sym().makeFuncSymbolTable(pos, params)
+        this._sym: parent.sym().makeFuncSymbolTable(pos, params, funcName, className)
 
     func setAllowSuper(a)
         this._allowSuper: a
@@ -293,7 +294,8 @@ class FuncScope: DomainScope
         return super.deliver(%%)
 
 export class SyncFuncScope: FuncScope
-    ctor(pos, parent, params, allowSuper) super(pos, parent, params, allowSuper)
+    ctor(pos, parent, params, allowSuper, funcName, className) super(
+                        pos, parent, params, allowSuper, funcName, className)
 
     func _retMethod(pos)
         return backend_methods.Ret()
@@ -308,7 +310,8 @@ func replaceBlockInAsyncTry(block, cf)
     return tryBlock
 
 export class AsyncFuncScope: FuncScope
-    ctor(pos, parent, params, allowSuper) super(pos, parent, params, allowSuper)
+    ctor(pos, parent, params, allowSuper, funcName, className) super(
+                        pos, parent, params, allowSuper, funcName, className)
         this.retPos: pos
         this._currentBlock: this.replaceBlock(this._currentBlock)
 
@@ -403,7 +406,7 @@ class PipelineScope: SubScope
     ctor(parent, pipeId, root) super(parent)
         this.pipeId: pipeId
         this.root: root
-        this._sym: st.FuncSymbolTable(parent.sym())
+        this._sym: parent.sym().makeSubSymbolTable()
         this._firstReturn: null
         this._hasBreak: false
 

@@ -316,3 +316,40 @@ export func run()
             type: 'UnexpectedEOF',
             pos: {file: null, line: 3},
         }], errors.deliver())
+
+    if true
+        it('macros or non-macros as prop', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        assert.deepEq([{
+          pos: POS0,
+          name: 'X',
+          base: null,
+          ct: null,
+          body: {
+            pos: POS0,
+            funcs: [{
+              pos: POS1,
+              name: '__a_b__',
+              params: [],
+              body: {
+                pos: POS1,
+                stmts: [{
+                  pos: POS2,
+                  ret: {
+                    pos: POS2,
+                    obj: {pos: POS2},
+                    prop: '__class__',
+                  },
+                }],
+                funcs: [],
+              },
+            }],
+            stmts: [],
+          },
+        }], buildForStmts('''
+            class X
+                func __a_b__()
+                    return this.__class__
+        '''))

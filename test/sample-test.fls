@@ -81,13 +81,13 @@ try
         'empty', 'write', 'literals', 'latency-ref', 'fib', 'nest-func', 'pair',
         'return-void', 'sqrt', 'find-root', 'fixed-point', 'lookup', 'string',
         'vector-multi', 'basic-list', 'return-list', 'list-pipe', 'list-slice',
-        'dict', 'set-attribute', 'lambda', 'ref-this', 'branches',
+        'dict', 'set-attribute', 'lambda', 'ref-this', 'branches', 'macros',
         'async-calls', 'set-timeout', 'async-pipes', 'qsort', 'async-fib',
         'branch-with-async-sub', 'return-in-branch', 'nested-subs', 'try-catch',
         'deliver-space-with-this-decl', 'async-try-catch', 'throw-in-pipeline',
         'return-in-pipeline', 'name-shadowing', 'class', 'conditional', 'regex',
         'same-name-in-sub-scopes', 'class-xref', 'loop-controls', 'for-range',
-        'enums', 'include',
+        'enums', 'include', 'instanceof', 'owns',
     ] |: checkFile($, %%)
     [
         'export', 'class',

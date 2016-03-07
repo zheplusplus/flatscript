@@ -29,12 +29,15 @@ export class Expression
         e: this.compile(scope, %%)
         scope.addStmt(this.pos, backend_stmts.PlaceExpr(e))
 
+    func delMe(scope, %%)
+        errors.NotDeleteProperty(this.pos)
+        return backend.Undefined()
+
 export class AtomicItem: Expression
     ctor(pos) super(pos)
     func compileAsStmt(scope, %%)
 
     func compile(scope, %%)
-        setTimeout(%, 0)
         return this.syncCompile(scope)
 
     func syncCompile(scope)
@@ -105,6 +108,9 @@ export class MemberAccess: Expression
     func compileAsStmt(scope, %%)
         return this.obj.compileAsStmt(scope, %%)
 
+    func delMe(scope, %%)
+        return this.compile(scope, %%)
+
 _UNARY_OP: eval('({' + (['+', '-', '!', '~', 'typeof']
                 |: '"' + $ + '":function(a) {return ' + $ + ' a}').join(',') + '})')
 
@@ -154,6 +160,9 @@ export class BinaryOp: Expression
         return this.lhs.isLiteral(sym) && this.rhs.isLiteral(sym)
 
     func literalValue(sym)
+        if this.op = 'instanceof'
+            errors.LiteralValueError(this.pos, this.rhs.literalValue(sym).value, 'instanceof')
+            return Literal(this.pos, false)
         return Literal(this.pos, _BINARY_OP[this.op](this.lhs.literalValue(sym).value,
                                                      this.rhs.literalValue(sym).value))
 
@@ -236,6 +245,9 @@ export class Lookup: Expression
         obj: this.obj.compile(scope, %%)
         key: this.key.compile(scope, %%)
         return backend.Lookup(obj, key)
+
+    func delMe(scope, %%)
+        return this.compile(scope, %%)
 
 export class Slice: Expression
     ctor(pos, arr, begin, end, step) super(pos)
@@ -327,7 +339,8 @@ export class SyncLambda: Expression
         return false
 
     func compile(scope, %%)
-        bodyScope: sc.SyncFuncScope(this.pos, scope, this.params, false)
+        bodyScope: sc.SyncFuncScope(this.pos, scope, this.params, false,
+                                    scope.sym().funcName(), scope.sym().className())
         this.body.compile(bodyScope, %%)
         return backend_funcs.SyncLambda(
             lambdaParams(this.pos, bodyScope, this.params), bodyScope.deliver(%%), false)
@@ -337,7 +350,8 @@ export class RegularAsyncLambda: SyncLambda
         this.asyncIndex: asyncIndex
 
     func compile(scope, %%)
-        bodyScope: sc.AsyncFuncScope(this.pos, scope, this.params, false)
+        bodyScope: sc.AsyncFuncScope(this.pos, scope, this.params, false,
+                                     scope.sym().funcName(), scope.sym().className())
         this.body.compile(bodyScope, %%)
         return backend_funcs.RegularAsyncLambda(
             lambdaParams(this.pos, bodyScope, this.params), this.asyncIndex, bodyScope.deliver(%%))
