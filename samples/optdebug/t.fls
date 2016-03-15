@@ -1,0 +1,10 @@
+console.log('Begin')
+ifnot __debug__
+    console.log('Not debug')
+if __debug__
+    console.log('Debug on', __debug__)
+if __debug__ > 1
+    console.log('Debug level greater than 1')
+if __debug__ = 3
+    console.log('Debug level is exactly 3')
+console.log('End')

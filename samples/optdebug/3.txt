@@ -1,0 +1,5 @@
+Begin
+Debug on 3
+Debug level greater than 1
+Debug level is exactly 3
+End

@@ -372,8 +372,10 @@ export class Conditional: Expression
         return this.predicate.isAsync() || this.consequence.isAsync() || this.alternative.isAsync()
 
     func isLiteral(sym)
-        return this.predicate.isLiteral(sym) && this.consequence.isLiteral(sym) &&
-               this.alternative.isLiteral(sym)
+        ifnot this.predicate.isLiteral(sym)
+            return false
+        return this.consequence.isLiteral(sym) if this.predicate.literalValue(sym).value
+                    else this.alternative.isLiteral(sym)
 
     func literalValue(sym)
         return this.consequence.literalValue(sym) if this.predicate.literalValue(sym).value else

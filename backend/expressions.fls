@@ -205,7 +205,7 @@ export class SuperCall: Expression
 
     func toString()
         return '$super.' + this.property + '.call($this' +
-               (this.args |: ',' + $.toString()).join(',') + ')'
+               (this.args |: ',' + $.toString()).join('') + ')'
 
 export class AnonymousRef: AtomicItem
     ctor(refId) super()

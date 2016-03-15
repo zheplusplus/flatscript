@@ -206,7 +206,7 @@ Output
 
     npm install -g flatscript
 
-This will install a executable named `flsc` as the compiler.
+This will install an executable named `flsc` as the compiler.
 
 ### Run
 
@@ -240,7 +240,7 @@ Or using `extern` statement in the source file:
 
 ### How could I use jQuery in Flatscript?
 
-Use `jQuery` the identifier instead of `$` because `$` represents list elements in pipeline context, like
+Use `jQuery` the identifier instead of `$` because `$` means the current list element in pipeline context, like
 
     buttons: jQuery('.btn')
 

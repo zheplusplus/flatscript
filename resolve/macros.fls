@@ -1,4 +1,5 @@
 include 'errors.fls' as errors
+include 'globals.fls' as g
 include 'resolve/expressions.fls' as base
 
 class Macro: base.AtomicItem
@@ -21,6 +22,12 @@ export class LineNumber: Macro
 
     func literalValue(sym)
         return base.Literal(this.pos, this.pos.line)
+
+export class DebugLevel: Macro
+    ctor(pos, image) super(pos, image)
+
+    func literalValue(sym)
+        return base.Literal(this.pos, g.debugLevel())
 
 func defaultStr(s)
     return '' if s = null else s

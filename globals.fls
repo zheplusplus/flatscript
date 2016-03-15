@@ -14,6 +14,7 @@ _g: {
     opt_input: null,
     opt_output: null,
     opt_export_point: null,
+    opt_debug_level: null,
 }
 
 export func useClassExt()
@@ -32,19 +33,27 @@ export func addExterns(e)
     e |: _g.opt_externs.push($)
 
 export func setInput(i)
-    if _g.opt_input
+    if _g.opt_input != null
         throw Error('`input file` option already set')
     _g.opt_input: i
 
 export func setOutput(o)
-    if _g.opt_output
+    if _g.opt_output != null
         throw Error('`output file` option already set')
     _g.opt_output: o
 
 export func setExportPoint(p)
-    if _g.opt_export_point
+    if _g.opt_export_point != null
         throw Error('`export point` option already set')
     _g.opt_export_point: p
+
+export func setDebugLevel(d)
+    if _g.opt_debug_level != null
+        throw Error('`debug` option already set')
+    _g.opt_debug_level: d
+
+export func debugLevel()
+    return 0 if _g.opt_debug_level = null else _g.opt_debug_level
 
 export func g()
     return _g

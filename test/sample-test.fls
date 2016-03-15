@@ -76,6 +76,16 @@ func checkError(case_, %%)
         throw 'Failed to check error ' + case_ + ':\n' + diff.stdout
     console.log(case_, 'report passed.')
 
+func checkOptDebug(%%)
+    fls: path.join('samples', 'optdebug', 't.fls')
+    js: path.join('samples', 'optdebug', 't.js')
+    for i range 5
+        r: runProcess('node', ['./flsc.js', '-i', fls, '--debug', i, '-o', js], %%)
+        if r.code != 0
+            throw 'Failed to compile debug test file on level ' + i + ': ' + r.stderr
+        checkOutput(js, path.join('samples', 'optdebug', i + '.txt'), %%)
+    console.log('Option for debug passed.')
+
 try
     [
         'empty', 'write', 'literals', 'latency-ref', 'fib', 'nest-func', 'pair',
@@ -98,5 +108,6 @@ try
         'constructor-not-in-class', 'throw-nothing', 'invalid-for-range-head',
         'include',
     ] |: checkError($, %%)
+    checkOptDebug(%%)
 catch e
     console.error(e)

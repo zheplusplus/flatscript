@@ -13,6 +13,7 @@ parser: *OptParser([
     ['-e', '--externs EXTERNS', 'Add predefined external names'],
     ['-p', '--export-point EXPPT', 'Override export point ONLY for browser env,'
                                    + ' thus exporting names to window.EXPORT_POINT'],
+    ['-D', '--debug DEBUG_LEVEL', 'set debug level'],
     ['-h', '--help', 'Show this help message and exit'],
 ])
 parser.banner: 'Flatscript v' + misc.version
@@ -27,6 +28,12 @@ parser.on('externs', (opt, val):
 )
 parser.on('export-point', (opt, val):
     g.setExportPoint(val)
+)
+parser.on('debug', (opt, val):
+    debugLevel: parseInt(val)
+    if isNaN(debugLevel)
+        throw Error('invalid debug level: require an integer')
+    g.setDebugLevel(debugLevel)
 )
 parser.on('help', ():
     console.error(parser.toString())

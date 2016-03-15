@@ -370,6 +370,59 @@ func sync(%%)
         done()
 
     if true
+        it('branch with literal conditional predicate', %done)
+        assert.deepEq({
+          localDefs: [],
+          funcs: [],
+          stmts: [{
+            localDefs: [],
+            funcs: [],
+            stmts: [{
+              expr: {
+                callee: {
+                  image: 'b',
+                },
+                args: [{
+                  value: false,
+                }],
+              },
+            }],
+          }],
+        }, buildForAll('''
+            extern a, b, p
+            m: false
+            if m && p()
+                a()
+            else
+                b(m)
+        ''', %%))
+
+        assert.deepEq({
+          localDefs: [],
+          funcs: [],
+          stmts: [{
+            localDefs: [],
+            funcs: [],
+            stmts: [{
+              expr: {
+                callee: {
+                  image: 'a',
+                },
+                args: [],
+              },
+            }],
+          }],
+        }, buildForAll('''
+            extern a, b, p
+            n: true
+            if n || p()
+                a()
+            else
+                b(n)
+        ''', %%))
+        done()
+
+    if true
         it('loop', %done)
         r: buildForAll('''
             extern x, y

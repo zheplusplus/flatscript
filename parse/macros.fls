@@ -22,6 +22,12 @@ class LineNumber: Macro
     func compileAsExpr()
         return resolve.LineNumber(this.pos)
 
+class DebugLevel: Macro
+    ctor(pos, image) super(pos, image)
+
+    func compileAsExpr()
+        return resolve.DebugLevel(this.pos)
+
 class FuncName: Macro
     ctor(pos, image) super(pos, image)
 
@@ -50,6 +56,7 @@ class NonMacro: Macro
 _M: {
     __file__: FileName,
     __line__: LineNumber,
+    __debug__: DebugLevel,
     __func__: FuncName,
     __class__: ClassName,
     __class_func__: ClassFuncNmae,

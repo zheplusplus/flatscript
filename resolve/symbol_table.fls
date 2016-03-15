@@ -92,9 +92,9 @@ class SymbolTableBase
         this._refPosLists: {}
 
     func _defSymbol(name, symbol)
-        if this._symbols[name]
+        if this._symbols owns name
             return errors.SymbolRedefined(symbol.pos, name, this._symbols[name].pos)
-        if this._refPosLists[name]
+        if this._refPosLists owns name
             errors.SymbolDefAfterRefs(symbol.pos, name, this._refPosLists[name])
         this._symbols[name]: symbol
 
@@ -124,7 +124,7 @@ class SymbolTableBase
         this._defSymbol(name, LoopDeclSymbol(pos, loopId))
 
     func _refName(pos, name)
-        ifnot this._refPosLists[name]
+        ifnot this._refPosLists owns name
             this._refPosLists[name]: []
         this._refPosLists[name].push(pos)
 
@@ -135,7 +135,7 @@ class SymbolTableBase
         return symbol.makeReference(name)
 
     func compileRef(pos, name)
-        if this._symbols[name]
+        if this._symbols owns name
             return this._makeRefFor(name, this._symbols[name])
         if this.extSym != null
             this._refName(pos, name)
@@ -144,7 +144,7 @@ class SymbolTableBase
         return backend.Undefined()
 
     func literalValue(pos, name)
-        if this._symbols[name]
+        if this._symbols owns name
             return this._symbols[name].literalValue()
         if this.extSym != null
             this._refName(pos, name)
