@@ -47,9 +47,6 @@ class RegularAsyncCallback: exprs.Expression
     func toString()
         return mangle.TERM_REGULAR_ASYNC_CALLBACK
 
-export func callRegularAsyncCallback(error, result)
-    return exprs.SyncArgsCall(RegularAsyncCallback(), [error, result])
-
 export class RegularAsyncFunction: SyncFunction
     ctor(nameRef, params, asyncIndex, body) super(nameRef, params, body)
         this._asyncIndex: asyncIndex

@@ -37,6 +37,49 @@ export class InvalidRegExp: BaseError
     func _message()
         return this.error
 
+export class InvalidSingleLineLiteralText: BaseError
+    ctor(pos) super(pos, __class__)
+
+    func _message()
+        return 'the begin of literal text cannot be at the same line with the end'
+
+export class InvalidLiteralTextEnd: BaseError
+    ctor(pos) super(pos, __class__)
+
+    func _message()
+        return 'text is not allowed to be at the same line with the end of literal text'
+
+export class InvalidLiteralPropertyValue: BaseError
+    ctor(pos, prop, value) super(pos, __class__)
+        this.prop: prop
+        this.value: value
+
+    func _message()
+        if this.value = null
+            return 'no such literal text property: ' + this.prop
+        return 'invalid value for literal text property: ' + this.prop + ':' + this.value
+
+export class InvalidLiteralProperty: BaseError
+    ctor(pos, prop) super(pos, __class__)
+        this.prop: prop
+
+    func _message()
+        return 'invalid literal text property-value: ' + this.prop
+
+export class NoSuchLiteralProperty: BaseError
+    ctor(pos, prop) super(pos, __class__)
+        this.prop: prop
+
+    func _message()
+        return 'no such literal text property: ' + this.prop
+
+export class DupLiteralTextProperty: BaseError
+    ctor(pos, prop) super(pos, __class__)
+        this.prop: prop
+
+    func _message()
+        return 'duplicated literal text property: ' + this.prop
+
 export class NoSuchMacro: BaseError
     ctor(pos, image) super(pos, __class__)
         this.image: image

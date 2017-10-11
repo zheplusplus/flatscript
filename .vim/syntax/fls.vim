@@ -40,9 +40,7 @@ syn keyword FlsTodo FIXME TODO
 syn keyword FlsLiteral true false null undefined NaN Infinity
 syn match FlsLiteral "\<\%([1-9]\d*\|0\)\=\>"
 syn region FlsLiteral start=+\z(['"]\)+ end="\z1" skip="\\\\\|\\\z1"
-syn region FlsLiteral start=+\z('''\|"""\)+ end="\z1" keepend
-syn region FlsLiteral start=+[rR]\z(['"]\)+ end="\z1" skip="\\\\\|\\\z1"
-syn region FlsLiteral start=+[rR]\z('''\|"""\)+ end="\z1" keepend
+syn region FlsLiteral start=+\z('''\|"""\|:::\)+ end="\z1" keepend
 syn region FlsLiteral start=+/[^/*]+me=e-1 skip=+\\\\\|\\/+ end=+/[gim]\{0,2\}\s*$+ end=+/[gim]\{0,2\}\s*[;.,)\]}]+me=e-1 contains=@htmlPreproc oneline
 
 syn keyword FlsBuiltin console eval setTimeout setInterval clearTimeout

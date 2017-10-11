@@ -1369,6 +1369,73 @@ export func run()
         '''))
 
     if true
+        it('enum export', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 3}
+        POS2: {file: null, line: 4}
+        assert.deepEq([{
+          pos: POS0,
+          name: 'm',
+          init: {
+            pos: POS0,
+            value: 0,
+          },
+        }, {
+          pos: POS0,
+          exportPath: ['m'],
+          value: {
+            pos: POS0,
+            value: 0,
+          },
+        }, {
+          pos: POS1,
+          name: 'x',
+          init: {
+            pos: POS1,
+            value: 0,
+          },
+        }, {
+          pos: POS1,
+          name: 'y',
+          init: {
+            pos: POS1,
+            value: 1,
+          },
+        }, {
+          pos: POS2,
+          name: 'z',
+          init: {
+            pos: POS2,
+            value: 2,
+          },
+        }, {
+          pos: POS1,
+          exportPath: ['x'],
+          value: {
+            pos: POS1,
+            value: 0,
+          },
+        }, {
+          pos: POS1,
+          exportPath: ['y'],
+          value: {
+            pos: POS1,
+            value: 1,
+          },
+        }, {
+          pos: POS2,
+          exportPath: ['z'],
+          value: {
+            pos: POS2,
+            value: 2,
+          },
+        }], buildForStmts('''
+            export enum m
+            export enum x, y,
+                z
+        '''))
+
+    if true
         it('delete something', %)
         POS0: {file: null, line: 2}
         POS1: {file: null, line: 3}
@@ -1421,3 +1488,39 @@ export func run()
             pos: {file: null, line: 2},
             image: 'aa',
         }], errors.deliver())
+
+    if true
+        it('next-tick', %)
+        POS0: {file: null, line: 2}
+        POS1: {file: null, line: 4}
+        POS_NT: {file: null, line: 3}
+        assert.deepEq([{
+          pos: POS0,
+          del: {
+            pos: POS0,
+            obj: {
+              pos: POS0,
+              name: 'a',
+            },
+            prop: 'b',
+          },
+        }, {
+          pos: POS_NT,
+        },{
+          pos: POS1,
+          del: {
+            pos: POS1,
+            obj: {
+              pos: POS1,
+              name: 'a',
+            },
+            key: {
+              pos: POS1,
+              value: 0,
+            },
+          },
+        }], buildForStmts('''
+            delete a.b
+            %
+            delete a[0]
+        '''))

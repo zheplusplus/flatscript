@@ -20,108 +20,159 @@ export func wrapGlobal(global)
             " ? module.exports : " + exportPointForBrowser())
 
     r.push(
-        '(function(' + params.join(',') + ') {'
-            # From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
-        +   'if (!Object.keys) {'
-        +     'Object.keys = (function() {'
-        +       '"use strict";'
-        +       'var hasOwnProperty = Object.prototype.hasOwnProperty,'
-        +           'hasDontEnumBug = !({ toString: null }).propertyIsEnumerable("toString"),'
-        +           'dontEnums = ['
-        +             '"toString",'
-        +             '"toLocaleString",'
-        +             '"valueOf",'
-        +             '"hasOwnProperty",'
-        +             '"isPrototypeOf",'
-        +             '"propertyIsEnumerable",'
-        +             '"constructor"'
-        +           '],'
-        +           'dontEnumsLength = dontEnums.length;'
-        +       'return function(obj) {'
-        +         'if (typeof obj !== "object" && (typeof obj !== "function" || obj === null)) {'
-        +           'throw new TypeError("Object.keys called on non-object");'
-        +         '}'
-        +         'var result = [], prop, i;'
-        +         'for (prop in obj) {'
-        +           'if (hasOwnProperty.call(obj, prop)) {'
-        +             'result.push(prop);'
-        +           '}'
-        +         '}'
-        +         'if (hasDontEnumBug) {'
-        +           'for (i = 0; i < dontEnumsLength; i++) {'
-        +             'if (hasOwnProperty.call(obj, dontEnums[i])) {'
-        +               'result.push(dontEnums[i]);'
-        +             '}'
-        +           '}'
-        +         '}'
-        +         'return result;'
-        +       '};'
-        +     '}());'
-        +   '}'
+        '(function(' + params.join(',') + ') {' +
+        # From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+        ::: left:trim eol:trim
+            if (!Object.keys) {
+              Object.keys = (function() {
+                'use strict';
+                var hasOwnProperty = Object.prototype.hasOwnProperty,
+                    hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
+                    dontEnums = [
+                      'toString',
+                      'toLocaleString',
+                      'valueOf',
+                      'hasOwnProperty',
+                      'isPrototypeOf',
+                      'propertyIsEnumerable',
+                      'constructor'
+                    ],
+                    dontEnumsLength = dontEnums.length;
+
+                return function(obj) {
+                  if (typeof obj !== 'function' && (typeof obj !== 'object' || obj === null)) {
+                    throw new TypeError('Object.keys called on non-object');
+                  }
+
+                  var result = [], prop, i;
+
+                  for (prop in obj) {
+                    if (hasOwnProperty.call(obj, prop)) {
+                      result.push(prop);
+                    }
+                  }
+
+                  if (hasDontEnumBug) {
+                    for (i = 0; i < dontEnumsLength; i++) {
+                      if (hasOwnProperty.call(obj, dontEnums[i])) {
+                        result.push(dontEnums[i]);
+                      }
+                    }
+                  }
+                  return result;
+                };
+              }());
+            }
+        :::
     )
 
     if g.use_class_ext
         r.push(
-            'function $extend(i, base) {'
-            +     'for (var k in base) {'
-            +         'if (base.hasOwnProperty(k)) {'
-            +             'i[k] = base[k]'
-            +         '}'
-            +     '}'
-            +     'function ctor() {'
-            +         'this.constructor = i'
-            +     '}'
-            +     'ctor.prototype = base.prototype;'
-            +     'i.prototype = new ctor();'
-            +     'i.$super = base.prototype;'
-            +     'return i'
-            + '}'
+            ::: left:trim eol:trim
+            function $extend(i, base) {
+                for (var k in base) {
+                    if (base.hasOwnProperty(k)) {
+                        i[k] = base[k];
+                    }
+                }
+                function ctor() {
+                    this.constructor = i;
+                }
+                ctor.prototype = base.prototype;
+                i.prototype = new ctor();
+                i.$super = base.prototype;
+                return i;
+            }
+            :::
         )
 
     if g.use_list_slice
         r.push(
-            'function $listslice($list, $begin, $end, $step) {'
-            +     'function $rnd(x, dft) {'
-            +         'if (x === undefined) return dft;'
-            +         'if (x > $list.length) return $list.length;'
-            +         'if (x < 0) return x % $list.length + $list.length;'
-            +         'return x'
-            +     '}'
-            +     'if (!$step || $step == 1) {'
-            +         'return $list.slice($begin, $end)'
-            +     '}'
-            +     'var r = [];'
-            +     'if ($step > 0) {'
-            +         '$begin = $rnd($begin, 0);'
-            +         '$end = $rnd($end, $list.length);'
-            +         'for (; $begin < $end; $begin += $step) {'
-            +             'r.push($list[$begin]);'
-            +         '}'
-            +     '} else {'
-            +         '$begin = $rnd($begin, $list.length - 1);'
-            +         '$end = $rnd($end, -1);'
-            +         'for (; $begin > $end; $begin += $step) {'
-            +             'r.push($list[$begin]);'
-            +         '}'
-            +     '}'
-            +     'return typeof $list === "string" ? r.join("") : r'
-            + '}'
+            ::: left:trim eol:trim
+            function $listslice($list, $begin, $end, $step) {
+                function $rnd(x, dft) {
+                    if (x === undefined) return dft;
+                    if (x > $list.length) return $list.length;
+                    if (x < 0) return x % $list.length + $list.length;
+                    return x
+                }
+                if (!$step || $step == 1) {
+                    return $list.slice($begin, $end)
+                }
+                var r = [];
+                if ($step > 0) {
+                    $begin = $rnd($begin, 0);
+                    $end = $rnd($end, $list.length);
+                    for (; $begin < $end; $begin += $step) {
+                        r.push($list[$begin]);
+                    }
+                } else {
+                    $begin = $rnd($begin, $list.length - 1);
+                    $end = $rnd($end, -1);
+                    for (; $begin > $end; $begin += $step) {
+                        r.push($list[$begin]);
+                    }
+                }
+                return typeof $list === "string" ? r.join("") : r
+            }
+            :::
         )
 
     if g.use_pipeline
         r.push(
-            'function $listpipesync($list, $next) {'
-            +     'if (!($list)) return;'
-            +     'var $result = [];'
-            +     'var $ind = 0;'
-            +     'for (var $k in $list) {'
-            +         'if ($list.hasOwnProperty($k)) {'
-            +             '$next($ind, $k, $list[$k], $result);'
-            +             '++$ind;'
-            +         '}'
-            +     '}'
-            +     'return $result;'
-            + '}'
+            ::: left:trim eol:trim
+            function $listpipesync($list, $next) {
+                if (!($list)) return;
+                var $result = [];
+                var $ind = 0;
+                for (var $k in $list) {
+                    if ($list.hasOwnProperty($k)) {
+                        $next($ind, $k, $list[$k], $result);
+                        ++$ind;
+                    }
+                }
+                return $result;
+            }
+            :::
+        )
+
+    if g.use_next_tick
+        # http://timnew.me/blog/2014/06/23/process-nexttick-implementation-in-browser/
+        r.push(
+            ::: left:trim eol:trim
+            var $nt = function() {
+              if (typeof process == "object"
+                      && typeof process.nextTick == "function") {
+                  return process.nextTick;
+              }
+              if (typeof window !== "undefined" && window.setImmediate) {
+                  return function(c) {window.setImmediate(c)}
+              }
+              if (typeof window !== "undefined"
+                      && window.postMessage && window.addEventListener) {
+                  var queue = [];
+                  window.addEventListener("message", function (ev) {
+                      var source = ev.source;
+                      if ((source === window || source === null) && ev.data === "process-tick") {
+                          ev.stopPropagation();
+                          if (queue.length > 0) {
+                              var fn = queue.shift();
+                              fn();
+                          }
+                      }
+                  }, true);
+
+                  return function(f) {
+                      queue.push(f);
+                      window.postMessage("process-tick", "*");
+                  };
+              }
+
+              return function(f) {
+                  setTimeout(f, 0);
+              };
+            }();
+            :::
         )
 
     return (r ++ [global.toString(), '})(', args.join(','), ');']).join('')

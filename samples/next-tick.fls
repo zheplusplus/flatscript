@@ -1,0 +1,18 @@
+for i range 10
+    console.log(i)
+    %
+    if i % 3 = 1
+        continue
+    for j range i * 2 - 1
+        if j % 3 = 0
+            continue
+        console.log(i, j)
+console.log('* 1')
+
+func recursive(n, %%)
+    if n < 5000
+        %
+        recursive(n + 1, %%)
+    console.log('* E', n)
+
+recursive(-1, %%)

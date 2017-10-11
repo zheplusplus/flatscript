@@ -1,8 +1,9 @@
-export TERM_EXPORT: "$export"
-export TERM_THIS: "$this"
-export TERM_REGULAR_ASYNC_CALLBACK: "$racb"
-export TERM_EXCEPTION: "$exception"
-export TERM_CONDITIONAL_CALLBACK_PARAMETER: "$ccp"
+export TERM_EXPORT: '$export'
+export TERM_THIS: '$this'
+export TERM_REGULAR_ASYNC_CALLBACK: '$racb'
+export TERM_EXCEPTION: '$excp'
+export TERM_CONDITIONAL_CALLBACK_PARAMETER: '$ccp'
+export TERM_NEXT_TICK_CALL: '$nt'
 
 export func loopReturnFlag(id)
     return '$retF' + id.toString()

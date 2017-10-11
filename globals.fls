@@ -3,6 +3,7 @@ _g: {
     use_export: false,
     use_list_slice: false,
     use_pipeline: false,
+    use_next_tick: false,
     built_in_names: [
         'console', 'eval', 'setTimeout', 'setInterval', 'clearTimeout', 'parseInt', 'parseFloat',
         'isFinite', 'isNaN', 'Number', 'Array', 'Object', 'Function', 'JSON', 'RegExp', 'Math',
@@ -28,6 +29,9 @@ export func useListSlice()
 
 export func usePipeline()
     _g.use_pipeline: true
+
+export func useNextTick()
+    _g.use_next_tick: true
 
 export func addExterns(e)
     e |: _g.opt_externs.push($)

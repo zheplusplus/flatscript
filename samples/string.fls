@@ -1,5 +1,5 @@
 func ret_string()
-    return "ste" + 'kin'
+    return "fla" + 'tscript'
 stekin: ret_string()
 console.log(stekin)
 
@@ -23,3 +23,8 @@ console.log(y(10))
 console.log(y(false))
 
 console.log('abcabc'.replace(*RegExp('b', 'g'), 'mm'))
+
+console.log(::: left:unindent eol:keep
+    The quick brown fox
+        jumps over a lazy dog
+::: + '.')

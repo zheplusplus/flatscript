@@ -17,6 +17,9 @@ export class Statement
     func compile(scope, %%)
         throw 'abstract Statement.compile'
 
+    func compileGlobal(scope, %%)
+        return this.compile(scope, %%)
+
 export class Arithmetics: Statement
     ctor(expr) super(expr.pos)
         this.expr: expr
@@ -87,6 +90,11 @@ export class Export: Statement
         return this.value.isAsync()
 
     func compile(scope, %%)
+        if this.value.isLiteral(scope.sym()) && this.exportPath.length = 1
+            literal: this.value.literalValue(scope.sym())
+            scope.sym().addExportedLiteral(this.exportPath[0], literal)
+            return scope.addStmt(this.pos, backend.Export(
+                this.exportPath, backend_exprs.Literal(literal.value)))
         value: this.value.compile(scope, %%)
         scope.addStmt(this.pos, backend.Export(this.exportPath, value))
 
@@ -268,8 +276,8 @@ export class Include: Statement
         return false
 
     func compile(scope, %%)
-        scope.sym().defModule(this.pos, this.moduleAlias,
-                              scope.includeFile(this.pos, this.includePath, %%).includeId)
+        included: scope.includeFile(this.pos, this.includePath, %%)
+        scope.sym().defModule(this.pos, this.moduleAlias, included)
 
 export class Delete: Statement
     ctor(pos, del) super(pos)
@@ -280,6 +288,17 @@ export class Delete: Statement
 
     func compile(scope, %%)
         scope.addStmt(this.pos, backend.Delete(this.del.delMe(scope, %%)))
+
+export class NextTick: Statement
+    ctor(pos) super(pos)
+
+    func isAsync()
+        return true
+
+    func compile(scope, %%)
+        call: backend_exprs.NextTickCall()
+        scope.addStmt(this.pos, backend.PlaceExpr(call))
+        scope.setAsyncSpace(this.pos, [], call.body())
 
 export class Block: Statement
     ctor(pos, stmts, funcs) super(pos)
@@ -293,10 +312,24 @@ export class Block: Statement
         return false
 
     func compile(scope, %%)
-        process.nextTick(%)
+        %
         block: scope.block()
         this.funcs |: scope.sym().defFunc($.pos, $.name)
         this.stmts |: $.compile(scope, %%)
+        this.funcs |: block.addFunc($.compile(scope, false, %%))
+
+    func compileGlobal(scope, %%)
+        %
+        block: scope.block()
+        this.funcs |: scope.sym().defFunc($.pos, $.name)
+        this.stmts |: $.compile(scope, %%)
+        this.compileSubs: (%%): this._compileSubs(scope, %%)
+
+    func compileSubs()
+        throw Error('Call compileGlobal first')
+
+    func _compileSubs(scope, %%)
+        block: scope.block()
         this.funcs |: block.addFunc($.compile(scope, false, %%))
 
 export func wrapSingle(s)

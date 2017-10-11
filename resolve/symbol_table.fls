@@ -19,6 +19,9 @@ class Symbol
     func makeSubReference(name, uid)
         return backend.SubReference(name, uid)
 
+    func findSubLiteral(name)
+        return null
+
 class LiteralSymbol: Symbol
     ctor(defPos, value) super(defPos)
         this.value: value
@@ -73,11 +76,11 @@ class LoopDeclSymbol: Symbol
         return this.makeReference(name)
 
 class ModuleSymbol: Symbol
-    ctor(defPos, uid) super(defPos)
-        this.uid: uid
+    ctor(defPos, module) super(defPos)
+        this.module: module
 
     func makeReference(name)
-        return backend.Module(this.uid)
+        return backend.Module(this.module.includeId)
 
     func makeSubReference(name, uid)
         return this.makeReference(name)
@@ -85,11 +88,18 @@ class ModuleSymbol: Symbol
     func addToLocalDef()
         return false
 
+    func findSubLiteral(name)
+        literals: this.module.scope.sym().getExportedLiterals()
+        if literals owns name
+            return literals[name]
+        return null
+
 class SymbolTableBase
     ctor(extSym)
         this.extSym: extSym
         this._symbols: {}
         this._refPosLists: {}
+        this._exportedLiterals: {}
 
     func _defSymbol(name, symbol)
         if this._symbols owns name
@@ -151,8 +161,8 @@ class SymbolTableBase
             return this.extSym.literalValue(pos, name)
         return null
 
-    func defModule(pos, name, moduleUid)
-        this._defSymbol(name, ModuleSymbol(pos, moduleUid))
+    func defModule(pos, name, module)
+        this._defSymbol(name, ModuleSymbol(pos, module))
 
     func makeFuncSymbolTable(pos, params, funcName, className)
         s: FuncSymbolTable(this, funcName, className)
@@ -167,6 +177,17 @@ class SymbolTableBase
 
     func className()
         throw 'abstract SymbolTableBase.className'
+
+    func getSymbol(name)
+        if this._symbols owns name
+            return this._symbols[name]
+        return this.extSym.getSymbol(name)
+
+    func addExportedLiteral(path, value)
+        this._exportedLiterals[path]: value
+
+    func getExportedLiterals()
+        return this._exportedLiterals
 
 class DomainSymbolTable: SymbolTableBase
     ctor(extSym) super(extSym)

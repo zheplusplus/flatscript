@@ -17,6 +17,14 @@ func assertTypedEq(expected, token)
     assert.eq(expected.image, token.image)
     assert.eq(expected.type, token.type)
 
+func assertOnlyFactorEq(expected, string)
+    r: t.tokenize(string, null, 1)
+    if errors.hasError()
+        console.log(errors.all)
+    assert.not(errors.hasError())
+    assert.eq(1, r.tokens.length)
+    assertFactorEq(expected, r.tokens[0])
+
 export func run(%%)
     describe('tokenize', %)
     if true
@@ -320,3 +328,159 @@ export func run(%%)
                 name: $,
                 image: $,
             }, r.tokens[$i])
+
+    if true
+        it('literal text basic', %)
+        r: t.tokenize('''(:::
+a
+:::)''', null, 1)
+        assert.not(errors.hasError())
+        assert.eq(3, r.tokens.length)
+        assert.eq('', r.source)
+        assertTypedEq({
+            pos: {file: null, line: 1},
+            image: '(',
+            type: 'openparen',
+        }, r.tokens[0])
+        assertFactorEq({
+            pos: {file: null, line: 1},
+            image: ':::\na\n:::',
+            value: 'a',
+        }, r.tokens[1])
+        assertTypedEq({
+            pos: {file: null, line: 3},
+            image: ')',
+            type: 'closeparen',
+        }, r.tokens[2])
+
+    if true
+        it('literal text left', %)
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: '::: left:keep\n            a\n               b\n            :::',
+            value: '            a\n               b',
+        }, '''::: left:keep
+            a
+               b
+            :::''')
+
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: ':::  left:trim\n            a\n               b\n            :::',
+            value: 'a\nb',
+        }, ''':::  left:trim
+            a
+               b
+            :::''')
+
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: ':::left:unindent\n            a\n                b\n            :::',
+            value: 'a\n    b',
+        }, ''':::left:unindent
+            a
+                b
+            :::''')
+
+    if true
+        it('literal text right', %)
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: ':::right:keep\n            a \n                b\n            :::',
+            value: '            a \n                b',
+        }, ''':::right:keep
+            a 
+                b
+            :::''')
+
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: ':::right:trim\n            a \n                b\n            :::',
+            value: '            a\n                b',
+        }, ''':::right:trim
+            a 
+                b
+            :::''')
+
+    if true
+        it('literal text eol multiple', %)
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: '::: eol:keep left:trim\n            a\n                b\n            :::',
+            value: 'a\nb',
+        }, '''::: eol:keep left:trim
+            a
+                b
+            :::''')
+
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: '::: eol:space left:trim\n            a\n                b\n            :::',
+            value: 'a b',
+        }, '''::: eol:space left:trim
+            a
+                b
+            :::''')
+
+        assertOnlyFactorEq({
+            pos: {file: null, line: 1},
+            image: '::: eol:trim\n            a\n                b\n            :::',
+            value: '            a                b',
+        }, '''::: eol:trim
+            a
+                b
+            :::''')
+
+    if true
+        it('invalid literal text', %)
+        t.tokenize('''::: left:trim left:keep
+            a
+            :::''', null, 1)
+
+        assert.eq(1, errors.count())
+        assert.deepEq({
+            type: 'DupLiteralTextProperty',
+            prop: 'left',
+            pos: {file: null, line: 1},
+        }, errors.all[0])
+
+        errors.clear()
+
+        t.tokenize('''::: right:unindent
+            a
+            :::''', null, 1)
+
+        assert.eq(1, errors.count())
+        assert.deepEq({
+            type: 'InvalidLiteralPropertyValue',
+            prop: 'right',
+            value: 'unindent',
+            pos: {file: null, line: 1},
+        }, errors.all[0])
+
+        errors.clear()
+
+        t.tokenize('''::: Left:unindent
+            a
+            :::''', null, 1)
+
+        assert.eq(1, errors.count())
+        assert.deepEq({
+            type: 'NoSuchLiteralProperty',
+            prop: 'Left',
+            pos: {file: null, line: 1},
+        }, errors.all[0])
+
+        errors.clear()
+
+        t.tokenize('''::: left right:trim
+            a
+            :::''', null, 1)
+        assert.eq(1, errors.count())
+        assert.deepEq({
+            type: 'InvalidLiteralProperty',
+            prop: 'left',
+            pos: {file: null, line: 1},
+        }, errors.all[0])
+
+        errors.clear()
