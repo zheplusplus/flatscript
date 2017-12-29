@@ -33,6 +33,9 @@ export class Expression
         errors.NotDeleteProperty(this.pos)
         return backend.Undefined()
 
+    func literalAccess(sym, prop)
+        return null
+
 export class AtomicItem: Expression
     ctor(pos) super(pos)
     func compileAsStmt(scope, %%)
@@ -85,6 +88,12 @@ export class Reference: AtomicItem
     func syncCompile(scope)
         return scope.sym().compileRef(this.pos, this.name)
 
+    func literalAccess(sym, prop)
+        symbol: sym.getSymbol(this.name)
+        if symbol = null
+            return null
+        return symbol.findSubLiteral(prop)
+
 export class This: AtomicItem
     ctor(pos) super(pos)
 
@@ -100,7 +109,16 @@ export class MemberAccess: Expression
     func isAsync()
         return this.obj.isAsync()
 
+    func isLiteral(sym)
+        return this.literalValue(sym) != null
+
+    func literalValue(sym)
+        return this.obj.literalAccess(sym, this.prop)
+
     func compile(scope, %%)
+        if this.isLiteral(scope.sym())
+            return backend.Literal(this.literalValue(scope.sym()).value)
+
         obj: this.obj.compile(scope, %%)
         return backend.Lookup(obj, backend.Literal(this.prop)) if lang.isReservedWord(this.prop)
                 else backend.MemberAccess(obj, this.prop)

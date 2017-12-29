@@ -602,7 +602,7 @@ class ExportAutomation: Automation
         this.pos: pos
 
     func nextFactor(factor)
-        ['func', 'class'] |: this.delPushFunc($)
+        ['func', 'class', 'enum'] |: this.delPushFunc($)
         this.stack.push(ExportPathAutomation(this.stack))
         this.stack.top().nextFactor(factor)
 
@@ -611,6 +611,9 @@ class ExportAutomation: Automation
 
     func _push_class(token)
         this.stack.replace(ClassAutomation(this.stack, true))
+
+    func _push_enum(token)
+        this.stack.replace(EnumAutomation(this.stack, true))
 
     func reducedList(exprs_)
         this._exportPath: exprs_ |: $.reduceAsName()
@@ -813,13 +816,16 @@ class ClassAutomation: Automation
         this.stack.addClassClause(pos, this._name, this._extend, this._export)
 
 class EnumAutomation: Automation
-    ctor(stack) super(stack)
+    ctor(stack, ex) super(stack)
+        this._export: ex
 
     func activated()
         this.stack.push(IdentListAutomation(this.stack, 'comma'))
 
     func reducedList(exprs_)
         exprs_ |: this.stack.acceptStmt(stmts.Assignment($, exprs.Num($.pos, $i)))
+        if this._export
+            exprs_ |: this.stack.acceptStmt(stmts.Export($.pos, [$.name], exprs.Num($.pos, $i)))
 
 class IncludeAutomation: Automation
     ctor(stack) super(stack)
@@ -876,6 +882,10 @@ export class BootstrapAutomation: Automation
         token.act(this.stack.top())
 
     func _push_operator(token)
+        if token.image = '%'
+            this.stack.acceptStmt(stmts.NextTick(token.pos))
+            this.stack.replace(IgnoreAny(this.stack, true))
+            return
         this._replaceArith(token)
 
     func _push_openparen(token)
@@ -938,7 +948,7 @@ export class BootstrapAutomation: Automation
         this.stack.replace(ClassAutomation(this.stack, false))
 
     func _push_enum(token)
-        this.stack.replace(EnumAutomation(this.stack))
+        this.stack.replace(EnumAutomation(this.stack, false))
 
     func _push_include(token)
         this.stack.replace(IncludeAutomation(this.stack))

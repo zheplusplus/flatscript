@@ -1,0 +1,7 @@
+fs: require('fs')
+
+func readMultiple(files, %%)
+    return (files |: fs.readFile($, %%)).join('')
+
+export readMultiple: readMultiple
+export enum ZERO, ONE

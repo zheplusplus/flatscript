@@ -8,6 +8,9 @@ class FakeScope: scope.GlobalScope
     ctor(sources) super()
         this.sources: sources
 
+    func canonicalPath(path, includePos, %%)
+        return path
+
     func parseFile(path, includePos, %%)
         if this.sources.hasOwnProperty(path)
             r: parse.build(this.sources[path], path)
@@ -26,9 +29,9 @@ func buildAndCompile(entry, otherSources, %%)
     return g.deliver(%%)
 
 export func run(%%)
-    describe('unresolvable deps error', %)
+    describe('scope include', %)
     if true
-        it('circular deps', %done)
+        it('unresolvable deps error', %done)
         buildAndCompile('''
             include 'f.fls' as f
             console.log(f.fff())
@@ -100,4 +103,23 @@ export func run(%%)
             type: 'DepenedenciesUnresolvable',
             circularDeps: ['g.fls', 'h.fls'],
         }], errors.deliver())
+        done()
+
+    if true
+        it('export and include literal', %done)
+        result: buildAndCompile('''
+            include 'x.fls' as x
+            console.log(x.ONE, x.ZERO)
+        ''', {
+            'x.fls': '''
+                export ZERO: 0
+                export ONE: 1
+            ''',
+        }, %%)
+        assert.deepEq([], errors.deliver())
+        assert.eq(2, result.stmts.length)
+        console_log: result.stmts[1].expr
+        assert.eq(2, console_log.args.length)
+        assert.eq(1, console_log.args[0].value)
+        assert.eq(0, console_log.args[1].value)
         done()

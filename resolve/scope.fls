@@ -177,12 +177,13 @@ class IncludedSource
         this.parsed: parsed
         this.path: path
         this.deps: null
+        this.scope: null
 
 export class GlobalScope: FileScope
     ctor() super()
         this._includings: {}
 
-    func canonicalPath(path, includePos)
+    func canonicalPath(path, includePos, %%)
         return path
 
     func parseFile(path, includePos, %%)
@@ -192,11 +193,14 @@ export class GlobalScope: FileScope
         if file.length = 0 || file[0] = '.'
             errors.InvalidFileName(pos)
             return _NULID
-        cfile: this.canonicalPath(file, pos)
+        cfile: this.canonicalPath(file, pos, %%)
         if this._includings owns cfile
             return this._includings[cfile]
         i: IncludedSource(misc.uid(), cfile, this.parseFile(cfile, pos, %%))
         this._includings[cfile]: i
+        fileScope: IncludeFileScope(this, i.includeId)
+        i.parsed.compileGlobal(fileScope, %%)
+        i.scope: fileScope
         return i
 
     func deliver(%%)
@@ -213,8 +217,8 @@ export class GlobalScope: FileScope
             return initFuncs
         this._includings |:
             ifnot initFuncs owns $.includeId.toString()
-                fileScope: IncludeFileScope(this, $.includeId)
-                $.parsed.compile(fileScope, %%)
+                $.parsed.compileSubs(%%)
+                fileScope: $.scope
                 initFuncs[$.includeId.toString()]: backend_func.ModuleInitFunc(
                     $.includeId, fileScope.deliver(%%))
                 $.deps: fileScope.deps

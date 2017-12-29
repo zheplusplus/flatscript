@@ -1,7 +1,10 @@
+== ffs included
 export test a.txt
 export test b.txt
 export test c.txt
 
+0 1
+== ffr included
 export test a.txt
 export test b.txt
 export test c.txt

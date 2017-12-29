@@ -8,6 +8,10 @@ console.log(JSON.stringify({
     files: ['flsc', 'flsc-recur.js'],
     preferGlobal: true,
     bin: {flsc: './flsc'},
+    repository: {
+        type: 'git',
+        url: 'git@github.com:neuront/flatscript.git',
+    },
     dependencies: {
         'optparse': '>=1.0.0',
     },

@@ -25,6 +25,7 @@ PATTERNS: [
     Pattern(/^[0-9][0-9_]*/, 'number'),
     Pattern(/^[0-9]x[0-9a-fA-F_]*/, 'number'),
     Pattern(/^[_a-zA-Z][_a-zA-Z0-9]*/, 'ident'),
+    Pattern(/^:::([^:]|:[^:]|::[^:])*:::/, 'literal_text'),
     Pattern(/^"""((\\.|[^\\"])|\"[^\"]|\"\"[^\"])*"""/, 'triple_quoted_string'),
     Pattern(/^'''((\\.|[^\\'])|\'[^\']|\'\'[^\'])*'''/, 'triple_quoted_string'),
     Pattern(/^"(\\.|[^\\"])*"/, 'string'),
@@ -112,6 +113,66 @@ func comprehenseString(s)
         return c(index + 1, r + s[index])
     return c(0, '')
 
+LITERAL_TEXT_EDITS: {
+    left: {
+        keep: (lines): lines,
+        trim: (lines): lines |: $.trimLeft(),
+        unindent: (lines):
+            minIndent: Math.min.apply(null, lines |: $.search(/\S/))
+            return lines |: $[minIndent,]
+    },
+    right: {
+        keep: (lines): lines,
+        trim: (lines): lines |: $.trimRight(),
+    },
+    eol: {
+        keep: '\n',
+        trim: '',
+        space: ' ',
+    },
+}
+
+func comprehenseText(pos, lines)
+    if lines.length = 1
+        errors.InvalidSingleLineLiteralText(pos)
+        return ''
+    if lines[lines.length - 1].trim().length != 0
+        errors.InvalidLiteralTextEnd(pos)
+        return ''
+    edits: {
+        left: LITERAL_TEXT_EDITS.left.keep,
+        right: LITERAL_TEXT_EDITS.right.keep,
+        eol: LITERAL_TEXT_EDITS.eol.keep,
+    }
+    editsProps: {}
+
+    lines[0].split(' ') |:
+        if $.length = 0
+            continue
+        kv: $.split(':')
+        if kv.length != 2
+            errors.InvalidLiteralProperty(pos, $)
+            return ''
+
+        key: kv[0].trim()
+        value: kv[1].trim()
+
+        if editsProps owns key
+            errors.DupLiteralTextProperty(pos, key)
+        editsProps[key]: true
+
+        ifnot LITERAL_TEXT_EDITS owns key
+            errors.NoSuchLiteralProperty(pos, key)
+            return ''
+
+        ifnot LITERAL_TEXT_EDITS[key] owns value
+            errors.InvalidLiteralPropertyValue(pos, key, value)
+            return ''
+
+        edits[key]: LITERAL_TEXT_EDITS[key][value]
+
+    return edits.right(edits.left(lines[1, -1])).join(edits.eol)
+
 KEYWORDS: {
     'if': true,
     'else': true,
@@ -155,6 +216,8 @@ OPERATORS: {
 FACTOR_TYPES: {
     number: (pos, image): FactorToken(pos, image, exprs.Num(pos, eval(image.replace(/_/g, '')))),
     string: (pos, image): FactorToken(pos, image, exprs.Str(pos, comprehenseString(image[1, -1]))),
+    literal_text: (pos, image): FactorToken(
+                pos, image, exprs.Str(pos, comprehenseText(pos, image[3, -3].split('\n')))),
     triple_quoted_string: (pos, image): FactorToken(
                 pos, image, exprs.Str(pos, comprehenseString(image[3, -3]))),
     regex: (pos, image):

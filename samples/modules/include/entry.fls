@@ -1,7 +1,10 @@
-ffs: require('./ffs')
+include 'samples/modules/include/ffs.fls' as ffs
+console.log('== ffs included')
 console.log(ffs.readMultiple(['a.txt', 'b.txt', 'c.txt'], %%))
+console.log(ffs.ZERO, ffs.ONE)
 
-ffr: require('./ffr')
+include 'samples/modules/include/ffr.fls' as ffr
+console.log('== ffr included')
 console.log(ffr.readMultiple(['a.txt', 'b.txt', 'c.txt'], %%))
 
 console.log(ffr.m, ffr.n.n)

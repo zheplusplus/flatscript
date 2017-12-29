@@ -144,3 +144,10 @@ export class Delete: Statement
 
     func compile()
         return resolve.Delete(this.pos, this.del.compileAsExpr())
+
+export class NextTick: Statement
+    ctor(pos) super(pos)
+
+    func compile()
+        g.useNextTick()
+        return resolve.NextTick(this.pos)

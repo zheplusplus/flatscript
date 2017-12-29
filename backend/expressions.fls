@@ -1,5 +1,6 @@
 include 'misc.fls' as misc
 include 'backend/mangle.fls' as mangle
+include 'backend/statements.fls' as stmts
 
 export class Expression
     func mayThrow()
@@ -180,6 +181,34 @@ export class Call: Expression
 
     func toString()
         return '(' + this.callee.toString() + ')(' + (this.args |: $.toString()).join(',') + ')'
+
+class NoParamCallbackArg: Expression
+    ctor() super()
+        this.body: stmts.Block()
+
+    func mayThrow()
+        return false
+
+    func toString()
+        return ['function() {', this.body.toString(), '}'].join('')
+
+class NextTickCallee: Expression
+    ctor() super()
+
+    func mayThrow()
+        return false
+
+    func toString()
+        return mangle.TERM_NEXT_TICK_CALL
+
+export class NextTickCall: Call
+    ctor() super(NextTickCallee(), [NoParamCallbackArg()])
+
+    func body()
+        return this.args[0].body
+
+    func mayThrow()
+        return false
 
 export class Conditional: Expression
     ctor(pred, consq, alter) super()

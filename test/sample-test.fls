@@ -97,10 +97,10 @@ try
         'deliver-space-with-this-decl', 'async-try-catch', 'throw-in-pipeline',
         'return-in-pipeline', 'name-shadowing', 'class', 'conditional', 'regex',
         'same-name-in-sub-scopes', 'class-xref', 'loop-controls', 'for-range',
-        'enums', 'include', 'instanceof', 'owns',
+        'enums', 'include', 'instanceof', 'owns', 'next-tick',
     ] |: checkFile($, %%)
     [
-        'export', 'class',
+        'export', 'class', 'include',
     ] |: checkDir($, %%)
     [
         'inv-chars', 'bad-indent', 'statments-after-return',
