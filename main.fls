@@ -12,8 +12,8 @@ parser: *OptParser([
     ['-o', '--output-file FILE', 'Output file, or stdout if not specified'],
     ['-e', '--externs EXTERNS', 'Add predefined external names'],
     ['-p', '--export-point EXPPT', 'Override export point ONLY for browser env,'
-                                   + ' thus exporting names to window.EXPORT_POINT'],
-    ['-D', '--debug DEBUG_LEVEL', 'set debug level'],
+                                   + ' thus exporting names to window.EXPPT'],
+    ['-D', '--debug DEBUG_LEVEL', 'set debug level macro'],
     ['-h', '--help', 'Show this help message and exit'],
 ])
 parser.banner: 'Flatscript v' + misc.version

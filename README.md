@@ -25,7 +25,7 @@ For example, Flatscript code like:
             setTimeout(%, 1000)
         console.log(i)
 
-will print `1` up to `10` and "sleep" for 1 second between each print.
+will print `0` up to `9` and "sleep" for 1 second between each print.
 
 And for Flatscript code like:
 
