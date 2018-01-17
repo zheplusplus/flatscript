@@ -1,0 +1,9 @@
+language: node_js
+node_js:
+  - 8.9.4
+before_script:
+  - npm install -g flatscript
+  - flsc -i npm.fls -o npm.js
+  - node npm.js > package.json
+  - npm install
+script: make recursivetest
