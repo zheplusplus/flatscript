@@ -1,0 +1,42 @@
+include 'errors.fls' as errors
+include 'parse/build.fls' as parse
+include 'resolve/scope.fls' as scope
+
+export func compile(jQuery, inputDom, errorDom)
+    func printError(pos, message)
+        errorDom.append(jQuery('<p>').text(pos.toString() + ':' + message))
+
+    func printErrorExit()
+        errors.deliver() |: errorDom.append(jQuery('<p>').text($.toString()))
+        throw Error()
+
+    func parse(text)
+        r: parse.build(text, '')
+        if errors.hasError()
+            printErrorsExit()
+        return r
+
+    class Scope: scope.GlobalScope
+        ctor() super()
+ 
+        func parseFile(path, includePos, %%)
+            printError(includePos, 'include not allowed in this demo environment')
+            printErrorsExit()
+
+    func compileFlow(flow, %%)
+        s: Scope()
+        flow.compile(s, %%)
+        return s.deliver(%%)
+
+    func compile_async(text, %%)
+        f: compileFlow(text, %%)
+        if errors.hasError()
+            printErrorsExit()
+        return backend.wrapGlobal(f)
+
+    errorDom.html('')
+    compile_async(inputDom.val(), (e, r):
+        if e
+            return
+        console.log(r)
+    )
